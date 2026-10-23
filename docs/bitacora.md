@@ -199,3 +199,33 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Qué diferencia hay entre el hook de pre-commit y el CI?* — El hook es local y rápido (avisa antes de commitear). El CI es remoto y obligatorio: si falla, se ve en GitHub con una cruz roja en el commit.
 - *¿Qué hace `--ci` en Jest?* — Desactiva el modo interactivo y hace que los snapshots nuevos fallen en lugar de escribirse solos.
 - *¿Por qué Node 22?* — Es una versión LTS compatible con el SDK 57. En mi máquina uso Node 24, que también es compatible.
+
+---
+
+## M09 · Agregué la plantilla de pull request y cerré la fase de calidad
+
+**Qué hice**
+
+- Creé `.github/pull_request_template.md`. GitHub la carga sola cada vez que alguien abre un pull request.
+- La plantilla pide: qué cambia, por qué, qué permisos toca, cómo se probó en cada plataforma y un checklist con las reglas de la app (no bloquear, pantalla previa, bitácora).
+- Verifiqué que el CI de M08 corrió en GitHub y terminó en verde.
+
+**Por qué**
+
+- En una app de permisos, lo más peligroso de un cambio es tocar `app.json` sin darse cuenta: eso exige una build nueva y no se puede arreglar con una actualización OTA. La plantilla obliga a marcarlo.
+- El checklist repite las reglas no negociables de la consigna (la app nunca se bloquea, pantalla previa con "Continuar"), así quien revisa sabe qué mirar.
+
+**Resumen de la fase de calidad (M05–M09)**
+
+| Capa | Herramienta | Cuándo corre |
+| --- | --- | --- |
+| Tipos | TypeScript `strict` | Editor, pre-commit y CI |
+| Errores y formato | ESLint + Prettier | Editor, pre-commit (`lint-staged`) y CI |
+| Comportamiento | Jest + Testing Library | Pre-commit y CI |
+| Mensajes de commit | commitlint | Hook `commit-msg` |
+| Compatibilidad con el SDK | `expo-doctor` | CI |
+
+**Qué podría preguntar el docente**
+
+- *¿Para qué una plantilla de PR si trabajás solo?* — Me obliga a revisar mi propio cambio antes de mergearlo, y deja documentado cómo lo probé en cada plataforma.
+- *¿Qué cambios de permisos no se pueden publicar por OTA?* — Todo lo que cambia el binario nativo: agregar o quitar un plugin, cambiar un texto de propósito del `Info.plist` o tocar `blockedPermissions`. Una actualización OTA solo cambia el JavaScript y los assets.
