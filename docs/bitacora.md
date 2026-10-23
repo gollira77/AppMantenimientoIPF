@@ -1129,3 +1129,35 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *Si tenés la lista de sectores, ¿para qué pedir la ubicación?* — Porque tocar "Tomar mi ubicación" es más rápido que buscar en una lista y sirve para confirmar que el reporte se hizo desde el instituto. La lista es el plan B, no el plan A.
 - *¿Por qué los sectores son un `enum` en zod y no texto libre?* — Para que el valor guardado sea siempre uno conocido: se puede agrupar y filtrar reportes por sector. Con texto libre habría "biblioteca", "Biblio", "la biblioteca"…
 - *¿Qué pasa si la persona vuelve sin elegir nada?* — Nada: el borrador queda sin ubicación ni sector y el reporte se puede guardar igual.
+
+---
+
+## M41 · Respondí la Parte C y D4 simulando el ciclo en mi dispositivo
+
+**Qué hice**
+
+- En `RESPUESTAS.md` escribí:
+  - **C1:** la tabla de claves del `Info.plist`.
+  - **C3:** la evaluación de los cinco textos de propósito, con versiones mejoradas usando el molde.
+  - **C4:** el acceso parcial y gradual en iOS, y la consecuencia del mínimo iOS 16.4 del SDK 57.
+  - **D1 a D4:** módulos y funciones, consultar contra pedir, cómo leer cada respuesta y la simulación del ciclo completo.
+  - **E2:** el orden de los permisos de ubicación, la versión correcta, `obtenerUbicacion()` y el requisito de Google Play.
+- Para **D4** armé un **sistema operativo simulado** (`src/test-utils/sistemaSimulado.ts`) con las reglas de los diálogos:
+  - Android 11+: el segundo "no" bloquea;
+  - iOS: el primero ya bloquea;
+  - bloqueado: no hay diálogo.
+- `src/__tests__/cicloD4.test.ts` corre los seis pasos de la tabla con **mi hook real** `usePermiso('ubicacion')` sobre ese sistema y verifica `status`, `canAskAgain` y si apareció el diálogo en cada paso, en Android y en iOS.
+- C2 y C5 quedan para M70, como indica la consigna.
+
+**Por qué**
+
+- La consigna pide "simular el ciclo". Lo simulé de dos formas: la tabla de la respuesta y un test que la ejecuta. Si mañana cambio `usePermiso` y rompo, por ejemplo, el paso 4 (pedir estando bloqueado), el test falla.
+- El paso 6 de la simulación muestra el bug real que todavía tiene la app: después de habilitar el permiso en Ajustes, si nadie vuelve a consultar, la pantalla sigue diciendo "bloqueado". Lo resuelvo en M47.
+- Aclaré en la respuesta que la simulación verifica **mi lógica**, no el sistema operativo. Los pasos hay que repetirlos en un Android 14 real cuando tenga la development build (M68).
+- Antes de escribir verifiqué en la documentación de Expo dos datos: que `expo-audio` pide el micrófono con `requestRecordingPermissionsAsync()` (no tiene hook) y que `expo-permissions` se deprecó en el SDK 41 y se eliminó en el 42.
+
+**Qué podría preguntar el docente**
+
+- *¿En qué paso cambia iOS y por qué?* — En el 2: iOS muestra el diálogo una sola vez, así que el primer "No permitir" ya deja `canAskAgain: false`.
+- *¿Qué es un "test double" como tu sistema simulado?* — Un reemplazo controlado de algo externo (acá, el sistema operativo) que se comporta según reglas conocidas. Me deja reproducir en milisegundos un ciclo que en un celular lleva reinstalar la app.
+- *¿Por qué `get…` no cuenta como diálogo?* — Porque consultar nunca muestra nada. En el test, `dialogosMostrados` solo sube en `pedir()`, y únicamente cuando el sistema realmente pregunta.

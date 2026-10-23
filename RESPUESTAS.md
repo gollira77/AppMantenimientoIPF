@@ -299,3 +299,204 @@ export default function Escanear({ onAula }: { onAula: (aula: string) => void })
 En la app real, además, el aula leída pasa por `leerCodigoAula` (M26–M27) y se guarda en el borrador del formulario (M29). Y después de un "no" se pasa directo a la carga manual, sin volver a explicar (M28).
 
 Lo que esta versión **todavía** no resuelve, y que corrijo más adelante: si la persona habilita la cámara en Ajustes y vuelve, el hook no se entera y sigue mostrando "bloqueado". Eso se arregla con `AppState` (M47, Parte E5).
+
+---
+
+## Parte C · iOS: textos de propósito y acceso parcial
+
+> C2 y C5 se responden en el módulo M70, con la build real.
+
+### C1. Claves del Info.plist
+
+| Recurso | Clave en Info.plist |
+| --- | --- |
+| Cámara | `NSCameraUsageDescription` |
+| Micrófono | `NSMicrophoneUsageDescription` |
+| Ubicación en uso | `NSLocationWhenInUseUsageDescription` |
+| Ubicación siempre | `NSLocationAlwaysAndWhenInUseUsageDescription` (la vieja `NSLocationAlwaysUsageDescription` solo servía hasta iOS 10 y está deprecada) |
+| Fotos (leer) | `NSPhotoLibraryUsageDescription` |
+| Fotos (solo guardar) | `NSPhotoLibraryAddUsageDescription` |
+| Contactos | `NSContactsUsageDescription` |
+| Face ID | `NSFaceIDUsageDescription` |
+| Rastreo entre apps (ATT) | `NSUserTrackingUsageDescription` |
+| Notificaciones | **No lleva clave.** El diálogo es fijo y lo arma el sistema. |
+
+En esta app, `npm run permisos:nativos` muestra que el `Info.plist` generado tiene solo `NSCameraUsageDescription` y `NSLocationWhenInUseUsageDescription`: no declara micrófono, "siempre" ni fotos, porque no los usa.
+
+### C3. Probador de textos de propósito
+
+La pauta 5.1.1 de Apple pide que el texto explique **claramente para qué** se usa el dato, con un ejemplo concreto. Los textos vagos, que culpan al sistema o que amenazan con que la app no funciona son motivo de rechazo.
+
+| Texto propuesto | ¿Aprobado? | Versión mejorada |
+| --- | --- | --- |
+| "Necesitamos tu ubicación." | **No.** Dice qué pide pero no para qué. | "Usamos tu ubicación para mostrarte los puntos de reciclaje más cercanos." |
+| "Para mejorar tu experiencia." | **No.** Es genérico: no dice qué dato ni qué beneficio. | "Usamos tu ubicación para ordenar las sucursales de la más cercana a la más lejana." |
+| "Usamos tu ubicación para mostrarte las farmacias de turno más cercanas." | **Sí.** Nombra el dato y un beneficio concreto que la persona entiende. Cumple el molde. | — |
+| "La app no funciona sin ubicación." | **No.** Presiona en lugar de explicar, y además suele ser falso (debería haber una alternativa). | "Usamos tu ubicación para completar la dirección de entrega. También podés escribirla a mano." |
+| "Ubicación requerida por el sistema." | **No.** Culpa al sistema y no explica el uso real. | "Usamos tu ubicación para saber en qué sector del instituto está el desperfecto que reportás." (es el texto de esta app) |
+
+### C4. Acceso parcial y gradual
+
+| Caso | iOS | En Expo |
+| --- | --- | --- |
+| Fotos limitadas ("Seleccionar fotos") | iOS 14 | `accessPrivileges === 'limited'` en la respuesta de `expo-image-picker` / `expo-media-library`. En esta app lo detecta `esParcial()` (M38). |
+| Ubicación aproximada (interruptor "Precisa") | iOS 14 | `ios.accuracy === 'reduced'` en la respuesta de `Location.getForegroundPermissionsAsync()`. En esta app: `esParcial()` → `parcial: true` en `usePermiso('ubicacion')`. |
+| "Permitir una vez" (ubicación) | iOS 13 | La respuesta es `granted` con `ios.scope: 'whenInUse'`, igual que "Al usar la app": Expo no los distingue. La diferencia aparece después: al cerrar la app, vuelve a `undetermined`. Por eso se consulta cada vez. |
+| Ubicación escalonada: de "al usar la app" a "Siempre" | iOS 13 | Primero `requestForegroundPermissionsAsync()` y después `requestBackgroundPermissionsAsync()`. La respuesta pasa a `ios.scope: 'always'`. |
+| Notificaciones provisionales | iOS 12 | `Notifications.requestPermissionsAsync({ ios: { allowProvisional: true } })`. Se detecta con `ios.status === IosAuthorizationStatus.PROVISIONAL` (lo uso en M71). |
+| Rastreo entre apps (App Tracking Transparency) | iOS 14.5 (obligatorio) | Módulo `expo-tracking-transparency`: `requestTrackingPermissionsAsync()` o `useTrackingPermissions()`. Esta app no lo usa. |
+
+**Versión mínima:** Expo SDK 57 requiere **iOS 16.4** (lo verifiqué en los podspecs de `expo-modules-core`). **Consecuencia práctica:** todos los casos de la tabla existen en cualquier iPhone donde corra la app. No hace falta preguntar por la versión de iOS (`if (version >= 14)`), pero sí hay que manejar **siempre** los casos parciales: cualquier persona puede elegir fotos limitadas o ubicación aproximada.
+
+### Fuentes (Parte C)
+
+- Apple Developer, *Protected resources* (claves `NS…UsageDescription`): https://developer.apple.com/documentation/bundleresources/protected-resources
+- Apple Developer, *App Review Guidelines 5.1.1*: https://developer.apple.com/app-store/review/guidelines/#data-collection-and-storage
+- Apple Developer, *Requesting authorization to use location services*: https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services
+- Expo, *Location (SDK 57)*: https://docs.expo.dev/versions/v57.0.0/sdk/location/
+- Expo, *ImagePicker (SDK 57)*: https://docs.expo.dev/versions/v57.0.0/sdk/imagepicker/
+- Expo, *Notifications (SDK 57)*: https://docs.expo.dev/versions/v57.0.0/sdk/notifications/
+- Expo, *TrackingTransparency*: https://docs.expo.dev/versions/v57.0.0/sdk/tracking-transparency/
+
+---
+
+## Parte D · Expo: una API, dos plataformas
+
+### D1. Módulos y funciones
+
+| Necesidad | Módulo | Hook / función de permiso |
+| --- | --- | --- |
+| Escanear un QR con la cámara | `expo-camera` | `useCameraPermissions()` o `Camera.requestCameraPermissionsAsync()` (esta app: `usePermiso('camara')`) |
+| Grabar video con sonido | `expo-camera` | `useCameraPermissions()` **y** `useMicrophonePermissions()` |
+| Mostrar farmacias cercanas | `expo-location` | `Location.useForegroundPermissions()` / `requestForegroundPermissionsAsync()` |
+| Seguir un envío con la app en segundo plano | `expo-location` + `expo-task-manager` | `requestForegroundPermissionsAsync()` y **después** `requestBackgroundPermissionsAsync()` |
+| Mostrar un recordatorio | `expo-notifications` | `Notifications.requestPermissionsAsync()` / `getPermissionsAsync()` |
+| Grabar una nota de voz | `expo-audio` | `requestRecordingPermissionsAsync()` / `getRecordingPermissionsAsync()` (no tiene hook) |
+| Galería propia dentro de la app | `expo-media-library` | `MediaLibrary.usePermissions()` / `requestPermissionsAsync()` |
+| Publicidad personalizada entre apps (iOS) | `expo-tracking-transparency` | `useTrackingPermissions()` / `requestTrackingPermissionsAsync()` |
+
+**`import * as Permissions from 'expo-permissions'`:** el tutorial está **desactualizado**. `expo-permissions` se deprecó en el SDK 41 (2021) y se eliminó en el SDK 42. Desde entonces cada módulo trae sus propias funciones de permiso. Además, si el tutorial tiene esa antigüedad, probablemente también use otras APIs viejas, así que no conviene copiarlo. La consigna de este TP prohíbe usarlo.
+
+### D2. Consultar, pedir y el hook
+
+**a)** `get…PermissionsAsync()` **consulta**: lee el estado actual y nunca muestra nada. `request…PermissionsAsync()` **pide**: si el permiso está sin decidir (o denegado con `canAskAgain: true`), muestra el diálogo del sistema. **Solo `request…` puede mostrar un diálogo.** En esta app, `usePermiso` consulta al montar y solo pide cuando la persona toca "Continuar".
+
+**b)** El hook devuelve:
+
+1. `permiso`: la `PermissionResponse` actual;
+2. `pedirPermiso`: la función que pide (como `request…`);
+3. `consultarPermiso`: la función que vuelve a leer (como `get…`).
+
+En el primer render `permiso` vale **`null`**, porque la consulta es asíncrona. Mientras tanto la pantalla tiene que mostrar un estado de **carga** ("Consultando el permiso…"), no la explicación ni la cámara. Es el estado `cargando` del escáner (M24).
+
+**c)** Si `canAskAgain` es `false`, `request…()` **no muestra nada**: devuelve enseguida `denied` con `canAskAgain: false`. Si se lo llama en un bucle (por ejemplo, en cada render o en un `useEffect` mal armado), la promesa vuelve, el estado se actualiza, se vuelve a renderizar y se vuelve a pedir: un ciclo infinito que consume batería y deja la pantalla en "Pidiendo permiso…" para siempre. Por eso en esta app solo se pide desde un toque y, si está bloqueado, el botón pasa a ser "Abrir Ajustes".
+
+### D3. Leé la respuesta
+
+| Respuesta | Qué hace la app |
+| --- | --- |
+| `null` | Muestra "Consultando el permiso…" y espera. No pide ni usa el recurso. |
+| `{ status: 'granted', granted: true }` | Usa el recurso: muestra la cámara o toma la ubicación. |
+| `{ status: 'undetermined', canAskAgain: true }` | Muestra la pantalla previa con el beneficio y "Continuar". Recién ahí pide. |
+| `{ status: 'denied', canAskAgain: true }` | Igual que sin decidir, pero **solo si la persona vuelve a tocar la función**: no insiste sola. Ofrece la alternativa (escribir el aula, elegir el sector). |
+| `{ status: 'denied', canAskAgain: false }` | Bloqueado: explica cómo habilitarlo, muestra "Abrir Ajustes" y la alternativa manual. No llama a `request…`. |
+| `{ status: 'granted', accessPrivileges: 'limited' }` | Concedido parcial: usa las fotos que la persona eligió y, si hace falta otra, ofrece ampliar la selección. Esta app ni siquiera llega acá: usa el selector del sistema (M43). |
+| `{ status: 'granted', android: { accuracy: 'coarse' } }` | Concedido parcial: muestra "Ubicación aproximada", **no** las coordenadas, y deja elegir el sector a mano (M38–M40). |
+
+**Los dos campos que deciden casi todo** son `granted` ("¿tengo el permiso ahora?") y `canAskAgain` ("¿el sistema todavía puede mostrar el diálogo?"). Con esos dos sale el estado (`interpretarRespuesta`, M34). El tercer nivel son los matices (`accessPrivileges`, `accuracy`), que dicen **cuánto** se concedió (`esParcial`, M38).
+
+### D4. Simulación del ciclo completo
+
+Esta tabla no la completé de memoria: la **corrí** con mi hook `usePermiso('ubicacion')` sobre un sistema operativo simulado que aplica las reglas de Android 14 (`src/test-utils/sistemaSimulado.ts` y `src/__tests__/cicloD4.test.ts`). El test verifica cada fila.
+
+| # | Acción | status | canAskAgain | ¿Diálogo? |
+| --- | --- | --- | --- | --- |
+| 1 | `getForegroundPermissionsAsync()` | `undetermined` | `true` | No (`get` nunca muestra nada) |
+| 2 | `requestForegroundPermissionsAsync()` → "No permitir" | `denied` | `true` | Sí |
+| 3 | `requestForegroundPermissionsAsync()` → "No permitir" | `denied` | `false` | Sí (el último) |
+| 4 | `requestForegroundPermissionsAsync()` | `denied` | `false` | **No**: el sistema contesta solo |
+| 5 | `Linking.openSettings()` → habilita "Mientras la app está en uso" → vuelve y la app consulta | `granted` | `true` | No |
+| 6 | Igual que el 5, pero la app no vuelve a consultar | Muestra lo viejo: `denied` / `false` → la pantalla sigue diciendo **"bloqueado"** aunque el permiso ya esté concedido | | No |
+
+El paso 6 es el problema que resuelvo en M47: la app vuelve a consultar con `AppState` cada vez que regresa al primer plano.
+
+**En iOS** el resultado cambia en el **paso 2**: iOS muestra el diálogo una sola vez, así que el primer "No permitir" ya devuelve `denied` con `canAskAgain: false`. Los pasos 3 y 4 no muestran diálogo (en la simulación, `dialogosMostrados` queda en 1). La razón es de diseño: Apple considera que preguntar dos veces es insistir.
+
+**"Permitir una vez" en iOS:** el permiso vale mientras la app está abierta. Al cerrarla y volver a abrirla, el permiso vuelve a `undetermined` (`canAskAgain: true`) y la próxima vez que la persona use la función aparece el diálogo otra vez. Por eso la app nunca guarda "ya tengo ubicación": siempre consulta.
+
+> Pendiente de prueba en el dispositivo real: los pasos 2 a 5 hay que repetirlos en un Android 14 con la development build (M68), con los comandos de reseteo de D6. La simulación verifica la lógica de mi app; el dispositivo verifica el sistema.
+
+### Fuentes (Parte D)
+
+- Expo, *Permissions guide*: https://docs.expo.dev/guides/permissions/
+- Expo, *Camera / Location / Notifications / Audio / MediaLibrary / TrackingTransparency (SDK 57)*: https://docs.expo.dev/versions/v57.0.0/
+- Expo blog, *Expo SDK 41* (deprecación de `expo-permissions`): https://blog.expo.dev/expo-sdk-41-12cc5232f2ef
+- Android Developers, *Request runtime permissions*: https://developer.android.com/training/permissions/requesting
+
+---
+
+## Parte E · Recetas (continuación)
+
+### E2. El orden importa (ubicación)
+
+**a) Qué está mal.** Pide **segundo plano antes que primer plano**. Las dos plataformas exigen el orden inverso:
+
+- **iOS:** la autorización es escalonada. Primero hay que tener "Al usar la app" y recién después se puede pedir "Siempre". Si se pide "Siempre" primero, iOS no ofrece esa opción o la da de forma provisional, y `expo-location` rechaza el pedido de segundo plano si no hay permiso de primer plano.
+- **Android 11+:** `ACCESS_BACKGROUND_LOCATION` no se puede pedir junto con el de primer plano ni antes. Si se pide sin tener el de primer plano, el sistema lo deniega sin diálogo. Con el de primer plano concedido, el pedido de segundo plano no muestra un diálogo: lleva a la pantalla de Ajustes, donde la persona tiene que elegir "Permitir todo el tiempo".
+
+En los dos casos `siempre.granted` da `false`, la función devuelve `false` y **nunca llega** a pedir el de primer plano.
+
+**b) Versión correcta:**
+
+```ts
+// src/lib/ubicacion.ts
+import * as Location from 'expo-location';
+
+export async function activarSeguimiento(): Promise<boolean> {
+  // 1. Primero, ubicación mientras la app está en uso.
+  const enUso = await Location.requestForegroundPermissionsAsync();
+  if (!enUso.granted) return false;
+
+  // 2. Recién con eso, segundo plano (en Android lleva a Ajustes).
+  const siempre = await Location.requestBackgroundPermissionsAsync();
+  return siempre.granted;
+}
+```
+
+**c) `obtenerUbicacion()`**, que contempla Android e iOS y nunca rompe la app (es la lógica de `/reporte/ubicacion` con `esParcial`, M38):
+
+```ts
+import * as Location from 'expo-location';
+
+export type UbicacionObtenida = { latitud: number; longitud: number; aproximada: boolean };
+
+export async function obtenerUbicacion(): Promise<UbicacionObtenida | null> {
+  try {
+    const permiso = await Location.requestForegroundPermissionsAsync();
+    if (!permiso.granted) return null;
+
+    const aproximada =
+      permiso.android?.accuracy === 'coarse' || permiso.ios?.accuracy === 'reduced';
+
+    const posicion = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+    return {
+      latitud: posicion.coords.latitude,
+      longitud: posicion.coords.longitude,
+      aproximada,
+    };
+  } catch {
+    // GPS apagado, sin señal o tiempo agotado: la app sigue sin ubicación.
+    return null;
+  }
+}
+```
+
+**d)** **No** hace falta segundo plano para "farmacias cercanas": la lista se calcula cuando la persona abre la pantalla, con la app en primer plano. Si se pidiera, **Google Play** exige completar la declaración de permisos de ubicación en segundo plano en Play Console, demostrar que es una **función principal** de la app que la persona espera, y adjuntar un **video** que muestre la función y el aviso previo al pedido. Sin eso, la app se rechaza. Esta app usa solo primer plano (M32).
+
+**Fuentes (E2):**
+
+- Android Developers, *Request background location*: https://developer.android.com/develop/sensors-and-location/location/permissions/background
+- Google Play Console Help, *Requesting access to location in the background*: https://support.google.com/googleplay/android-developer/answer/9799150
+- Expo, *Location (SDK 57)*: https://docs.expo.dev/versions/v57.0.0/sdk/location/
