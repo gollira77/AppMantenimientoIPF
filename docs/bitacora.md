@@ -432,3 +432,32 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Por qué el formulario no pide la cámara o la ubicación al abrirse?* — Porque la persona todavía no eligió usar esas funciones. Pedir antes de tiempo entrena el "No permitir" automático. El escáner, la foto y la ubicación son opcionales y se piden cuando se tocan.
 - *¿Qué es un componente controlado?* — Un `TextInput` cuyo valor viene del estado (`value={titulo}`) y que avisa cada cambio (`onChangeText={setTitulo}`). La fuente de verdad es el estado de React, no el input.
 - *¿Por qué `autoCapitalize="characters"` en el aula?* — Los códigos de aula van en mayúsculas ("B12"). Así el teclado ya sale en mayúsculas.
+
+---
+
+## M18 · Validé el formulario con zod
+
+**Qué hice**
+
+- Instalé `zod` (versión 4) con `npx expo install`.
+- `src/lib/reportes/esquema.ts` define `esquemaReporte`:
+  - **título:** de 3 a 60 letras;
+  - **descripción:** de 10 a 500 letras;
+  - **aula:** obligatoria, hasta 12 caracteres, se pasa a mayúsculas y solo admite letras, números y guiones (`B12`, `LAB-2`);
+  - **categoría:** una de las cuatro de `CATEGORIAS`.
+- La función `validarReporte` usa `safeParse` y devuelve `{ ok: true, datos }` o `{ ok: false, errores }` con **un mensaje por campo**.
+- El formulario muestra cada error debajo de su campo (en rojo y con el borde rojo) y no guarda hasta que todo esté bien.
+
+**Por qué**
+
+- La validación vive en `lib` y no en la pantalla: es lógica pura, se puede testear sin renderizar nada (M19) y la reutilizo si el reporte llega por otro camino (por ejemplo, el aula leída del QR en M26).
+- El esquema también **limpia** los datos: saca espacios (`trim`) y pasa el aula a mayúsculas. Lo que se guarda es `resultado.datos`, no lo que se tipeó.
+- El tipo `DatosReporte` sale del esquema con `z.infer`: hay una sola definición para la validación y para TypeScript.
+- Los mensajes dicen **cómo corregir** ("Usá letras, números y guiones, por ejemplo B12"), no solo "inválido".
+- En zod 4 el mensaje se pasa con `{ error: '...' }` (en zod 3 era `{ message: '...' }`). Lo verifiqué en la versión instalada.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué diferencia hay entre `parse` y `safeParse`?* — `parse` lanza una excepción si los datos no sirven. `safeParse` devuelve un objeto con `success`, así el error se maneja con un `if` y no con `try/catch`.
+- *¿Por qué `entrada: unknown`?* — Porque la validación es justamente lo que convierte datos desconocidos en datos con tipo. Si recibiera `DatosReporte`, estaría asumiendo lo que quiero comprobar.
+- *¿Por qué el mensaje del aula menciona el QR?* — Porque el aula se puede cargar escaneando el QR o, si se deniega la cámara, escribiéndola a mano. El mensaje recuerda las dos opciones.

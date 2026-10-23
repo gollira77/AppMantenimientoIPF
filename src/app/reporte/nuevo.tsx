@@ -7,6 +7,7 @@ import { Campo } from '@/components/Campo';
 import { Pantalla } from '@/components/Pantalla';
 import { SelectorCategoria } from '@/components/SelectorCategoria';
 import { Texto } from '@/components/Texto';
+import { validarReporte, type ErroresReporte } from '@/lib/reportes/esquema';
 import type { Categoria } from '@/lib/reportes/tipos';
 
 export default function NuevoReporte() {
@@ -14,10 +15,18 @@ export default function NuevoReporte() {
   const [descripcion, setDescripcion] = useState('');
   const [aula, setAula] = useState('');
   const [categoria, setCategoria] = useState<Categoria | null>(null);
+  const [errores, setErrores] = useState<ErroresReporte>({});
 
   function guardar() {
-    // Versión 1: todavía no hay dónde guardar el reporte ni validación.
-    Alert.alert('Reporte creado', `"${titulo}" quedó registrado.`);
+    const resultado = validarReporte({ titulo, descripcion, aula, categoria });
+    if (!resultado.ok) {
+      setErrores(resultado.errores);
+      return;
+    }
+
+    setErrores({});
+    // Todavía no hay dónde guardar el reporte: la lista no lo va a ver (se resuelve en M21).
+    Alert.alert('Reporte creado', `"${resultado.datos.titulo}" quedó registrado.`);
     router.back();
   }
 
@@ -32,6 +41,7 @@ export default function NuevoReporte() {
         value={titulo}
         onChangeText={setTitulo}
         maxLength={60}
+        error={errores.titulo}
       />
       <Campo
         etiqueta="Descripción"
@@ -40,6 +50,7 @@ export default function NuevoReporte() {
         onChangeText={setDescripcion}
         multiline
         maxLength={500}
+        error={errores.descripcion}
       />
       <Campo
         etiqueta="Aula"
@@ -48,8 +59,9 @@ export default function NuevoReporte() {
         onChangeText={setAula}
         autoCapitalize="characters"
         autoCorrect={false}
+        error={errores.aula}
       />
-      <SelectorCategoria valor={categoria} onCambiar={setCategoria} />
+      <SelectorCategoria valor={categoria} onCambiar={setCategoria} error={errores.categoria} />
       <Boton titulo="Guardar reporte" onPress={guardar} />
     </Pantalla>
   );
