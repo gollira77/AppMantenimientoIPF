@@ -492,3 +492,30 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Qué casos borde probaste?* — Textos con solo espacios (gracias a `trim` no pasan), aulas con espacios o símbolos, la categoría con mayúscula y entradas que no son objetos.
 - *¿Por qué `'Agua'` es inválida si existe la categoría agua?* — Porque el valor interno es `agua`. La interfaz manda siempre el valor interno, así que un `Agua` indicaría un error en otra parte del código.
 - *¿Qué es un spy?* — Un envoltorio sobre una función real que registra cómo se la llamó. Con `mockImplementation` además reemplazo lo que hace.
+
+---
+
+## M20 · Validé el id del detalle y mostré un mensaje si no existe
+
+**Qué hice**
+
+- `src/lib/reportes/buscar.ts` con `buscarReporte(reportes, idCrudo)`, que devuelve uno de tres resultados:
+  - `invalido`: el id no es un texto o tiene caracteres raros (solo acepto letras, números y guiones, hasta 40);
+  - `no_encontrado`: el id es válido pero no hay ningún reporte con ese número;
+  - `encontrado`: el reporte.
+- `/reporte/[id]` muestra un mensaje distinto para cada caso. Los dos casos de error tienen un enlace "Volver a mis reportes".
+- Si el reporte existe, muestra título, estado, aula, categoría, fecha (con formato argentino) y descripción.
+- Tests de la función (incluido un id repetido como arreglo, uno vacío y uno con `<script>`) y de la pantalla para los tres casos.
+
+**Por qué**
+
+- El id llega por la URL, y la URL la puede escribir cualquiera o venir de una notificación vieja (M62). No puedo confiar en ella: `useLocalSearchParams` puede devolver `undefined`, un texto cualquiera o un arreglo si el parámetro se repite.
+- Separé "inválido" de "no existe" porque significan cosas distintas: uno es un enlace mal armado y el otro un reporte que ya no está. El mensaje ayuda a entender qué pasó.
+- El resultado es una **unión discriminada** (`tipo`). TypeScript me obliga a manejar los tres casos y, dentro de cada `if`, sabe qué campos existen (`reporte` solo existe si `tipo === 'encontrado'`).
+- La pantalla todavía busca en los datos de prueba. Un reporte nuevo del formulario no aparecería acá: es el mismo problema de M17, que resuelvo en el próximo módulo.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no usar la página 404 para un reporte que no existe?* — Porque la ruta sí existe (`/reporte/[id]`); lo que no existe es el dato. La 404 es para URLs que no corresponden a ninguna pantalla.
+- *¿Qué es una unión discriminada?* — Un tipo que es "uno de varios", con un campo común (`tipo`) que dice cuál es. Al chequear ese campo, TypeScript reduce el tipo automáticamente.
+- *¿Por qué `Intl.DateTimeFormat('es-AR')`?* — Para mostrar la fecha como se lee en Argentina (día/mes/año) sin armar el texto a mano. Hermes, el motor de JavaScript de React Native, soporta `Intl`.
