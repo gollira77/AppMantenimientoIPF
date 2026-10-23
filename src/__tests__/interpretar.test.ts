@@ -1,25 +1,85 @@
-import { interpretarRespuesta } from '@/lib/permisos/interpretar';
+import {
+  interpretarRespuesta,
+  type EstadoPermiso,
+  type RespuestaPermiso,
+} from '@/lib/permisos/interpretar';
 
-describe('interpretarRespuesta', () => {
-  it('null es cargando', () => {
-    expect(interpretarRespuesta(null)).toBe('cargando');
+// Tabla D3 de la consigna. Las respuestas reales siempre traen granted, canAskAgain y status,
+// así que completo los campos que la tabla abrevia con los valores que devuelve Expo.
+type Fila = { descripcion: string; respuesta: RespuestaPermiso | null; esperado: EstadoPermiso };
+
+const tablaD3: Fila[] = [
+  { descripcion: 'null (el hook todavía consulta)', respuesta: null, esperado: 'cargando' },
+  {
+    descripcion: "{ status: 'granted', granted: true }",
+    respuesta: { status: 'granted', granted: true, canAskAgain: true },
+    esperado: 'concedido',
+  },
+  {
+    descripcion: "{ status: 'undetermined', canAskAgain: true }",
+    respuesta: { status: 'undetermined', granted: false, canAskAgain: true },
+    esperado: 'preguntable',
+  },
+  {
+    descripcion: "{ status: 'denied', canAskAgain: true }",
+    respuesta: { status: 'denied', granted: false, canAskAgain: true },
+    esperado: 'preguntable',
+  },
+  {
+    descripcion: "{ status: 'denied', canAskAgain: false }",
+    respuesta: { status: 'denied', granted: false, canAskAgain: false },
+    esperado: 'bloqueado',
+  },
+  {
+    descripcion: "{ status: 'granted', accessPrivileges: 'limited' }",
+    respuesta: {
+      status: 'granted',
+      granted: true,
+      canAskAgain: true,
+      accessPrivileges: 'limited',
+    } as RespuestaPermiso,
+    esperado: 'concedido',
+  },
+  {
+    descripcion: "{ status: 'granted', android: { accuracy: 'coarse' } }",
+    respuesta: {
+      status: 'granted',
+      granted: true,
+      canAskAgain: true,
+      android: { accuracy: 'coarse' },
+    } as RespuestaPermiso,
+    esperado: 'concedido',
+  },
+];
+
+describe('interpretarRespuesta: tabla D3', () => {
+  it.each(tablaD3)('$descripcion → $esperado', ({ respuesta, esperado }) => {
+    expect(interpretarRespuesta(respuesta)).toBe(esperado);
+  });
+});
+
+describe('interpretarRespuesta: casos de borde', () => {
+  it('undefined también es cargando', () => {
+    expect(interpretarRespuesta(undefined)).toBe('cargando');
   });
 
-  it('granted es concedido', () => {
-    expect(interpretarRespuesta({ status: 'granted', granted: true, canAskAgain: true })).toBe(
+  it('concedido gana aunque canAskAgain sea false', () => {
+    expect(interpretarRespuesta({ status: 'granted', granted: true, canAskAgain: false })).toBe(
       'concedido',
     );
   });
 
-  it('no concedido con canAskAgain es preguntable', () => {
-    expect(interpretarRespuesta({ status: 'denied', granted: false, canAskAgain: true })).toBe(
-      'preguntable',
+  it('en iOS, después del primer "no", queda bloqueado', () => {
+    // iOS muestra el diálogo una sola vez: el primer "No permitir" ya devuelve canAskAgain: false.
+    expect(interpretarRespuesta({ status: 'denied', granted: false, canAskAgain: false })).toBe(
+      'bloqueado',
     );
   });
 
-  it('no concedido sin canAskAgain es bloqueado', () => {
-    expect(interpretarRespuesta({ status: 'denied', granted: false, canAskAgain: false })).toBe(
-      'bloqueado',
+  it('"Solo esta vez" vencido en Android vuelve a ser preguntable', () => {
+    // Al revocarse el permiso temporal, Android lo informa como denegado pero se puede volver a pedir.
+    expect(interpretarRespuesta({ status: 'denied', granted: false, canAskAgain: true })).toBe(
+      'preguntable',
     );
   });
 });

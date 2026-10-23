@@ -942,3 +942,35 @@ La regla "¿en qué estado está este permiso?" es una sola, pero estaba escrita
 - *¿Por qué una función y no un componente?* — Porque decidir el estado es lógica, no interfaz. Como función pura se prueba con una tabla de entradas y salidas (M35).
 - *¿Qué es tipado estructural?* — En TypeScript, un objeto es compatible con un tipo si tiene sus campos, sin importar de dónde viene. Por eso `PermissionResponse` de la cámara y `LocationPermissionResponse` encajan en `RespuestaPermiso`.
 - *¿Por qué `granted` gana aunque `canAskAgain` sea `false`?* — Porque si ya está concedido no hace falta preguntar nada. `canAskAgain` solo importa cuando no está concedido.
+
+---
+
+## M35 · Cubrí cada PermissionResponse de la tabla D3
+
+**Qué hice**
+
+- `src/__tests__/interpretar.test.ts` prueba `interpretarRespuesta` con **las siete filas de la tabla D3** de la consigna, escritas como objetos (`descripcion`, `respuesta`, `esperado`), así cada test se titula igual que la fila:
+
+| Respuesta (D3) | Estado |
+| --- | --- |
+| `null` | cargando |
+| `{ status: 'granted', granted: true }` | concedido |
+| `{ status: 'undetermined', canAskAgain: true }` | preguntable |
+| `{ status: 'denied', canAskAgain: true }` | preguntable |
+| `{ status: 'denied', canAskAgain: false }` | bloqueado |
+| `{ status: 'granted', accessPrivileges: 'limited' }` | concedido (parcial) |
+| `{ status: 'granted', android: { accuracy: 'coarse' } }` | concedido (parcial) |
+
+- Casos de borde: `undefined`, concedido con `canAskAgain: false`, el primer "no" en iOS (ya queda bloqueado) y un "Solo esta vez" vencido en Android (vuelve a preguntable).
+
+**Por qué**
+
+- La tabla D3 es exactamente la especificación de esta función. Si la convierto en test, la respuesta de la Parte D3 y el código no pueden contradecirse.
+- La tabla abrevia las respuestas (por ejemplo, no pone `granted`). Las completé con lo que devuelve Expo de verdad, porque Expo **siempre** trae `granted`, `canAskAgain` y `status`.
+- Las dos últimas filas son **concedido** porque el permiso está dado, aunque sea con menos alcance. Lo de "parcial" no cambia el estado: es un **matiz** que agrego en M38 (fotos limitadas, ubicación aproximada).
+
+**Qué podría preguntar el docente**
+
+- *¿Cuáles son los dos campos que deciden casi todo?* — `granted` ("¿lo tengo?") y `canAskAgain` ("¿el sistema todavía puede mostrar el diálogo?"). `status` es casi redundante: `granted` ya dice si está concedido.
+- *¿Para qué sirve `status` entonces?* — Para distinguir "nunca se preguntó" (`undetermined`) de "se dijo que no" (`denied`). La interfaz los trata igual (los dos son preguntables), pero sirve para el panel de permisos (M54).
+- *¿Por qué `it.each` con objetos y no con arreglos?* — Porque con `$descripcion` y `$esperado` el título del test se lee como la fila de la tabla.
