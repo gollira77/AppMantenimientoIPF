@@ -7,6 +7,7 @@ import { Campo } from '@/components/Campo';
 import { Pantalla } from '@/components/Pantalla';
 import { SelectorCategoria } from '@/components/SelectorCategoria';
 import { Texto } from '@/components/Texto';
+import { useReportes } from '@/hooks/useReportes';
 import { validarReporte, type ErroresReporte } from '@/lib/reportes/esquema';
 import type { Categoria } from '@/lib/reportes/tipos';
 
@@ -16,6 +17,7 @@ export default function NuevoReporte() {
   const [aula, setAula] = useState('');
   const [categoria, setCategoria] = useState<Categoria | null>(null);
   const [errores, setErrores] = useState<ErroresReporte>({});
+  const { agregar } = useReportes();
 
   function guardar() {
     const resultado = validarReporte({ titulo, descripcion, aula, categoria });
@@ -25,8 +27,8 @@ export default function NuevoReporte() {
     }
 
     setErrores({});
-    // Todavía no hay dónde guardar el reporte: la lista no lo va a ver (se resuelve en M21).
-    Alert.alert('Reporte creado', `"${resultado.datos.titulo}" quedó registrado.`);
+    const nuevo = agregar(resultado.datos);
+    Alert.alert('Reporte creado', `"${nuevo.titulo}" quedó registrado.`);
     router.back();
   }
 

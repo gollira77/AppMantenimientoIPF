@@ -1,17 +1,15 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Enlace } from '@/components/Enlace';
 import { TarjetaReporte } from '@/components/TarjetaReporte';
 import { Texto } from '@/components/Texto';
-import { REPORTES_DE_PRUEBA } from '@/lib/reportes/datosDePrueba';
-import type { Reporte } from '@/lib/reportes/tipos';
+import { useReportes } from '@/hooks/useReportes';
 import { colores, espacio } from '@/lib/tema';
 
 export default function Reportes() {
-  const [reportes] = useState<Reporte[]>(REPORTES_DE_PRUEBA);
+  const { reportes } = useReportes();
 
   return (
     <View style={estilos.fondo}>

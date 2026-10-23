@@ -5,8 +5,8 @@ import { EtiquetaEstado } from '@/components/EtiquetaEstado';
 import { Pantalla } from '@/components/Pantalla';
 import { Tarjeta } from '@/components/Tarjeta';
 import { Texto } from '@/components/Texto';
+import { useReportes } from '@/hooks/useReportes';
 import { buscarReporte } from '@/lib/reportes/buscar';
-import { REPORTES_DE_PRUEBA } from '@/lib/reportes/datosDePrueba';
 import { ETIQUETA_CATEGORIA } from '@/lib/reportes/tipos';
 
 const formatoFecha = new Intl.DateTimeFormat('es-AR', {
@@ -16,7 +16,8 @@ const formatoFecha = new Intl.DateTimeFormat('es-AR', {
 
 export default function DetalleReporte() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const busqueda = buscarReporte(REPORTES_DE_PRUEBA, id);
+  const { reportes } = useReportes();
+  const busqueda = buscarReporte(reportes, id);
 
   if (busqueda.tipo === 'invalido') {
     return (

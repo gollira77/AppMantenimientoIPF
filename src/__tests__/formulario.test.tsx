@@ -3,10 +3,11 @@ import { renderRouter } from 'expo-router/testing-library';
 import { Alert } from 'react-native';
 
 import NuevoReporte from '@/app/reporte/nuevo';
+import { ProveedorReportes } from '@/hooks/useReportes';
 
 describe('Formulario de nuevo reporte', () => {
   it('muestra los cuatro campos', () => {
-    render(<NuevoReporte />);
+    render(<NuevoReporte />, { wrapper: ProveedorReportes });
 
     expect(screen.getByLabelText('Título')).toBeTruthy();
     expect(screen.getByLabelText('Descripción')).toBeTruthy();
@@ -15,7 +16,7 @@ describe('Formulario de nuevo reporte', () => {
   });
 
   it('marca la categoría elegida', () => {
-    render(<NuevoReporte />);
+    render(<NuevoReporte />, { wrapper: ProveedorReportes });
 
     fireEvent.press(screen.getByRole('radio', { name: 'Agua' }));
 
@@ -26,7 +27,7 @@ describe('Formulario de nuevo reporte', () => {
 
 describe('Formulario de nuevo reporte: errores', () => {
   it('muestra los errores al guardar vacío y no navega', () => {
-    render(<NuevoReporte />);
+    render(<NuevoReporte />, { wrapper: ProveedorReportes });
 
     fireEvent.press(screen.getByRole('button', { name: 'Guardar reporte' }));
 

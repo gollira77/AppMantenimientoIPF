@@ -519,3 +519,34 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Por qué no usar la página 404 para un reporte que no existe?* — Porque la ruta sí existe (`/reporte/[id]`); lo que no existe es el dato. La 404 es para URLs que no corresponden a ninguna pantalla.
 - *¿Qué es una unión discriminada?* — Un tipo que es "uno de varios", con un campo común (`tipo`) que dice cuál es. Al chequear ese campo, TypeScript reduce el tipo automáticamente.
 - *¿Por qué `Intl.DateTimeFormat('es-AR')`?* — Para mostrar la fecha como se lee en Argentina (día/mes/año) sin armar el texto a mano. Hermes, el motor de JavaScript de React Native, soporta `Intl`.
+
+---
+
+## M21 (evolución) · Moví los reportes a un contexto porque la lista no veía los nuevos
+
+**El problema**
+
+En M16 la lista guardaba los reportes en su propio `useState`. En M17 y M18 el formulario validaba y mostraba "Reporte creado", pero el reporte **no aparecía en la lista ni en el detalle**. No era un error de la lista ni del formulario: el estado de React es **local al componente** que lo crea. El formulario es otra pantalla y no tenía ninguna forma de llegar al `useState` de la lista. Para colmo, el detalle buscaba en los datos de prueba.
+
+**Qué hice**
+
+- `src/hooks/useReportes.tsx`:
+  - `ProveedorReportes` guarda la lista en un único `useState` y expone `reportes` y `agregar(datos)`;
+  - `useReportes()` la lee desde cualquier pantalla. Si se usa fuera del proveedor, tira un error claro en vez de devolver `undefined`.
+- `src/lib/reportes/crear.ts`: `crearReporte` (id, estado `pendiente`, fecha ISO) y `generarId`. Son funciones puras, sin React.
+- El proveedor envuelve el `Stack` en `src/app/_layout.tsx`, así todas las pantallas comparten los mismos datos.
+- La lista, el detalle y el formulario ahora usan `useReportes()`.
+- Tests: `crearReporte`, ids distintos, error fuera del proveedor, `agregar` pone el nuevo primero y el **flujo completo**: crear → aparece en la lista → el detalle se abre.
+
+**Por qué este diseño lo resuelve**
+
+- El estado sube al ancestro común de todas las pantallas (el layout raíz). Es la idea de "levantar el estado", pero con contexto: así no paso la lista por props a través del router, que no lo permite.
+- `useMemo` y `useCallback` mantienen el mismo objeto `valor` mientras la lista no cambie, para que las pantallas no se redibujen de más.
+- La lógica de armar un reporte quedó en `lib`, separada de React: el contexto solo decide **dónde vive** el estado.
+- Todavía no persiste: si cierro la app se pierden los reportes nuevos. Eso es M64 (AsyncStorage detrás de un repositorio). Como las pantallas solo conocen `useReportes()`, ese cambio no las va a tocar.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no Redux o Zustand?* — Para una lista y una función alcanza con Context de React, sin dependencias nuevas. Si el estado creciera mucho o cambiara muy seguido, evaluaría una librería.
+- *¿Qué pasa si una pantalla usa `useReportes` fuera del proveedor?* — Tira el error "useReportes tiene que usarse dentro de &lt;ProveedorReportes&gt;". Así el problema aparece enseguida y no como un `undefined` misterioso.
+- *¿Por qué `setReportes((actuales) => [nuevo, ...actuales])` y no `[nuevo, ...reportes]`?* — La forma con función usa siempre el estado más reciente, aunque se agreguen dos reportes seguidos antes de redibujar.
