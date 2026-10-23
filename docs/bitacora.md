@@ -671,3 +671,32 @@ El escáner ahora distingue los cuatro estados que pide la consigna:
 - *¿Cuándo pasa un permiso de "preguntable" a "bloqueado"?* — En iOS, después del primer "No permitir". En Android 11+, después del segundo. En los dos casos `canAskAgain` pasa a `false`.
 - *¿Qué hace `Linking.openSettings()`?* — Abre la pantalla de Ajustes de **esta app** en el sistema, donde están sus permisos.
 - *¿Qué pasa cuando la persona vuelve de Ajustes?* — En esta versión, nada: el hook no se entera de que el permiso cambió y la pantalla sigue diciendo "bloqueado". Lo arreglo en M47 con `AppState`.
+
+---
+
+## M26 · Leí el QR del aula y evité lecturas repetidas
+
+**Qué hice**
+
+- Definí el formato de los QR pegados en cada aula: el texto `IPF-AULA:<código>`, por ejemplo `IPF-AULA:B12`.
+- `src/lib/aulas/codigoQr.ts`:
+  - `leerCodigoAula(datos)` devuelve `{ tipo: 'aula', aula }` o `{ tipo: 'ajeno' }` (cualquier QR que no sea de un aula del IPF);
+  - `codigoQrDeAula(aula)` arma el texto inverso, para el generador de QR (M30).
+- En el escáner:
+  - `barcodeScannerSettings={{ barcodeTypes: ['qr'] }}`: solo busca QR, no códigos de barras de productos;
+  - `onBarcodeScanned` guarda la lectura y muestra "Aula B12" o "Ese QR no es de un aula", con un botón "Escanear otra vez";
+  - **una sola lectura**: un `useRef` corta en la primera, y además paso `onBarcodeScanned={undefined}` cuando ya hay lectura.
+- Tests con una cámara simulada que dispara lecturas: muestra el aula, procesa **una sola** lectura aunque lleguen tres seguidas, y avisa con un QR ajeno.
+
+**Por qué**
+
+- Mientras el QR está enfocado, la cámara llama a `onBarcodeScanned` **muchas veces por segundo**. Si solo usara `useState`, varias llamadas podrían llegar antes de que React vuelva a dibujar y procesaría la misma lectura varias veces (por ejemplo, navegar dos veces). El `ref` cambia en el momento, sin esperar al render.
+- Pasar `undefined` además le dice a la cámara que deje de analizar cuadros, lo que ahorra batería.
+- El prefijo `IPF-AULA:` evita que un QR cualquiera (un menú, una publicidad) se tome como aula. Y reutilizo `PATRON_AULA` del esquema de zod: un aula leída del QR cumple las mismas reglas que una escrita a mano.
+- Todavía el aula leída **no llega al formulario**: el escáner es otra pantalla y no tiene cómo escribir en él. Lo resuelvo en M29.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `useRef` y no `useState` para el "ya leído"?* — Cambiar un `ref` no redibuja y el valor nuevo está disponible al instante, incluso dentro de la misma ráfaga de eventos. `useState` recién se actualiza en el próximo render.
+- *¿Qué datos trae `onBarcodeScanned`?* — Un `BarcodeScanningResult` con `data` (el texto del QR), `type` (`'qr'`), los bordes y las esquinas del código.
+- *¿El escáner necesita permiso de galería o de internet?* — No. Solo la cámara: lee el QR en el momento, en el dispositivo.

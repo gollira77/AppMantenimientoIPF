@@ -1,22 +1,71 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Linking, StyleSheet } from 'react-native';
+import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
+import { useRef, useState } from 'react';
+import { Linking, StyleSheet, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Cargando } from '@/components/Cargando';
 import { Pantalla } from '@/components/Pantalla';
 import { Texto } from '@/components/Texto';
+import { leerCodigoAula, type LecturaQr } from '@/lib/aulas/codigoQr';
+import { colores, espacio } from '@/lib/tema';
 
 export default function EscanearAula() {
   const [permiso, pedirPermiso] = useCameraPermissions();
+  const [lectura, setLectura] = useState<LecturaQr | null>(null);
+  // La cámara dispara el evento muchas veces por segundo mientras el QR está enfocado.
+  // El ref corta en la primera lectura, antes de que React vuelva a dibujar.
+  const yaLeido = useRef(false);
+
+  function alLeer({ data }: BarcodeScanningResult) {
+    if (yaLeido.current) return;
+    yaLeido.current = true;
+    setLectura(leerCodigoAula(data));
+  }
+
+  function escanearOtraVez() {
+    yaLeido.current = false;
+    setLectura(null);
+  }
 
   // 1. Cargando: el hook todavía está consultando al sistema.
   if (!permiso) {
     return <Cargando mensaje="Consultando el permiso de la cámara…" />;
   }
 
-  // 2. Concedido: muestro la cámara.
+  // 2. Concedido: muestro la cámara (o el resultado de la lectura).
   if (permiso.granted) {
-    return <CameraView style={estilos.camara} facing="back" />;
+    if (lectura) {
+      return (
+        <Pantalla centrada>
+          {lectura.tipo === 'aula' ? (
+            <>
+              <Texto variante="titulo">Aula {lectura.aula}</Texto>
+              <Texto>Leímos el código del aula correctamente.</Texto>
+            </>
+          ) : (
+            <>
+              <Texto variante="titulo">Ese QR no es de un aula</Texto>
+              <Texto>Buscá el código pegado en la puerta del aula, que empieza con IPF-AULA.</Texto>
+            </>
+          )}
+          <Boton titulo="Escanear otra vez" variante="secundario" onPress={escanearOtraVez} />
+        </Pantalla>
+      );
+    }
+
+    return (
+      <View style={estilos.contenedor}>
+        <CameraView
+          style={estilos.camara}
+          facing="back"
+          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+          onBarcodeScanned={lectura ? undefined : alLeer}
+        />
+        <View style={estilos.pie}>
+          <Texto style={estilos.textoPie}>Apuntá al código QR pegado en la puerta del aula.</Texto>
+        </View>
+      </View>
+    );
   }
 
   // 3. Preguntable: el sistema todavía puede mostrar el diálogo.
@@ -44,7 +93,19 @@ export default function EscanearAula() {
 }
 
 const estilos = StyleSheet.create({
+  contenedor: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
   camara: {
     flex: 1,
+  },
+  pie: {
+    padding: espacio.m,
+    backgroundColor: colores.texto,
+  },
+  textoPie: {
+    color: colores.primarioTexto,
+    textAlign: 'center',
   },
 });
