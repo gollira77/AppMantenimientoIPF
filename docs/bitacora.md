@@ -837,3 +837,41 @@ Después de M26 y M28 el escáner leía el aula (o la recibía escrita), pero mo
 - *¿Qué diferencia hay entre un permiso especial y uno de tiempo de ejecución?* — El de tiempo de ejecución se concede en un diálogo dentro de la app. El especial no tiene diálogo: la app manda a la persona a una pantalla específica de Ajustes y ahí lo habilita.
 - *¿Por qué tu app no declara `SYSTEM_ALERT_WINDOW` si aparece en el manifiesto de Expo?* — Lo agrega Expo por defecto (para herramientas de desarrollo). La app no lo usa, así que lo bloqueo con `blockedPermissions` en M45.
 - *¿Tu app cumple el requisito de Google Play de agosto de 2026?* — Sí: Expo SDK 57 compila con `targetSdkVersion` 36.
+
+---
+
+## M32 · Configuré expo-location solo en primer plano
+
+**Qué hice**
+
+- Instalé `expo-location` con `npx expo install` (`~57.0.22`).
+- Plugin en `app.json`:
+
+```json
+["expo-location", {
+  "locationWhenInUsePermission": "Usamos tu ubicación para saber en qué sector del instituto está el desperfecto que reportás.",
+  "locationAlwaysAndWhenInUsePermission": false,
+  "locationAlwaysPermission": false,
+  "motionUsagePermission": false,
+  "isIosBackgroundLocationEnabled": false,
+  "isAndroidBackgroundLocationEnabled": false,
+  "isAndroidForegroundServiceEnabled": false
+}]
+```
+
+- Script nuevo `npm run permisos:nativos` (`scripts/permisos-nativos.js`): corre `expo config --type introspect` y lista las claves de propósito de iOS y los permisos de Android, sin compilar. Resultado:
+  - **iOS:** solo `NSLocationWhenInUseUsageDescription` (y la de cámara). `UIBackgroundModes` vacío.
+  - **Android:** `ACCESS_COARSE_LOCATION` y `ACCESS_FINE_LOCATION`. **No** están `ACCESS_BACKGROUND_LOCATION` ni `FOREGROUND_SERVICE_LOCATION`.
+
+**Por qué**
+
+- La app solo necesita saber dónde está la persona **en el momento** de reportar. Seguirla con la app cerrada no aporta nada y pedirlo sería exceso de privilegio (Parte F3). Además, Google Play exige una declaración especial y un video para `ACCESS_BACKGROUND_LOCATION`, y Apple revisa con lupa el "Siempre".
+- Leí el plugin antes de configurarlo: si no paso nada, pone textos genéricos en inglés para **las tres** claves de iOS (incluida "siempre") y para movimiento. Con `false` las borra. Así el `Info.plist` no declara usos que la app no tiene.
+- Pido FINE y COARSE juntos (los agrega el plugin): Android muestra un solo diálogo y la persona elige entre *Precisa* y *Aproximada*. La app tiene que funcionar con las dos (M38).
+- El script de introspect lo voy a reutilizar para verificar `blockedPermissions` (M45) y los textos de propósito (M69).
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no `locationAlwaysAndWhenInUsePermission`?* — Esa clave es para pedir "Siempre" en iOS. Sin ella, aunque el código lo intentara, iOS no podría pedirlo. Es una protección extra.
+- *¿Qué es un servicio en primer plano (foreground service)?* — En Android, la forma de seguir trabajando (por ejemplo, rastrear la ubicación) con una notificación fija mientras la app no está a la vista. Esta app no lo necesita.
+- *¿Por qué el texto habla del sector del instituto?* — Porque el molde pide un beneficio concreto: la ubicación sirve para saber dónde está el desperfecto, no "para mejorar la experiencia".

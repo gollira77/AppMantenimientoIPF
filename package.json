@@ -13,6 +13,7 @@
     "expo-glass-effect": "~57.0.4",
     "expo-image": "~57.0.5",
     "expo-linking": "~57.0.13",
+    "expo-location": "~57.0.22",
     "expo-router": "~57.0.29",
     "expo-splash-screen": "~57.0.10",
     "expo-status-bar": "~57.0.1",
@@ -63,7 +64,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "prepare": "husky",
-    "tipos:rutas": "expo customize tsconfig.json"
+    "tipos:rutas": "expo customize tsconfig.json",
+    "permisos:nativos": "node scripts/permisos-nativos.js"
   },
   "private": true,
   "jest": {
