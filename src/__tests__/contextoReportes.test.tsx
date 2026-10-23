@@ -65,3 +65,23 @@ describe('Flujo completo (el problema de M17)', () => {
     expect(screen.getByText('La silla de la primera fila tiene una pata floja.')).toBeTruthy();
   });
 });
+
+describe('Reporte sin permisos (regla 7)', () => {
+  it('se crea sin ubicación ni sector y el detalle se abre igual', () => {
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const app = renderRouter('./src/app', { initialUrl: '/' });
+
+    fireEvent.press(screen.getByRole('button', { name: 'Nuevo reporte' }));
+    fireEvent.changeText(screen.getByLabelText('Título'), 'Luz quemada');
+    fireEvent.changeText(screen.getByLabelText('Descripción'), 'El tubo del pasillo no prende.');
+    fireEvent.changeText(screen.getByLabelText('Aula'), 'B11');
+    fireEvent.press(screen.getByRole('radio', { name: 'Electricidad' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Guardar reporte' }));
+
+    expect(app.getPathname()).toBe('/');
+    fireEvent.press(screen.getByText('Luz quemada'));
+    expect(screen.getByText('El tubo del pasillo no prende.')).toBeTruthy();
+    // Sin ubicación ni sector, el reporte igual existe: la ubicación es opcional.
+    expect(screen.queryByText('Ubicación')).toBeNull();
+  });
+});

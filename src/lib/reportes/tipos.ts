@@ -25,6 +25,8 @@ export type Reporte = {
   creadoEn: string;
   /** Opcional: solo si la persona compartió su ubicación. */
   ubicacion?: Ubicacion | null;
+  /** Sector elegido a mano, cuando no hay ubicación o es aproximada. */
+  sector?: string | null;
 };
 
 export const ETIQUETA_CATEGORIA: Record<Categoria, string> = {

@@ -9,7 +9,14 @@ import { SelectorCategoria } from '@/components/SelectorCategoria';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
 import { useReportes } from '@/hooks/useReportes';
+import type { Borrador } from '@/lib/reportes/borrador';
 import { validarReporte, type ErroresReporte } from '@/lib/reportes/esquema';
+
+function textoBotonUbicacion({ ubicacion, sector }: Borrador) {
+  if (sector) return `Sector: ${sector}`;
+  if (ubicacion) return 'Ubicación agregada ✓';
+  return 'Agregar ubicación o sector (opcional)';
+}
 
 export default function NuevoReporte() {
   // Los datos viven en el borrador compartido: así el escáner puede completar el aula.
@@ -69,7 +76,7 @@ export default function NuevoReporte() {
         onPress={() => router.push('/reporte/escanear')}
       />
       <Boton
-        titulo={borrador.ubicacion ? 'Ubicación agregada ✓' : 'Agregar ubicación (opcional)'}
+        titulo={textoBotonUbicacion(borrador)}
         variante="secundario"
         pista="Usa la ubicación del celular para indicar dónde está el desperfecto"
         onPress={() => router.push('/reporte/ubicacion')}

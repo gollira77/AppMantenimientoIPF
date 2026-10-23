@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { SECTORES } from '@/lib/aulas/sectores';
 import { CATEGORIAS } from '@/lib/reportes/tipos';
 
 // Formato de aula: letras, números y guiones, como "B12", "LAB-2" o "PB-BAÑO".
@@ -32,6 +33,7 @@ export const esquemaReporte = z.object({
       aproximada: z.boolean(),
     })
     .nullish(),
+  sector: z.enum(SECTORES).nullish(),
 });
 
 export type DatosReporte = z.infer<typeof esquemaReporte>;

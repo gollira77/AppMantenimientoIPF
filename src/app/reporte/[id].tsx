@@ -59,6 +59,12 @@ export default function DetalleReporte() {
             <Texto>{textoUbicacion(reporte.ubicacion)}</Texto>
           </>
         ) : null}
+        {reporte.sector ? (
+          <>
+            <Texto variante="secundario">Sector</Texto>
+            <Texto>{reporte.sector}</Texto>
+          </>
+        ) : null}
         <Texto variante="secundario">Creado</Texto>
         <Texto>{formatoFecha.format(new Date(reporte.creadoEn))}</Texto>
       </Tarjeta>

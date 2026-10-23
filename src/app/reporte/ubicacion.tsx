@@ -5,10 +5,12 @@ import { useState } from 'react';
 import { Boton } from '@/components/Boton';
 import { Cargando } from '@/components/Cargando';
 import { Pantalla } from '@/components/Pantalla';
+import { SelectorSector } from '@/components/SelectorSector';
 import { Tarjeta } from '@/components/Tarjeta';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
 import { usePermiso } from '@/hooks/usePermiso';
+import type { Sector } from '@/lib/aulas/sectores';
 import { textoUbicacion } from '@/lib/reportes/textoUbicacion';
 import type { Ubicacion } from '@/lib/reportes/tipos';
 
@@ -26,7 +28,7 @@ export default function UbicacionReporte() {
   const [ubicacion, setUbicacion] = useState<Ubicacion | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [error, setError] = useState(false);
-  const { actualizar } = useBorrador();
+  const { borrador, actualizar } = useBorrador();
 
   async function continuar() {
     const nuevo = await pedir();
@@ -58,6 +60,14 @@ export default function UbicacionReporte() {
     volver();
   }
 
+  // Sin ubicación precisa, el sector elegido a mano es lo que ubica el reporte.
+  function usarSector(sector: Sector) {
+    actualizar(ubicacion ? { ubicacion, sector } : { sector });
+    volver();
+  }
+
+  const elegirSector = <SelectorSector valor={borrador.sector} onElegir={usarSector} />;
+
   // 1. Cargando
   if (estado === 'cargando') {
     return <Cargando mensaje="Consultando el permiso de ubicación…" />;
@@ -73,7 +83,7 @@ export default function UbicacionReporte() {
             <Texto variante="subtitulo">Ubicación aproximada</Texto>
             <Texto variante="secundario">
               Compartiste tu ubicación aproximada (unos 3 km²). Alcanza para saber que estás en el
-              instituto, pero no en qué sector.
+              instituto, pero no en qué sector. Elegí el sector de la lista.
             </Texto>
           </Tarjeta>
         ) : null}
@@ -96,7 +106,10 @@ export default function UbicacionReporte() {
           cargando={buscando}
           onPress={tomarUbicacion}
         />
-        {ubicacion ? <Boton titulo="Usar esta ubicación" onPress={usarUbicacion} /> : null}
+        {ubicacion && !parcial ? (
+          <Boton titulo="Usar esta ubicación" onPress={usarUbicacion} />
+        ) : null}
+        {parcial ? elegirSector : null}
       </Pantalla>
     );
   }
@@ -104,10 +117,11 @@ export default function UbicacionReporte() {
   // Se acaba de denegar: no insisto.
   if (denegadaAhora && estado === 'preguntable') {
     return (
-      <Pantalla centrada>
+      <Pantalla>
         <Texto variante="titulo">Seguimos sin ubicación</Texto>
-        <Texto>El reporte se puede enviar igual: con el aula alcanza para encontrarlo.</Texto>
-        <Boton titulo="Volver al reporte" onPress={volver} />
+        <Texto>Elegí el sector a mano. Si no lo sabés, con el aula alcanza para encontrarlo.</Texto>
+        {elegirSector}
+        <Boton titulo="Volver al reporte" variante="secundario" onPress={volver} />
       </Pantalla>
     );
   }
@@ -129,14 +143,15 @@ export default function UbicacionReporte() {
 
   // 4. Bloqueado
   return (
-    <Pantalla centrada>
+    <Pantalla>
       <Texto variante="titulo">La ubicación está desactivada</Texto>
       <Texto>
-        Para agregarla, habilitá la ubicación para esta app en Ajustes y volvé a esta pantalla. El
-        reporte se puede enviar igual sin ubicación.
+        Para agregarla, habilitá la ubicación para esta app en Ajustes y volvé a esta pantalla.
+        Mientras tanto, elegí el sector a mano.
       </Texto>
       <Boton titulo="Abrir Ajustes" variante="secundario" onPress={abrirAjustes} />
-      <Boton titulo="Volver al reporte" onPress={volver} />
+      {elegirSector}
+      <Boton titulo="Volver al reporte" variante="secundario" onPress={volver} />
     </Pantalla>
   );
 }

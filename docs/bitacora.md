@@ -1099,3 +1099,33 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *¿Por qué no borrar directamente las coordenadas si es aproximada?* — Porque igual dicen algo útil (el barrio, el instituto). El problema es mostrarlas con una precisión que no tienen.
 - *¿Por qué 5 decimales?* — 5 decimales de latitud son alrededor de 1 metro, que es lo máximo que puede dar un GPS de celular. Más decimales serían ruido.
 - *¿Dónde se aplica la regla?* — En `textoUbicacion`, una función pura con su test. Las pantallas no deciden cómo mostrar la ubicación: le preguntan a esa función.
+
+---
+
+## M40 · Permití elegir el sector a mano si se deniega
+
+**Qué hice**
+
+- `src/lib/aulas/sectores.ts`: siete sectores del edificio (hall, baños, aulas A, aulas B, laboratorios, biblioteca, patio).
+- Componente `SelectorSector`: una lista de opciones con rol `radio`.
+- El modelo suma `sector` opcional en `Reporte`, en el borrador y en el esquema (`z.enum(SECTORES).nullish()`).
+- En `/reporte/ubicacion` la lista de sectores aparece en tres casos:
+  - **se acaba de denegar** ("Seguimos sin ubicación");
+  - **bloqueado** (debajo de "Abrir Ajustes");
+  - **ubicación aproximada**: en lugar de "Usar esta ubicación", se elige el sector. Si había tomado la ubicación, la guardo también (marcada como aproximada).
+- Elegir un sector lo guarda en el borrador y vuelve al formulario. El botón del formulario muestra "Sector: Biblioteca", "Ubicación agregada ✓" o "Agregar ubicación o sector (opcional)".
+- El detalle del reporte muestra el sector si lo hay.
+- Tests: elegir sector después de un "no", con la ubicación bloqueada y con ubicación aproximada; con ubicación precisa no aparece la lista; y un reporte sin ubicación ni sector se crea igual.
+
+**Por qué**
+
+- La consigna: si se deniega la ubicación, el reporte usa el sector elegido a mano. Es la misma idea que el aula escrita a mano cuando no hay cámara (M28): **toda función que usa un permiso tiene una alternativa sin permiso**.
+- Con la ubicación aproximada el GPS no alcanza para el sector (unos 3 km²), así que también ofrezco la lista. La persona aporta lo que el permiso no da.
+- El sector es más útil que unas coordenadas para quien arregla el desperfecto: "Primer piso · Laboratorios" se entiende sin mapa.
+- Y todo sigue siendo **opcional**: con el aula alcanza. Ningún "no" bloquea el reporte (regla 7).
+
+**Qué podría preguntar el docente**
+
+- *Si tenés la lista de sectores, ¿para qué pedir la ubicación?* — Porque tocar "Tomar mi ubicación" es más rápido que buscar en una lista y sirve para confirmar que el reporte se hizo desde el instituto. La lista es el plan B, no el plan A.
+- *¿Por qué los sectores son un `enum` en zod y no texto libre?* — Para que el valor guardado sea siempre uno conocido: se puede agrupar y filtrar reportes por sector. Con texto libre habría "biblioteca", "Biblio", "la biblioteca"…
+- *¿Qué pasa si la persona vuelve sin elegir nada?* — Nada: el borrador queda sin ubicación ni sector y el reporte se puede guardar igual.

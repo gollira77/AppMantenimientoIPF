@@ -23,7 +23,12 @@ function conPermiso(...args: Parameters<typeof permisoSimulado>) {
 
 function UbicacionDelBorrador() {
   const { borrador } = useBorrador();
-  return <Text>borrador: {JSON.stringify(borrador.ubicacion)}</Text>;
+  return (
+    <>
+      <Text>borrador: {JSON.stringify(borrador.ubicacion)}</Text>
+      <Text>sector: {borrador.sector ?? '(ninguno)'}</Text>
+    </>
+  );
 }
 
 function renderUbicacion() {
@@ -129,8 +134,9 @@ describe('Coordenadas ocultas si es aproximada (M39)', () => {
     await waitFor(() => expect(screen.getByText('Ubicación tomada')).toBeTruthy());
 
     expect(screen.queryByText(/-26.18489/)).toBeNull();
-    fireEvent.press(screen.getByRole('button', { name: 'Usar esta ubicación' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Biblioteca' }));
     expect(screen.getByText(/"aproximada":true/)).toBeTruthy();
+    expect(screen.getByText('sector: Biblioteca')).toBeTruthy();
   });
 
   it('con ubicación precisa sí muestra las coordenadas', async () => {
@@ -140,5 +146,36 @@ describe('Coordenadas ocultas si es aproximada (M39)', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Tomar mi ubicación' }));
 
     await waitFor(() => expect(screen.getByText('-26.18489, -58.17313')).toBeTruthy());
+  });
+});
+
+describe('Sector elegido a mano (M40)', () => {
+  it('si se deniega en el diálogo, ofrece elegir el sector', async () => {
+    conPermiso('preguntable');
+    renderUbicacion();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
+    await waitFor(() => expect(screen.getByText('Seguimos sin ubicación')).toBeTruthy());
+    fireEvent.press(screen.getByRole('radio', { name: 'Primer piso · Laboratorios' }));
+
+    expect(screen.getByText('sector: Primer piso · Laboratorios')).toBeTruthy();
+    expect(screen.getByText('borrador: null')).toBeTruthy();
+    expect(router.back).toHaveBeenCalled();
+  });
+
+  it('si la ubicación está bloqueada, también se elige el sector', () => {
+    conPermiso('bloqueado');
+    renderUbicacion();
+
+    fireEvent.press(screen.getByRole('radio', { name: 'Patio y exteriores' }));
+
+    expect(screen.getByText('sector: Patio y exteriores')).toBeTruthy();
+  });
+
+  it('con ubicación precisa no hace falta elegir sector', () => {
+    conPermiso('concedido');
+    renderUbicacion();
+
+    expect(screen.queryByRole('radio')).toBeNull();
   });
 });
