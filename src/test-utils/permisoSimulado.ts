@@ -11,6 +11,7 @@ export function permisoSimulado(
 ): ResultadoPermiso {
   return {
     estado,
+    parcial: false,
     respuesta: null,
     // Por defecto, en el diálogo la persona contesta "No permitir".
     pedir: jest.fn().mockResolvedValue('preguntable'),

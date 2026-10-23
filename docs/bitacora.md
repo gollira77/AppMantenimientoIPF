@@ -1045,3 +1045,31 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *¿Qué es `renderHook`?* — Una función de Testing Library que monta un componente vacío que solo usa el hook, y te da `result.current` con lo que devuelve. Sirve para probar hooks sin armar una pantalla.
 - *¿Por qué `waitFor`?* — Porque la consulta inicial es asíncrona: el estado pasa de `cargando` a otro un instante después. `waitFor` reintenta la verificación hasta que se cumple o se vence el tiempo.
 - *¿Qué ganás con simular Expo y no correr en un celular?* — Puedo provocar cualquier respuesta (bloqueado, segundo "no") en milisegundos. En un celular tendría que reinstalar o resetear permisos para cada caso. Las pruebas en el dispositivo siguen siendo necesarias (M75), pero para otra cosa.
+
+---
+
+## M38 · Detecté la ubicación aproximada en Android e iOS
+
+**Qué hice**
+
+- `RespuestaPermiso` suma los matices **opcionales** de cada módulo: `accessPrivileges`, `android.accuracy` e `ios.accuracy`.
+- Función pura `esParcial(respuesta)`: es `true` si el permiso está **concedido** y además:
+  - `android.accuracy === 'coarse'` (Android 12+, la persona eligió "Aproximada");
+  - `ios.accuracy === 'reduced'` (iOS 14+, interruptor "Precisa" apagado);
+  - `accessPrivileges === 'limited'` (fotos limitadas, para cuando haga falta).
+- `usePermiso` devuelve el indicador **`parcial`**, como pide la consigna.
+- En `/reporte/ubicacion`, si `parcial` es `true`, aparece una tarjeta "Ubicación aproximada": alcanza para saber que la persona está en el instituto, pero no en qué sector.
+- Tests: tres casos parciales, seis que no lo son (incluido un **denegado** que dice `coarse`), el hook con Android e iOS y la pantalla con y sin aviso.
+
+**Por qué**
+
+- Android e iOS informan lo mismo con **nombres distintos**: `coarse` en uno y `reduced` en el otro. `esParcial` lo traduce a una sola idea, y la pantalla no tiene que saber en qué plataforma corre.
+- "Parcial" no es un quinto estado: el permiso **está concedido**. Por eso es un indicador aparte y no cambia `interpretarRespuesta` (M35 sigue igual).
+- `esParcial` exige `granted`. Una respuesta denegada puede traer `accuracy: 'coarse'` de una decisión anterior, y no quiero mostrar "aproximada" cuando en realidad no hay ubicación.
+- Con unos 3 km² de margen, la ubicación aproximada no sirve para el sector del edificio. En M39 dejo de mostrar las coordenadas en ese caso y en M40 permito elegir el sector a mano.
+
+**Qué podría preguntar el docente**
+
+- *¿Cómo elige la persona "aproximada" en cada plataforma?* — En Android 12+, el diálogo de ubicación tiene dos opciones: "Precisa" y "Aproximada". En iOS 14+, el diálogo tiene un interruptor "Precisa" que se puede apagar.
+- *¿Se puede pedir que pase a precisa?* — En Android, volviendo a pedir el permiso (el diálogo ofrece mejorar a precisa). En iOS existe una petición temporal de precisión completa, que necesita otra clave en el `Info.plist`. Esta app no la usa: si es aproximada, ofrece elegir el sector a mano.
+- *¿Por qué `parcial` también contempla las fotos si la app no pide galería?* — Porque el hook es genérico. Hoy no lo usa nadie, pero el panel de permisos (M54) va a mostrar ese matiz para explicar por qué la app no lo necesita.

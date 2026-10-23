@@ -1,4 +1,5 @@
 import {
+  esParcial,
   interpretarRespuesta,
   type EstadoPermiso,
   type RespuestaPermiso,
@@ -81,5 +82,31 @@ describe('interpretarRespuesta: casos de borde', () => {
     expect(interpretarRespuesta({ status: 'denied', granted: false, canAskAgain: true })).toBe(
       'preguntable',
     );
+  });
+});
+
+describe('esParcial', () => {
+  const concedido = { status: 'granted', granted: true, canAskAgain: true };
+
+  it.each([
+    ['fotos limitadas', { ...concedido, accessPrivileges: 'limited' }],
+    ['ubicación aproximada en Android', { ...concedido, android: { accuracy: 'coarse' } }],
+    ['ubicación aproximada en iOS', { ...concedido, ios: { accuracy: 'reduced' } }],
+  ])('%s es parcial', (_caso, respuesta) => {
+    expect(esParcial(respuesta)).toBe(true);
+  });
+
+  it.each([
+    ['null', null],
+    ['concedido sin matices', concedido],
+    ['todas las fotos', { ...concedido, accessPrivileges: 'all' }],
+    ['ubicación precisa en Android', { ...concedido, android: { accuracy: 'fine' } }],
+    ['ubicación precisa en iOS', { ...concedido, ios: { accuracy: 'full' } }],
+    [
+      'denegado (aunque diga coarse)',
+      { status: 'denied', granted: false, canAskAgain: true, android: { accuracy: 'coarse' } },
+    ],
+  ])('%s no es parcial', (_caso, respuesta) => {
+    expect(esParcial(respuesta)).toBe(false);
   });
 });

@@ -95,3 +95,19 @@ describe('Ubicación: los cuatro estados', () => {
     expect(permiso.pedir).not.toHaveBeenCalled();
   });
 });
+
+describe('Ubicación aproximada (M38)', () => {
+  it('avisa que la ubicación es aproximada', () => {
+    conPermiso('concedido', { parcial: true });
+    renderUbicacion();
+
+    expect(screen.getByText('Ubicación aproximada')).toBeTruthy();
+  });
+
+  it('con ubicación precisa no muestra el aviso', () => {
+    conPermiso('concedido');
+    renderUbicacion();
+
+    expect(screen.queryByText('Ubicación aproximada')).toBeNull();
+  });
+});

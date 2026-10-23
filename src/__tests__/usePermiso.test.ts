@@ -108,3 +108,31 @@ describe('usePermiso', () => {
     await waitFor(() => expect(result.current.respuesta).toEqual(bloqueado));
   });
 });
+
+describe('usePermiso: matiz parcial', () => {
+  it('marca parcial la ubicación aproximada de Android', async () => {
+    consultarUbicacion.mockResolvedValue({
+      ...concedido,
+      android: { accuracy: 'coarse' },
+    } as never);
+    const { result } = renderHook(() => usePermiso('ubicacion'));
+
+    await waitFor(() => expect(result.current.estado).toBe('concedido'));
+    expect(result.current.parcial).toBe(true);
+  });
+
+  it('marca parcial la ubicación aproximada de iOS', async () => {
+    consultarUbicacion.mockResolvedValue({ ...concedido, ios: { accuracy: 'reduced' } } as never);
+    const { result } = renderHook(() => usePermiso('ubicacion'));
+
+    await waitFor(() => expect(result.current.parcial).toBe(true));
+  });
+
+  it('la ubicación precisa no es parcial', async () => {
+    consultarUbicacion.mockResolvedValue({ ...concedido, android: { accuracy: 'fine' } } as never);
+    const { result } = renderHook(() => usePermiso('ubicacion'));
+
+    await waitFor(() => expect(result.current.estado).toBe('concedido'));
+    expect(result.current.parcial).toBe(false);
+  });
+});

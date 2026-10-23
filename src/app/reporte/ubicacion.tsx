@@ -20,7 +20,7 @@ function volver() {
 }
 
 export default function UbicacionReporte() {
-  const { estado, pedir, abrirAjustes } = usePermiso('ubicacion');
+  const { estado, parcial, pedir, abrirAjustes } = usePermiso('ubicacion');
   const [denegadaAhora, setDenegadaAhora] = useState(false);
   const [ubicacion, setUbicacion] = useState<Ubicacion | null>(null);
   const [buscando, setBuscando] = useState(false);
@@ -63,6 +63,15 @@ export default function UbicacionReporte() {
     return (
       <Pantalla>
         <Texto variante="titulo">Ubicación del desperfecto</Texto>
+        {parcial ? (
+          <Tarjeta>
+            <Texto variante="subtitulo">Ubicación aproximada</Texto>
+            <Texto variante="secundario">
+              Compartiste tu ubicación aproximada (unos 3 km²). Alcanza para saber que estás en el
+              instituto, pero no en qué sector.
+            </Texto>
+          </Tarjeta>
+        ) : null}
         {ubicacion ? (
           <Tarjeta>
             <Texto variante="secundario">Coordenadas</Texto>

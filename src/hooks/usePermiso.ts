@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Linking } from 'react-native';
 
 import {
+  esParcial,
   interpretarRespuesta,
   type EstadoPermiso,
   type RespuestaPermiso,
@@ -30,6 +31,8 @@ const FUNCIONES: Record<Recurso, Funciones> = {
 
 export type ResultadoPermiso = {
   estado: EstadoPermiso;
+  /** Concedido con menos alcance: ubicación aproximada o fotos limitadas. */
+  parcial: boolean;
   /** La respuesta cruda del sistema, para quien necesite los detalles. */
   respuesta: RespuestaPermiso | null;
   /** Muestra el diálogo del sistema (si todavía se puede) y devuelve el estado nuevo. */
@@ -68,5 +71,12 @@ export function usePermiso(recurso: Recurso): ResultadoPermiso {
     };
   }, [funciones]);
 
-  return { estado: interpretarRespuesta(respuesta), respuesta, pedir, consultar, abrirAjustes };
+  return {
+    estado: interpretarRespuesta(respuesta),
+    parcial: esParcial(respuesta),
+    respuesta,
+    pedir,
+    consultar,
+    abrirAjustes,
+  };
 }

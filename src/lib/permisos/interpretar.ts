@@ -3,11 +3,17 @@
 
 export type EstadoPermiso = 'cargando' | 'concedido' | 'preguntable' | 'bloqueado';
 
-/** Lo mínimo que tienen todas las PermissionResponse de Expo. */
+/** Lo que tienen todas las PermissionResponse de Expo, más los matices opcionales de cada módulo. */
 export type RespuestaPermiso = {
   granted: boolean;
   canAskAgain: boolean;
   status: string;
+  /** expo-image-picker / expo-media-library: 'all' | 'limited' | 'none'. */
+  accessPrivileges?: string;
+  /** expo-location en Android: 'fine' | 'coarse' | 'none'. */
+  android?: { accuracy?: string };
+  /** expo-location en iOS: 'full' | 'reduced'. */
+  ios?: { accuracy?: string };
 };
 
 /**
@@ -22,4 +28,19 @@ export function interpretarRespuesta(
   if (!respuesta) return 'cargando';
   if (respuesta.granted) return 'concedido';
   return respuesta.canAskAgain ? 'preguntable' : 'bloqueado';
+}
+
+/**
+ * Concedido, pero con menos alcance del pedido:
+ * - fotos limitadas (`accessPrivileges: 'limited'`);
+ * - ubicación aproximada en Android (`android.accuracy: 'coarse'`);
+ * - ubicación aproximada en iOS (`ios.accuracy: 'reduced'`, interruptor "Precisa" apagado).
+ */
+export function esParcial(respuesta: RespuestaPermiso | null | undefined): boolean {
+  if (!respuesta?.granted) return false;
+  return (
+    respuesta.accessPrivileges === 'limited' ||
+    respuesta.android?.accuracy === 'coarse' ||
+    respuesta.ios?.accuracy === 'reduced'
+  );
 }
