@@ -461,3 +461,34 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Qué diferencia hay entre `parse` y `safeParse`?* — `parse` lanza una excepción si los datos no sirven. `safeParse` devuelve un objeto con `success`, así el error se maneja con un `if` y no con `try/catch`.
 - *¿Por qué `entrada: unknown`?* — Porque la validación es justamente lo que convierte datos desconocidos en datos con tipo. Si recibiera `DatosReporte`, estaría asumiendo lo que quiero comprobar.
 - *¿Por qué el mensaje del aula menciona el QR?* — Porque el aula se puede cargar escaneando el QR o, si se deniega la cámara, escribiéndola a mano. El mensaje recuerda las dos opciones.
+
+---
+
+## M19 · Cubrí los casos inválidos del formulario
+
+**Qué hice**
+
+- `src/__tests__/esquema.test.ts` prueba `validarReporte` sin renderizar nada:
+  - un reporte válido se acepta y se **limpia** (espacios afuera, aula en mayúsculas);
+  - el formulario vacío da un error en cada uno de los cuatro campos;
+  - título corto, de solo espacios o de más de 60 letras;
+  - descripción de menos de 10 o más de 500 letras;
+  - aulas inválidas (`B 12`, `B12!`, `-B12`, `B12-`, `AULA/3`), vacía (el mensaje menciona el QR) o demasiado larga;
+  - categoría `null`, vacía, inexistente (`gas`) o con mayúscula (`Agua`);
+  - entradas que ni siquiera son objetos (`undefined`, un texto).
+- En `formulario.test.tsx` agregué dos tests de pantalla:
+  - guardar vacío muestra los mensajes;
+  - con datos válidos, el reporte se guarda (se llama a `Alert.alert`) y la app vuelve a la lista.
+
+**Por qué**
+
+- La mayoría de los casos se prueban sobre la función pura porque es rápido y directo. En la pantalla pruebo lo que la función no puede saber: que los errores se **muestren** y que la navegación funcione.
+- Con `it.each` escribo un caso por fila de una tabla: si agrego un formato de aula inválido nuevo, es una línea.
+- El test de pantalla con datos válidos me mostró un detalle: `router.back()` necesita el router montado. Por eso ese test usa `renderRouter`, entra al formulario con el botón real "Nuevo reporte" y verifica que al guardar se vuelve a `/`.
+- `jest.spyOn(Alert, 'alert')` reemplaza el cartel nativo, que en Jest no existe, y me deja comprobar con qué texto se llamó.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué casos borde probaste?* — Textos con solo espacios (gracias a `trim` no pasan), aulas con espacios o símbolos, la categoría con mayúscula y entradas que no son objetos.
+- *¿Por qué `'Agua'` es inválida si existe la categoría agua?* — Porque el valor interno es `agua`. La interfaz manda siempre el valor interno, así que un `Agua` indicaría un error en otra parte del código.
+- *¿Qué es un spy?* — Un envoltorio sobre una función real que registra cómo se la llamó. Con `mockImplementation` además reemplazo lo que hace.
