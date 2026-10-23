@@ -176,3 +176,26 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Qué es un hook de Git?* — Un script que Git ejecuta en un momento del ciclo (antes de commitear, al escribir el mensaje, antes de pushear). Husky los versiona dentro del repo para que todo el equipo tenga los mismos.
 - *¿Qué rechaza commitlint?* — Por ejemplo `Feat: Algo`: el tipo en mayúscula, un tipo que no está en la lista o un asunto que empieza con mayúscula.
 - *¿Se puede saltear el hook?* — Sí, con `--no-verify`, pero no lo uso. Además el CI (M08) repite las mismas verificaciones en GitHub, así que no sirve de nada saltearlo.
+
+---
+
+## M08 · Configuré lint, tipos y tests en cada push
+
+**Qué hice**
+
+- Creé `.github/workflows/ci.yml`. Corre en cada push y pull request a `main` y `develop`, sobre Ubuntu con Node 22.
+- Pasos: `npm ci`, generar `expo-env.d.ts`, `npx expo lint`, `npm run format:check`, `npm run typecheck`, `npm test -- --ci` y `npx expo-doctor`.
+- Corrí `npx expo-doctor` en mi máquina antes de subirlo: 21/21 verificaciones OK.
+
+**Por qué**
+
+- Los hooks de Husky corren en mi computadora y se pueden saltear. El CI es la verificación que no depende de mí: corre en una máquina limpia, igual para todos.
+- `npm ci` (y no `npm install`) instala exactamente lo que dice `package-lock.json` y falla si no coincide con `package.json`. Así el CI prueba las mismas versiones que yo.
+- `expo-env.d.ts` está en `.gitignore` (lo genera Expo al arrancar), así que en el CI lo creo a mano para que TypeScript conozca los tipos de Expo.
+- `expo-doctor` revisa que las versiones de los paquetes sean compatibles con el SDK 57 y que la configuración sea válida. Es lo que más rápido detecta un paquete instalado con `npm` en vez de `npx expo install`.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué diferencia hay entre el hook de pre-commit y el CI?* — El hook es local y rápido (avisa antes de commitear). El CI es remoto y obligatorio: si falla, se ve en GitHub con una cruz roja en el commit.
+- *¿Qué hace `--ci` en Jest?* — Desactiva el modo interactivo y hace que los snapshots nuevos fallen en lugar de escribirse solos.
+- *¿Por qué Node 22?* — Es una versión LTS compatible con el SDK 57. En mi máquina uso Node 24, que también es compatible.

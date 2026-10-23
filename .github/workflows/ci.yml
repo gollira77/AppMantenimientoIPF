@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  calidad:
+    name: Lint, tipos, tests y expo-doctor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bajar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Generar los tipos de Expo
+        # expo-env.d.ts está en .gitignore; lo creo para que tsc conozca los tipos de Expo.
+        run: echo '/// <reference types="expo/types" />' > expo-env.d.ts
+
+      - name: Lint
+        run: npx expo lint
+
+      - name: Formato
+        run: npm run format:check
+
+      - name: Tipos
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test -- --ci
+
+      - name: Expo Doctor
+        run: npx expo-doctor
