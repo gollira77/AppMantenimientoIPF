@@ -750,3 +750,33 @@ El escáner ahora distingue los cuatro estados que pide la consigna:
 - *¿Qué devuelve `pedirPermiso()`?* — Una promesa con el `PermissionResponse` nuevo. Con eso sé si la persona aceptó o no sin esperar al próximo render del hook.
 - *¿Qué es `esquemaReporte.shape.aula`?* — El esquema de zod de un solo campo dentro del objeto. Me deja validar el aula sola con las mismas reglas.
 - *¿Y si la persona no sabe el código del aula?* — Está escrito en el QR pegado en la puerta, debajo del código (lo muestra el generador de M30).
+
+---
+
+## M29 (evolución) · Creé un borrador compartido para que el escáner complete el aula
+
+**El problema**
+
+Después de M26 y M28 el escáner leía el aula (o la recibía escrita), pero mostraba "Aula B12" y ahí terminaba: el dato **no llegaba al formulario**. Otra vez el estado local: el formulario guardaba título, descripción, aula y categoría en cuatro `useState` propios, y el escáner, al ser otra pantalla, no tenía forma de escribir en ellos. Pasar el aula como parámetro de la URL al volver tampoco servía: `router.back()` no lleva parámetros y, con `push`, quedaba un formulario nuevo encima del viejo, perdiendo lo escrito.
+
+**Qué hice**
+
+- `src/lib/reportes/borrador.ts`: el tipo `Borrador` (lo cargado, todavía sin validar) y `BORRADOR_VACIO`.
+- `src/hooks/useBorrador.tsx`: `ProveedorBorrador` con `borrador`, `actualizar(cambios)` y `limpiar()`. Va en el layout raíz, al lado de `ProveedorReportes`.
+- El formulario lee y escribe **todo** en el borrador (ya no tiene `useState` por campo, salvo los errores). Botón nuevo "Escanear QR del aula".
+- El escáner, con un aula válida (leída o escrita), hace `actualizar({ aula })` y vuelve con `router.back()`. Si se abrió directo por URL y no hay a dónde volver, abre `/reporte/nuevo`. Solo un QR ajeno se queda en pantalla con "Escanear otra vez".
+- Al guardar el reporte, el formulario llama a `limpiar()`.
+- `src/test-utils/Proveedores.tsx` envuelve una pantalla suelta con los dos proveedores en los tests.
+- Test de integración: escribo el título → "Escanear QR del aula" → leo `IPF-AULA:B12` → vuelvo al formulario con el aula `B12` **y el título intacto**.
+
+**Por qué este diseño lo resuelve**
+
+- El borrador vive arriba de las dos pantallas, así que las dos lo leen y lo modifican. Es el mismo patrón de M21, aplicado a otro dato.
+- Separé el borrador de los reportes: un reporte es algo ya validado y guardado; el borrador puede estar a medias o mal. Mezclarlos me obligaría a validar en todos lados.
+- Además, ahora el formulario **no pierde lo escrito** si la persona va al escáner, a la foto o a la ubicación (M43 y M40 usan el mismo borrador).
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no pasar el aula por parámetro con `router.push('/reporte/nuevo?aula=B12')`?* — Porque crearía otra pantalla de formulario encima de la anterior: la persona tendría dos formularios en el historial y perdería lo que ya había escrito.
+- *¿Qué pasa con el borrador si cierro la app?* — Por ahora se pierde. En M65 lo persisto con AsyncStorage.
+- *¿Por qué `actualizar` recibe un `Partial<Borrador>`?* — Para cambiar un solo campo (`{ aula: 'B12' }`) sin tener que pasar los demás.

@@ -1,10 +1,13 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { PermissionStatus, useCameraPermissions, type PermissionResponse } from 'expo-camera';
-import { Linking } from 'react-native';
+import { router } from 'expo-router';
+import { Linking, Text } from 'react-native';
 
 import { leerCodigoAula } from '@/lib/aulas/codigoQr';
 
 import EscanearAula from '@/app/reporte/escanear';
+import { useBorrador } from '@/hooks/useBorrador';
+import { Proveedores } from '@/test-utils/Proveedores';
 
 jest.mock('expo-camera', () => ({
   // La cámara simulada tiene dos botones que disparan lecturas, como si enfocara un QR.
@@ -26,6 +29,25 @@ jest.mock('expo-camera', () => ({
   PermissionStatus: { GRANTED: 'granted', DENIED: 'denied', UNDETERMINED: 'undetermined' },
 }));
 
+jest.mock('expo-router', () => ({
+  router: { back: jest.fn(), canGoBack: jest.fn(() => true), replace: jest.fn() },
+}));
+
+/** Muestra el aula del borrador para poder verificarla. */
+function AulaDelBorrador() {
+  const { borrador } = useBorrador();
+  return <Text>borrador: {borrador.aula || '(vacío)'}</Text>;
+}
+
+function renderEscaner() {
+  return render(
+    <Proveedores>
+      <EscanearAula />
+      <AulaDelBorrador />
+    </Proveedores>,
+  );
+}
+
 const usarPermisos = jest.mocked(useCameraPermissions);
 const pedir = jest.fn();
 
@@ -42,6 +64,7 @@ function conPermiso(permiso: PermissionResponse | null) {
 }
 
 beforeEach(() => {
+  jest.mocked(router.back).mockClear();
   pedir.mockReset();
   // Por defecto, la persona contesta "No permitir" en el diálogo.
   pedir.mockResolvedValue(respuesta(PermissionStatus.DENIED, false, true));
@@ -50,7 +73,7 @@ beforeEach(() => {
 describe('Escáner: los cuatro estados del permiso', () => {
   it('1. cargando: con null muestra el mensaje de carga y ningún botón', () => {
     conPermiso(null);
-    render(<EscanearAula />);
+    renderEscaner();
 
     expect(screen.getByText('Consultando el permiso de la cámara…')).toBeTruthy();
     expect(screen.queryByRole('button')).toBeNull();
@@ -58,7 +81,7 @@ describe('Escáner: los cuatro estados del permiso', () => {
 
   it('2. concedido: muestra la cámara', () => {
     conPermiso(respuesta(PermissionStatus.GRANTED, true, true));
-    render(<EscanearAula />);
+    renderEscaner();
 
     expect(screen.getByText('vista de cámara')).toBeTruthy();
   });
@@ -68,7 +91,7 @@ describe('Escáner: los cuatro estados del permiso', () => {
     ['denegado una vez', PermissionStatus.DENIED],
   ])('3. preguntable (%s): explica y pide con Continuar', async (_caso, status) => {
     conPermiso(respuesta(status, false, true));
-    render(<EscanearAula />);
+    renderEscaner();
 
     expect(screen.queryByRole('button', { name: 'Permitir' })).toBeNull();
     fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
@@ -80,7 +103,7 @@ describe('Escáner: los cuatro estados del permiso', () => {
   it('4. bloqueado: no vuelve a pedir y ofrece Abrir Ajustes', () => {
     const abrirAjustes = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
     conPermiso(respuesta(PermissionStatus.DENIED, false, false));
-    render(<EscanearAula />);
+    renderEscaner();
 
     expect(screen.queryByRole('button', { name: 'Continuar' })).toBeNull();
     fireEvent.press(screen.getByRole('button', { name: 'Abrir Ajustes' }));
@@ -101,16 +124,17 @@ describe('Escáner: lectura del QR', () => {
     conPermiso(respuesta(PermissionStatus.GRANTED, true, true));
   });
 
-  it('muestra el aula leída', () => {
-    render(<EscanearAula />);
+  it('guarda el aula leída en el borrador y vuelve al formulario', () => {
+    renderEscaner();
 
     fireEvent.press(screen.getByText('leer QR de aula'));
 
-    expect(screen.getByText('Aula B12')).toBeTruthy();
+    expect(screen.getByText('borrador: B12')).toBeTruthy();
+    expect(router.back).toHaveBeenCalled();
   });
 
   it('procesa una sola lectura aunque la cámara dispare varias seguidas', () => {
-    render(<EscanearAula />);
+    renderEscaner();
     const boton = screen.getByText('leer QR de aula');
 
     fireEvent.press(boton);
@@ -121,7 +145,7 @@ describe('Escáner: lectura del QR', () => {
   });
 
   it('avisa si el QR no es de un aula y permite escanear otra vez', () => {
-    render(<EscanearAula />);
+    renderEscaner();
 
     fireEvent.press(screen.getByText('leer QR ajeno'));
     expect(screen.getByText('Ese QR no es de un aula')).toBeTruthy();
@@ -129,7 +153,7 @@ describe('Escáner: lectura del QR', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Escanear otra vez' }));
     fireEvent.press(screen.getByText('leer QR de aula'));
 
-    expect(screen.getByText('Aula B12')).toBeTruthy();
+    expect(screen.getByText('borrador: B12')).toBeTruthy();
     expect(leerCodigoAula).toHaveBeenCalledTimes(2);
   });
 });
@@ -137,7 +161,7 @@ describe('Escáner: lectura del QR', () => {
 describe('Escáner: carga manual del aula (M28)', () => {
   it('si se deniega en el diálogo, ofrece escribir el aula y no vuelve a explicar', async () => {
     conPermiso(respuesta(PermissionStatus.UNDETERMINED, false, true));
-    render(<EscanearAula />);
+    renderEscaner();
 
     fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
@@ -147,22 +171,23 @@ describe('Escáner: carga manual del aula (M28)', () => {
 
   it('si la cámara está bloqueada, se puede escribir el aula', () => {
     conPermiso(respuesta(PermissionStatus.DENIED, false, false));
-    render(<EscanearAula />);
+    renderEscaner();
 
     fireEvent.changeText(screen.getByLabelText('Código del aula'), 'lab-2');
     fireEvent.press(screen.getByRole('button', { name: 'Usar esta aula' }));
 
-    expect(screen.getByText('Aula LAB-2')).toBeTruthy();
+    expect(screen.getByText('borrador: LAB-2')).toBeTruthy();
+    expect(router.back).toHaveBeenCalled();
   });
 
   it('valida el aula escrita con la misma regla del formulario', () => {
     conPermiso(respuesta(PermissionStatus.DENIED, false, false));
-    render(<EscanearAula />);
+    renderEscaner();
 
     fireEvent.changeText(screen.getByLabelText('Código del aula'), 'B 12');
     fireEvent.press(screen.getByRole('button', { name: 'Usar esta aula' }));
 
     expect(screen.getByText('Usá letras, números y guiones, por ejemplo B12.')).toBeTruthy();
-    expect(screen.queryByText('Aula B 12')).toBeNull();
+    expect(screen.getByText('borrador: (vacío)')).toBeTruthy();
   });
 });
