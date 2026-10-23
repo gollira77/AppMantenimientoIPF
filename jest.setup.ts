@@ -5,3 +5,9 @@ jest.mock('@expo/vector-icons/Ionicons', () => {
   Icono.glyphMap = {};
   return { __esModule: true, default: Icono };
 });
+
+// En Node no hay cámara. Por defecto el permiso queda "cargando" (null); cada test lo cambia si necesita.
+jest.mock('expo-camera', () => ({
+  CameraView: () => null,
+  useCameraPermissions: jest.fn(() => [null, jest.fn(), jest.fn()]),
+}));

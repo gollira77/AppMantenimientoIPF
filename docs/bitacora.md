@@ -586,3 +586,34 @@ En M16 la lista guardaba los reportes en su propio `useState`. En M17 y M18 el f
 - *¿Este cambio se puede publicar por OTA?* — No. Cambia el `Info.plist` y el `AndroidManifest.xml`, que son parte del binario. Necesita una build nueva.
 - *¿Por qué en Expo Go no se ve mi texto?* — Porque Expo Go es otra app, con su propio `Info.plist` y sus propios textos. Mi texto aparece recién en una development build (M68).
 - *¿Cómo verificaste el manifiesto sin compilar?* — Con `npx expo config --type introspect`, que corre los plugins y muestra cómo quedarían el `Info.plist` y el `AndroidManifest.xml`.
+
+---
+
+## M23 · Mostré la cámara en /reporte/escanear
+
+**Qué hice**
+
+- Versión **ingenua** del escáner, a propósito:
+
+```tsx
+const [permiso, pedirPermiso] = useCameraPermissions();
+if (permiso?.granted) return <CameraView style={{ flex: 1 }} facing="back" />;
+return (/* explicación + botón "Permitir" que llama a pedirPermiso */);
+```
+
+- Tests con `expo-camera` simulado: con el permiso concedido se ve la cámara; si no, el botón "Permitir" llama a `pedirPermiso`; con `null` no se rompe.
+- Un mock global de `expo-camera` en `jest.setup.ts` (en Node no hay cámara), con el permiso en `null` por defecto.
+
+**Por qué**
+
+- La consigna pide arrancar por la versión simple para ver sus problemas. Esta versión es casi la del ejercicio E1, y tiene varios:
+  1. **Primer render:** `useCameraPermissions` devuelve `null` mientras consulta. El código de E1 hace `permiso.status` y se rompe. Yo tuve que escribir `permiso?.granted` porque TypeScript estricto no me dejaba leer una propiedad de algo que puede ser `null`. Igual queda un problema: durante ese instante muestra la explicación y el botón "Permitir", aunque el permiso ya esté concedido (un parpadeo). Lo arreglo en M24.
+  2. **No distingue "preguntable" de "bloqueado":** si la persona ya dijo que no y `canAskAgain` es `false`, tocar "Permitir" no hace nada (el sistema no muestra el diálogo). Lo arreglo en M25.
+  3. **El botón dice "Permitir":** la pantalla previa tiene que decir "Continuar" (Parte F2). Lo arreglo en M25 y en M49.
+  4. **No lee el QR** ni evita lecturas repetidas (M26) y **no hay salida si se deniega**: la persona queda trabada (M28).
+
+**Qué podría preguntar el docente**
+
+- *¿Qué devuelve `useCameraPermissions`?* — Un arreglo: `[permiso, pedir, consultar]`. `permiso` es `null` en el primer render y después un `PermissionResponse`. `pedir()` puede mostrar el diálogo; `consultar()` solo lee el estado.
+- *¿Por qué esta versión "funciona la primera vez"?* — Porque en una instalación nueva el permiso está "sin decidir": al tocar "Permitir" aparece el diálogo y, si se acepta, se ve la cámara. Los problemas aparecen en los otros caminos: el primer render, un "no", o el bloqueo.
+- *¿Por qué un mock global?* — Para que cualquier test que monte el router (como el de rutas) no intente usar la cámara real, y para controlar el estado del permiso desde cada test.
