@@ -1,14 +1,51 @@
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { FlatList, StyleSheet, View } from 'react-native';
+
+import { Boton } from '@/components/Boton';
 import { Enlace } from '@/components/Enlace';
-import { Pantalla } from '@/components/Pantalla';
+import { TarjetaReporte } from '@/components/TarjetaReporte';
 import { Texto } from '@/components/Texto';
+import { REPORTES_DE_PRUEBA } from '@/lib/reportes/datosDePrueba';
+import type { Reporte } from '@/lib/reportes/tipos';
+import { colores, espacio } from '@/lib/tema';
 
 export default function Reportes() {
+  const [reportes] = useState<Reporte[]>(REPORTES_DE_PRUEBA);
+
   return (
-    <Pantalla centrada>
-      <Texto variante="titulo">Mis reportes</Texto>
-      <Texto>Todavía no cargaste ningún reporte.</Texto>
-      <Enlace href="/reporte/nuevo">Nuevo reporte</Enlace>
-      <Enlace href="/ajustes-app">Ajustes de la app</Enlace>
-    </Pantalla>
+    <View style={estilos.fondo}>
+      <FlatList
+        data={reportes}
+        keyExtractor={(reporte) => reporte.id}
+        contentContainerStyle={estilos.lista}
+        ListHeaderComponent={
+          <View style={estilos.encabezado}>
+            <Texto variante="titulo">Mis reportes</Texto>
+            <Boton titulo="Nuevo reporte" onPress={() => router.push('/reporte/nuevo')} />
+            <Enlace href="/ajustes-app">Ajustes de la app</Enlace>
+          </View>
+        }
+        ListEmptyComponent={<Texto>Todavía no cargaste ningún reporte.</Texto>}
+        renderItem={({ item }) => (
+          <TarjetaReporte reporte={item} onPress={() => router.push(`/reporte/${item.id}`)} />
+        )}
+      />
+    </View>
   );
 }
+
+const estilos = StyleSheet.create({
+  fondo: {
+    flex: 1,
+    backgroundColor: colores.fondo,
+  },
+  lista: {
+    padding: espacio.m,
+    gap: espacio.s,
+  },
+  encabezado: {
+    gap: espacio.s,
+    marginBottom: espacio.s,
+  },
+});

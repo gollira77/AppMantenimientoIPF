@@ -381,3 +381,28 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Qué hace `as const`?* — Hace que TypeScript tome el arreglo como de solo lectura y con los valores literales (`'agua'`), no como `string[]`. Sin eso no podría derivar el tipo `Categoria`.
 - *¿Qué es `valor is Categoria`?* — Un *type guard*: si la función devuelve `true`, TypeScript sabe que a partir de ahí `valor` es una `Categoria`.
 - *¿Por qué `en_proceso` con guion bajo?* — Es el valor interno (estable, sin espacios ni tildes). Lo que ve la persona sale de `ETIQUETA_ESTADO`: "En proceso".
+
+---
+
+## M16 · Mostré la lista de reportes con datos de prueba
+
+**Qué hice**
+
+- `src/lib/reportes/datosDePrueba.ts`: tres reportes de ejemplo, uno por estado.
+- La tab Reportes guarda la lista en un **`useState`** y la muestra con `FlatList`.
+- Componentes nuevos: `TarjetaReporte` (título, aula, categoría y estado; al tocarla abre `/reporte/<id>`) y `EtiquetaEstado` (pendiente en naranja, en proceso en azul, resuelto en verde).
+- Botón "Nuevo reporte" que navega a `/reporte/nuevo`.
+- Tests: se ven los reportes con su estado, tocar uno abre su detalle y el botón abre el formulario.
+
+**Por qué**
+
+- Arranco con datos falsos para construir y probar la interfaz sin depender del formulario ni del almacenamiento.
+- Uso `useState` **a propósito**, como pide la consigna para esta versión. Ya sé que tiene un problema: el estado vive dentro de esta pantalla, así que cuando el formulario cree un reporte, la lista no se va a enterar. Ese problema aparece en M17 y lo resuelvo en M21 con un contexto.
+- `FlatList` y no `ScrollView` con `map`: `FlatList` solo dibuja lo que se ve en pantalla. Con muchos reportes, la diferencia de rendimiento es grande.
+- El estado no se comunica **solo con color**: la etiqueta tiene texto y el lector de pantalla lee "Estado: Pendiente". Así lo entiende alguien que no distingue colores.
+
+**Qué podría preguntar el docente**
+
+- *¿Para qué sirve `keyExtractor`?* — Le da a React una clave estable por fila (el id del reporte). Con eso, al agregar o quitar un reporte, React sabe qué fila cambió y no redibuja todas.
+- *¿Por qué el `useState` no tiene `setReportes`?* — Porque en esta versión la lista no cambia: solo muestra los datos de prueba. Lo agrego cuando haga falta.
+- *¿Esta pantalla pide algún permiso?* — No, y no debe pedirlo: es la pantalla de inicio. Pedir permisos al abrir la app es una mala práctica (Parte F1).
