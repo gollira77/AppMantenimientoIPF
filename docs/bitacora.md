@@ -1161,3 +1161,38 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *¿En qué paso cambia iOS y por qué?* — En el 2: iOS muestra el diálogo una sola vez, así que el primer "No permitir" ya deja `canAskAgain: false`.
 - *¿Qué es un "test double" como tu sistema simulado?* — Un reemplazo controlado de algo externo (acá, el sistema operativo) que se comporta según reglas conocidas. Me deja reproducir en milisegundos un ciclo que en un celular lleva reinstalar la app.
 - *¿Por qué `get…` no cuenta como diálogo?* — Porque consultar nunca muestra nada. En el test, `dialogosMostrados` solo sube en `pedir()`, y únicamente cuando el sistema realmente pregunta.
+
+---
+
+## M42 · Configuré expo-image-picker sin permiso de galería
+
+**Qué hice**
+
+- Instalé `expo-image-picker` con `npx expo install` (`~57.0.20`).
+- Plugin en `app.json`:
+
+```json
+["expo-image-picker", {
+  "photosPermission": false,
+  "cameraPermission": "Usamos tu cámara para leer el código QR del aula y sacar la foto del desperfecto que reportás.",
+  "microphonePermission": false
+}]
+```
+
+- Verifiqué con `npm run permisos:nativos`:
+  - **iOS:** no aparece `NSPhotoLibraryUsageDescription` ni `NSMicrophoneUsageDescription`. La clave de cámara conserva **mi** texto.
+  - **Android:** `RECORD_AUDIO` aparece como **[bloqueado]** (`tools:node="remove"`). No hay `READ_MEDIA_IMAGES`.
+- Revisé los `AndroidManifest.xml` **de las librerías** en `node_modules`, porque esos permisos se suman al compilar y no aparecen en el introspect. `expo-image-picker` y `expo-file-system` declaran `READ/WRITE_EXTERNAL_STORAGE` con `maxSdkVersion="32"`. **Ninguna** declara `READ_MEDIA_IMAGES`.
+
+**Por qué**
+
+- La foto del desperfecto se elige con el **selector del sistema** (`launchImageLibraryAsync`, M43). Ese selector corre fuera de la app: la persona elige una foto y el sistema le entrega solo esa. No hace falta permiso de galería. Si no lo uso, no lo declaro (mínimo privilegio).
+- `photosPermission: false`: leí el plugin y, si no paso nada, agrega `NSPhotoLibraryUsageDescription` con un texto genérico en inglés. Con `false` la borra.
+- `cameraPermission`: le paso **el mismo texto** que en `expo-camera`. Los dos plugins escriben la misma clave del `Info.plist`; si dejara el texto vacío, el de este plugin podría pisar el mío con el genérico. Y **no** le paso `false`: el plugin interpreta `false` como "bloquear `CAMERA` en Android", y eso rompería el escáner.
+- `microphonePermission: false`: por defecto este plugin agrega `RECORD_AUDIO` (para grabar video). Con `false`, además de no agregarlo, lo **bloquea**, así ninguna otra librería lo puede sumar.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué dos plugins configuran la cámara?* — Porque los dos módulos la usan: `expo-camera` para el escáner y `expo-image-picker` para "Sacar foto" (`launchCameraAsync`). En el `Info.plist` es una sola clave, así que tienen que coincidir.
+- *¿Qué significa `maxSdkVersion="32"`?* — Que el permiso solo se declara hasta Android 12L (API 32). Desde Android 13 no tiene efecto, porque el almacenamiento usa otros permisos.
+- *¿Por qué revisaste el manifiesto de las librerías?* — Porque al compilar, Gradle **fusiona** el manifiesto de la app con el de cada librería. Un permiso puede aparecer en el APK final aunque no esté en `app.json`. Lo bloqueo y lo verifico en M45 y M67.
