@@ -9,6 +9,7 @@ import { IngresoAulaManual } from '@/components/IngresoAulaManual';
 import { Pantalla } from '@/components/Pantalla';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
+import { interpretarRespuesta } from '@/lib/permisos/interpretar';
 import { leerCodigoAula } from '@/lib/aulas/codigoQr';
 import { colores, espacio } from '@/lib/tema';
 
@@ -66,13 +67,15 @@ export default function EscanearAula() {
 
   const cargaManual = <IngresoAulaManual onConfirmar={usarAula} />;
 
+  const estado = interpretarRespuesta(permiso);
+
   // 1. Cargando: el hook todavía está consultando al sistema.
-  if (!permiso) {
+  if (estado === 'cargando') {
     return <Cargando mensaje="Consultando el permiso de la cámara…" />;
   }
 
   // 2. Concedido: muestro la cámara.
-  if (permiso.granted) {
+  if (estado === 'concedido') {
     return (
       <View style={estilos.contenedor}>
         <CameraView
@@ -89,7 +92,7 @@ export default function EscanearAula() {
   }
 
   // Se acaba de denegar: no insisto, ofrezco escribir el aula.
-  if (denegadaAhora && permiso.canAskAgain) {
+  if (denegadaAhora && estado === 'preguntable') {
     return (
       <Pantalla>
         <Texto variante="titulo">Escribí el código del aula</Texto>
@@ -102,7 +105,7 @@ export default function EscanearAula() {
   }
 
   // 3. Preguntable: el sistema todavía puede mostrar el diálogo.
-  if (permiso.canAskAgain) {
+  if (estado === 'preguntable') {
     return (
       <Pantalla centrada>
         <Texto variante="titulo">Escanear el QR del aula</Texto>

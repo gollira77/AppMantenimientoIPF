@@ -903,3 +903,42 @@ Después de M26 y M28 el escáner leía el aula (o la recibía escrita), pero mo
 - *¿Qué diferencia hay entre `useForegroundPermissions` y `getCurrentPositionAsync`?* — El primero maneja el **permiso** (consultar o pedir). El segundo lee la **posición**, y solo funciona si el permiso ya está concedido.
 - *¿Por qué atrapás el error de `getCurrentPositionAsync`?* — Porque puede fallar aunque haya permiso: GPS apagado, interior sin señal o tiempo agotado. La app avisa y deja reintentar.
 - *¿Qué pasa en iOS si la persona elige "Permitir una vez"?* — El permiso vale para esta sesión. Cuando la app se cierra, vuelve a "sin decidir" y la próxima vez aparece el diálogo de nuevo.
+
+---
+
+## M34 (evolución) · Extraje interpretarRespuesta porque duplicaba la lógica de cámara
+
+**El problema**
+
+Después de M33, `escanear.tsx` y `ubicacion.tsx` tenían la **misma** cadena de decisiones copiada:
+
+```tsx
+if (!permiso) …                 // cargando
+if (permiso.granted) …          // concedido
+if (permiso.canAskAgain) …      // preguntable
+…                               // bloqueado
+```
+
+La regla "¿en qué estado está este permiso?" es una sola, pero estaba escrita dos veces y la foto (M44) iba a sumar una tercera. Si mañana cambia la regla (por ejemplo, para tratar distinto un permiso parcial), tengo que encontrar y cambiar todas las copias, y es fácil que una quede distinta.
+
+**Qué hice**
+
+- `src/lib/permisos/interpretar.ts`:
+  - el tipo `EstadoPermiso = 'cargando' | 'concedido' | 'preguntable' | 'bloqueado'`;
+  - el tipo `RespuestaPermiso`, con lo mínimo que tienen **todas** las respuestas de Expo (`granted`, `canAskAgain`, `status`);
+  - la función pura `interpretarRespuesta(respuesta)`.
+- Las dos pantallas calculan `const estado = interpretarRespuesta(permiso)` y deciden con `estado === 'concedido'`, etc.
+- Tests básicos de los cuatro casos (la tabla completa de D3 va en M35).
+
+**Por qué este diseño lo resuelve**
+
+- La regla vive en **un solo lugar** y se prueba sin React ni Expo.
+- `RespuestaPermiso` es un tipo **estructural**: no importa de `expo-camera` ni de `expo-location`. Cualquier respuesta que tenga esos campos sirve, así que la misma función interpreta cámara, ubicación, notificaciones o lo que venga.
+- Las pantallas ahora hablan el idioma de la interfaz ("preguntable", "bloqueado") y no el del sistema (`canAskAgain: false`), que es más fácil de leer y de explicar.
+- **Lo que todavía se repite:** cada pantalla sigue llamando a su hook, guardando `denegadaAhora` y armando el "Abrir Ajustes". Eso lo unifico en M36 con el hook `usePermiso`.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué una función y no un componente?* — Porque decidir el estado es lógica, no interfaz. Como función pura se prueba con una tabla de entradas y salidas (M35).
+- *¿Qué es tipado estructural?* — En TypeScript, un objeto es compatible con un tipo si tiene sus campos, sin importar de dónde viene. Por eso `PermissionResponse` de la cámara y `LocationPermissionResponse` encajan en `RespuestaPermiso`.
+- *¿Por qué `granted` gana aunque `canAskAgain` sea `false`?* — Porque si ya está concedido no hace falta preguntar nada. `canAskAgain` solo importa cuando no está concedido.

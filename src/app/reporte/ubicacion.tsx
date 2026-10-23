@@ -9,6 +9,7 @@ import { Pantalla } from '@/components/Pantalla';
 import { Tarjeta } from '@/components/Tarjeta';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
+import { interpretarRespuesta } from '@/lib/permisos/interpretar';
 import type { Ubicacion } from '@/lib/reportes/tipos';
 
 function volver() {
@@ -54,13 +55,15 @@ export default function UbicacionReporte() {
     volver();
   }
 
+  const estado = interpretarRespuesta(permiso);
+
   // 1. Cargando
-  if (!permiso) {
+  if (estado === 'cargando') {
     return <Cargando mensaje="Consultando el permiso de ubicación…" />;
   }
 
   // 2. Concedido
-  if (permiso.granted) {
+  if (estado === 'concedido') {
     return (
       <Pantalla>
         <Texto variante="titulo">Ubicación del desperfecto</Texto>
@@ -91,7 +94,7 @@ export default function UbicacionReporte() {
   }
 
   // Se acaba de denegar: no insisto.
-  if (denegadaAhora && permiso.canAskAgain) {
+  if (denegadaAhora && estado === 'preguntable') {
     return (
       <Pantalla centrada>
         <Texto variante="titulo">Seguimos sin ubicación</Texto>
@@ -102,7 +105,7 @@ export default function UbicacionReporte() {
   }
 
   // 3. Preguntable
-  if (permiso.canAskAgain) {
+  if (estado === 'preguntable') {
     return (
       <Pantalla centrada>
         <Texto variante="titulo">Agregar la ubicación</Texto>
