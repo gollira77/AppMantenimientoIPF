@@ -406,3 +406,29 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Para qué sirve `keyExtractor`?* — Le da a React una clave estable por fila (el id del reporte). Con eso, al agregar o quitar un reporte, React sabe qué fila cambió y no redibuja todas.
 - *¿Por qué el `useState` no tiene `setReportes`?* — Porque en esta versión la lista no cambia: solo muestra los datos de prueba. Lo agrego cuando haga falta.
 - *¿Esta pantalla pide algún permiso?* — No, y no debe pedirlo: es la pantalla de inicio. Pedir permisos al abrir la app es una mala práctica (Parte F1).
+
+---
+
+## M17 · Armé el formulario de nuevo reporte
+
+**Qué hice**
+
+- `/reporte/nuevo` tiene los cuatro campos de la consigna: título, descripción, aula y categoría.
+- Cada campo es un `useState`. La categoría se elige con `SelectorCategoria`: cuatro opciones con rol `radio` (el lector de pantalla las anuncia como "botón de opción, marcado").
+- "Guardar reporte" muestra un `Alert` y vuelve atrás.
+- La pantalla **no pide ningún permiso al abrirse**, como exige la consigna. Agregué una línea que lo deja claro: "Ningún dato del celular es obligatorio para crear el reporte".
+- Tests: aparecen los cuatro campos y la categoría elegida queda marcada.
+
+**Por qué**
+
+- Esta es la versión simple. Tiene dos problemas que dejo a la vista a propósito:
+  1. **No valida nada**: se puede guardar un reporte vacío. Lo resuelvo en M18 con zod.
+  2. **El reporte no llega a la lista**: la lista guarda sus datos en su propio `useState` (M16), y el formulario no tiene forma de llegar a ese estado. Lo resuelvo en M21 con un contexto.
+- La categoría es un grupo de opciones y no un menú desplegable: con cuatro opciones se ven todas de un vistazo y se elige con un toque.
+- `maxLength` en título y descripción evita textos enormes antes de llegar a la validación.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué el formulario no pide la cámara o la ubicación al abrirse?* — Porque la persona todavía no eligió usar esas funciones. Pedir antes de tiempo entrena el "No permitir" automático. El escáner, la foto y la ubicación son opcionales y se piden cuando se tocan.
+- *¿Qué es un componente controlado?* — Un `TextInput` cuyo valor viene del estado (`value={titulo}`) y que avisa cada cambio (`onChangeText={setTitulo}`). La fuente de verdad es el estado de React, no el input.
+- *¿Por qué `autoCapitalize="characters"` en el aula?* — Los códigos de aula van en mayúsculas ("B12"). Así el teclado ya sale en mayúsculas.
