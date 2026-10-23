@@ -1,0 +1,8 @@
+node_modules
+coverage
+dist
+.expo
+package-lock.json
+docs/consignas.md
+*.md
+assets

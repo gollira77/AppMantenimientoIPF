@@ -103,3 +103,27 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 
 - *¿Por qué hay un commit que no está en la lista de módulos?* — Porque corregí la Parte A después de recibir el enunciado. Preferí un commit honesto a reescribir el historial con `--amend` o `rebase`.
 - *¿Cuál es la diferencia central entre Android e iOS en los estados?* — iOS muestra el diálogo una sola vez; Android da dos oportunidades y recién el segundo "no" bloquea.
+
+---
+
+## M05 · Activé TypeScript estricto, ESLint y Prettier
+
+**Qué hice**
+
+- `tsconfig.json`: además de `strict`, activé `noUncheckedIndexedAccess`, `noImplicitReturns`, `noFallthroughCasesInSwitch` y `forceConsistentCasingInFileNames`.
+- ESLint con la configuración plana (`eslint.config.js`) de `eslint-config-expo`, más `eslint-plugin-prettier/recommended` para que un error de formato sea un error de lint.
+- Prettier con `.prettierrc` (comillas simples, 100 columnas, coma final, fin de línea LF). Excluí los `.md` porque Prettier rellena las tablas con espacios y quedan ilegibles en texto plano.
+- `.gitattributes` y `.editorconfig` para forzar LF y no tener diferencias falsas entre Windows y el CI de Linux.
+- Scripts nuevos: `typecheck`, `format` y `format:check`.
+
+**Por qué**
+
+- `strict` obliga a manejar `null` y `undefined`. Esto es clave en esta app: el permiso de cámara vale `null` en el primer render, y con `strict` TypeScript no me deja leer `permiso.granted` sin chequearlo antes.
+- `noUncheckedIndexedAccess` hace que `lista[0]` sea `T | undefined`. Lo voy a necesitar al buscar un reporte por id: si no existe, el tipo me obliga a mostrar el mensaje de "no encontrado".
+- ESLint encuentra errores (por ejemplo, reglas de hooks) y Prettier se encarga solo del formato, así no discuto estilo en las revisiones.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué diferencia hay entre ESLint y Prettier?* — ESLint analiza el código y detecta errores o malas prácticas (por ejemplo, llamar un hook dentro de un `if`). Prettier solo reescribe el formato. Los conecté para que `npx expo lint` falle si el formato no está bien.
+- *¿Qué agrega `strict`?* — Entre otras cosas, `strictNullChecks` (null y undefined son tipos aparte) y `noImplicitAny` (prohíbe los `any` implícitos).
+- *¿Por qué LF y no CRLF?* — El CI corre en Linux. Si en Windows los archivos tienen CRLF, Prettier marca todos los archivos como mal formateados.
