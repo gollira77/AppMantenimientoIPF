@@ -64,3 +64,24 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Por qué no trabajás directo en `main`?* — Porque `main` representa lo que se entrega. Trabajando en `develop` puedo commitear módulo por módulo, aunque el trabajo esté a medias, sin ensuciar la versión estable.
 - *¿Cómo llega el código a `main`?* — Con un `git merge --no-ff develop` al final (M78). El `--no-ff` fuerza un commit de merge, así en el historial se ve claramente cuándo entró la versión 1.0.0.
 - *¿Por qué los commits tienen ese formato?* — Es Conventional Commits: `tipo(ámbito): mensaje`. El tipo (`feat`, `fix`, `refactor`…) dice qué clase de cambio es, y en M07 commitlint lo valida automáticamente.
+
+---
+
+## M04 · Respondí la Parte A sobre qué es un permiso
+
+**Qué hice**
+
+- Creé `RESPUESTAS.md` y escribí la Parte A: qué es un permiso, para qué existe, la diferencia entre declararlo y pedirlo, los tipos de permisos en Android e iOS, sus estados y quién decide.
+- Cité las fuentes oficiales (Android Developers, Apple Developer y docs.expo.dev).
+
+**Por qué**
+
+- Antes de escribir código de permisos necesito tener claro el modelo: si confundo "declarar" (en la build) con "pedir" (en ejecución), después no entiendo por qué un pedido falla.
+- Adelanté la tabla de los cuatro estados (`cargando`, `concedido`, `preguntable`, `bloqueado`) porque es la base del hook `usePermiso` que voy a construir más adelante.
+
+**Qué podría preguntar el docente**
+
+- *¿Cuál es la diferencia entre declarar y pedir un permiso?* — Declarar es avisarle al sistema, en la build, que la app puede llegar a usar un recurso (`AndroidManifest.xml` o `Info.plist`). Pedir es mostrar el diálogo en ejecución. Sin declarar, no se puede pedir.
+- *¿Desde qué versión Android pide permisos en ejecución?* — Desde Android 6.0 (API 23). Antes se aceptaban todos al instalar.
+- *¿Qué significa `canAskAgain: false`?* — Que el sistema ya no va a mostrar el diálogo (por ejemplo, la persona denegó dos veces en Android o una vez en iOS). La única salida es mandarla a Ajustes.
+- *¿Qué es un permiso parcial?* — Uno concedido pero con menos alcance: ubicación aproximada en vez de precisa, o acceso solo a algunas fotos.
