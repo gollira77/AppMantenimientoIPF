@@ -151,3 +151,28 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Qué es un preset de Jest?* — Una configuración base. `jest-expo` define cómo transformar el código (Babel), qué archivos son tests y los mocks de los módulos nativos.
 - *¿Para qué sirve `transformIgnorePatterns`?* — Jest no transforma `node_modules` por defecto, pero React Native y Expo publican código sin compilar. Ese patrón le dice que sí transforme esos paquetes.
 - *¿Por qué `getByText` y no buscar por estilo o por id interno?* — Testing Library propone probar lo que ve la persona usuaria. Si cambio la implementación pero el texto sigue, el test sigue pasando.
+
+---
+
+## M07 · Agregué husky y commitlint para validar cada commit
+
+**Qué hice**
+
+- Instalé `husky`, `lint-staged`, `@commitlint/cli` y `@commitlint/config-conventional` (con `npm`, porque no son módulos de Expo).
+- `npx husky init` agregó el script `prepare` y la carpeta `.husky`.
+- Hook `pre-commit`: corre `lint-staged` (ESLint y Prettier solo sobre los archivos en stage), `npm run typecheck` y `npm test`.
+- Hook `commit-msg`: corre `commitlint` sobre el mensaje.
+- `commitlint.config.js`: extiende Conventional Commits, limita los tipos a los diez de la consigna y exige el tipo en minúscula.
+- Probé los 84 mensajes de la lista de módulos contra commitlint y pasan todos.
+
+**Por qué**
+
+- La consigna pide que tipos, lint y tests pasen antes de cada commit. Con el hook no depende de que me acuerde: si algo falla, el commit no se hace.
+- `lint-staged` revisa solo lo que voy a commitear, así el hook es rápido. Los tipos y los tests sí corren sobre todo el proyecto, porque un cambio en un archivo puede romper otro.
+- Subí el largo máximo del encabezado a 120 caracteres porque algunos mensajes de la consigna (por ejemplo, el de M21) superan los 100 que trae por defecto.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es un hook de Git?* — Un script que Git ejecuta en un momento del ciclo (antes de commitear, al escribir el mensaje, antes de pushear). Husky los versiona dentro del repo para que todo el equipo tenga los mismos.
+- *¿Qué rechaza commitlint?* — Por ejemplo `Feat: Algo`: el tipo en mayúscula, un tipo que no está en la lista o un asunto que empieza con mayúscula.
+- *¿Se puede saltear el hook?* — Sí, con `--no-verify`, pero no lo uso. Además el CI (M08) repite las mismas verificaciones en GitHub, así que no sirve de nada saltearlo.

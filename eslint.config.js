@@ -12,6 +12,11 @@ module.exports = defineConfig([
   {
     rules: {
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
