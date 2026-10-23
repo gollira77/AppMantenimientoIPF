@@ -550,3 +550,39 @@ En M16 la lista guardaba los reportes en su propio `useState`. En M17 y M18 el f
 - *¿Por qué no Redux o Zustand?* — Para una lista y una función alcanza con Context de React, sin dependencias nuevas. Si el estado creciera mucho o cambiara muy seguido, evaluaría una librería.
 - *¿Qué pasa si una pantalla usa `useReportes` fuera del proveedor?* — Tira el error "useReportes tiene que usarse dentro de &lt;ProveedorReportes&gt;". Así el problema aparece enseguida y no como un `undefined` misterioso.
 - *¿Por qué `setReportes((actuales) => [nuevo, ...actuales])` y no `[nuevo, ...reportes]`?* — La forma con función usa siempre el estado más reciente, aunque se agreguen dos reportes seguidos antes de redibujar.
+
+---
+
+## M22 · Configuré el plugin de expo-camera sin micrófono
+
+**Qué hice**
+
+- Instalé `expo-camera` con `npx expo install` (quedó en `~57.0.6`).
+- Agregué el plugin en `app.json`:
+
+```json
+["expo-camera", {
+  "cameraPermission": "Usamos tu cámara para leer el código QR del aula y sacar la foto del desperfecto que reportás.",
+  "microphonePermission": false,
+  "recordAudioAndroid": false,
+  "barcodeScannerEnabled": true
+}]
+```
+
+- Verifiqué el resultado sin compilar, con `npx expo config --type introspect`:
+  - **iOS:** solo `NSCameraUsageDescription` con mi texto. **No** está `NSMicrophoneUsageDescription`.
+  - **Android:** `CAMERA` sí, `RECORD_AUDIO` no.
+
+**Por qué**
+
+- El texto sigue el molde de la consigna, "Usamos tu [dato] para [beneficio concreto]", y nombra los **dos** usos reales de la cámara: el QR del aula y la foto del desperfecto (M44 reutiliza este permiso).
+- `microphonePermission: false`: leí el código del plugin y, con `false`, borra la clave del `Info.plist` (si no paso nada, pone un texto genérico en inglés). Si la app no graba audio, no tiene por qué declarar el micrófono: Apple revisa que cada clave tenga un uso real.
+- `recordAudioAndroid: false`: por defecto `expo-camera` agrega `RECORD_AUDIO` porque el mismo módulo graba video con sonido. Esta app solo lee QR, así que no lo necesita (mínimo privilegio, Parte F3).
+- `barcodeScannerEnabled: true`: deja activo el lector de códigos que usa el escáner (M26).
+- El introspect también mostró permisos que **yo no pedí** (`SYSTEM_ALERT_WINDOW`, `READ/WRITE_EXTERNAL_STORAGE`, `VIBRATE`): los agrega Expo por defecto. Los bloqueo y justifico en M45.
+
+**Qué podría preguntar el docente**
+
+- *¿Este cambio se puede publicar por OTA?* — No. Cambia el `Info.plist` y el `AndroidManifest.xml`, que son parte del binario. Necesita una build nueva.
+- *¿Por qué en Expo Go no se ve mi texto?* — Porque Expo Go es otra app, con su propio `Info.plist` y sus propios textos. Mi texto aparece recién en una development build (M68).
+- *¿Cómo verificaste el manifiesto sin compilar?* — Con `npx expo config --type introspect`, que corre los plugins y muestra cómo quedarían el `Info.plist` y el `AndroidManifest.xml`.
