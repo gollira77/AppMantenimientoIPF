@@ -302,3 +302,28 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Por qué el archivo se llama `+not-found`?* — Los archivos con `+` son especiales en Expo Router. `+not-found` es la pantalla que se muestra cuando ninguna ruta coincide con la URL.
 - *¿`/permisos` y `/permisos/camara` no chocan?* — No. `/permisos` es la tab (`(tabs)/permisos.tsx`, el grupo no suma a la URL) y `/permisos/camara` es el modal (`permisos/[recurso].tsx`). Son URLs distintas.
 - *¿Por qué la pantalla previa no tiene botón "Cerrar"?* — Por la pauta 5.1.1(iv) de Apple: antes del diálogo del sistema no se puede ofrecer una salida que evite la pregunta. Va a tener un único botón "Continuar" (M49).
+
+---
+
+## M13 · Verifiqué que cada URL de G1 abre su pantalla
+
+**Qué hice**
+
+- Escribí `src/__tests__/rutas.test.tsx` con `renderRouter` de `expo-router/testing-library`, que monta el router real usando la carpeta `src/app`.
+- Para cada URL de la tabla de rutas (G1) verifico que el router queda en esa URL (`getPathname()`) y que **no** aparece la página 404.
+- Tests extra: `/reporte/42` cae en el segmento `[id]`, `/permisos/camara` cae en `[recurso]` y una URL inexistente muestra la 404.
+- Agregué `jest.setup.ts` con un mock de los íconos de Ionicons.
+
+**Por qué**
+
+- Probar la navegación a mano en el celular en cada cambio es lento. Con este test, si alguien mueve o renombra un archivo de `src/app` y rompe una URL, el CI lo detecta.
+- Al principio comparaba también el texto de cada pantalla, pero eso es frágil: cuando llene las pantallas cambian los textos y el test fallaría sin que la navegación esté rota. Lo que importa acá es **URL → pantalla**, no el contenido.
+- Primero usé `expect(screen).toHavePathname(...)` como en la documentación, pero el hook de pre-commit lo frenó: en el SDK 57 ese matcher no está tipado para TypeScript. Uso los métodos del resultado de `renderRouter` (`getPathname`, `getSegments`), que sí tienen tipos.
+- Los íconos cargan su fuente en forma asíncrona y llenaban la salida de advertencias `act(...)`. En un test de rutas el ícono no importa, así que lo reemplacé por un componente vacío.
+- En el SDK 57 `renderRouter` es **sincrónico**. En el SDK 58 pasa a ser asíncrono (`await renderRouter(...)`), según la guía de migración.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no probaste con `render(<NuevoReporte />)` directamente?* — Porque eso prueba el componente, no la ruta. `renderRouter` usa el mismo mapeo archivo → URL que la app real, que es lo que quiero verificar.
+- *¿Qué es `getSegments()`?* — Los segmentos de archivo que coincidieron con la URL. Para `/reporte/42` es `['reporte', '[id]']`: demuestra que la URL cayó en la ruta dinámica y no en otra.
+- *¿Qué es un mock?* — Un reemplazo falso de un módulo para el test. `jest.mock` hace que cualquier `import` de ese módulo reciba la versión falsa.
