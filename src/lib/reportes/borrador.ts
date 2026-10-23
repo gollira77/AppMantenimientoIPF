@@ -9,6 +9,7 @@ export type Borrador = {
   categoria: Categoria | null;
   ubicacion: Ubicacion | null;
   sector: Sector | null;
+  fotoUri: string | null;
 };
 
 export const BORRADOR_VACIO: Borrador = {
@@ -18,4 +19,5 @@ export const BORRADOR_VACIO: Borrador = {
   categoria: null,
   ubicacion: null,
   sector: null,
+  fotoUri: null,
 };

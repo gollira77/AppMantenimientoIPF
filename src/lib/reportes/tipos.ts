@@ -27,6 +27,8 @@ export type Reporte = {
   ubicacion?: Ubicacion | null;
   /** Sector elegido a mano, cuando no hay ubicación o es aproximada. */
   sector?: string | null;
+  /** Foto del desperfecto (URI local que devuelve el selector o la cámara). */
+  fotoUri?: string | null;
 };
 
 export const ETIQUETA_CATEGORIA: Record<Categoria, string> = {

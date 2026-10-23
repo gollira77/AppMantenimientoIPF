@@ -34,6 +34,7 @@ export const esquemaReporte = z.object({
     })
     .nullish(),
   sector: z.enum(SECTORES).nullish(),
+  fotoUri: z.string().min(1).nullish(),
 });
 
 export type DatosReporte = z.infer<typeof esquemaReporte>;

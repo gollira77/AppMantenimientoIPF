@@ -1196,3 +1196,35 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *¿Por qué dos plugins configuran la cámara?* — Porque los dos módulos la usan: `expo-camera` para el escáner y `expo-image-picker` para "Sacar foto" (`launchCameraAsync`). En el `Info.plist` es una sola clave, así que tienen que coincidir.
 - *¿Qué significa `maxSdkVersion="32"`?* — Que el permiso solo se declara hasta Android 12L (API 32). Desde Android 13 no tiene efecto, porque el almacenamiento usa otros permisos.
 - *¿Por qué revisaste el manifiesto de las librerías?* — Porque al compilar, Gradle **fusiona** el manifiesto de la app con el de cada librería. Un permiso puede aparecer en el APK final aunque no esté en `app.json`. Lo bloqueo y lo verifico en M45 y M67.
+
+---
+
+## M43 · Elegí la foto desde el selector del sistema sin pedir permiso
+
+**Qué hice**
+
+- `/reporte/foto` con el botón **"Elegir de la galería"**, que llama a `ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 })`.
+- **No** se llama a `requestMediaLibraryPermissionsAsync` ni a ningún otro pedido de permiso.
+- La foto elegida se ve en pantalla. "Usar esta foto" guarda la URI en el borrador (`fotoUri`) y vuelve al formulario; "Quitar la foto" la saca.
+- El modelo suma `fotoUri` opcional (tipo, borrador y esquema). El formulario tiene "Agregar foto (opcional)" / "Foto agregada ✓" y el detalle del reporte muestra la foto.
+- Mock global de `expo-image-picker` y tests:
+  - abre el selector **sin** llamar a ninguna función de permiso;
+  - pide solo imágenes;
+  - guarda la foto en el borrador;
+  - cancelar no cambia nada;
+  - se puede quitar la foto.
+
+**Por qué**
+
+- Requisito 3 de la consigna: la foto **sin** permiso de galería.
+- El selector del sistema (en Android, el *Photo Picker*; en iOS, el `PHPicker`) es una pantalla **del sistema**, no de la app. La persona elige y el sistema entrega **solo esa foto**. La app nunca ve el resto de la galería, así que no hay nada que autorizar. Es el "mejor permiso": el que no hace falta pedir (Parte E4).
+- Lo verifico con un test que dice explícitamente "no se llamó a `requestMediaLibraryPermissionsAsync`". Si alguien agrega un pedido de permiso "por las dudas", el test falla.
+- `quality: 0.7` reduce el peso de la foto sin que se note: importa porque después se guarda en el dispositivo (M64).
+- `mediaTypes: ['images']`: en el SDK 57 se pasa un arreglo de tipos. La opción vieja `MediaTypeOptions` está deprecada.
+- El resultado puede ser `{ canceled: true, assets: null }`: si la persona cierra el selector sin elegir, la app no hace nada y no muestra errores.
+
+**Qué podría preguntar el docente**
+
+- *Si no pedís permiso, ¿cómo accede la app a la foto?* — El sistema le da una URI temporal a **ese archivo**, elegido por la persona. Es acceso por elección, no por permiso.
+- *¿Cuándo sí haría falta el permiso de galería?* — Si la app mostrara la galería entera dentro de su propia interfaz (por ejemplo, un editor de fotos con su propia grilla). Para elegir una foto, nunca.
+- *¿Y en iOS con videos?* — La documentación de `expo-image-picker` aclara una excepción: para **videos** en iOS con ciertas opciones conviene pedir permiso antes. Esta app solo elige imágenes, así que no le aplica.

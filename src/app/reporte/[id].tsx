@@ -1,4 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
+import { Image, StyleSheet } from 'react-native';
 
 import { Enlace } from '@/components/Enlace';
 import { EtiquetaEstado } from '@/components/EtiquetaEstado';
@@ -9,6 +10,7 @@ import { useReportes } from '@/hooks/useReportes';
 import { buscarReporte } from '@/lib/reportes/buscar';
 import { textoUbicacion } from '@/lib/reportes/textoUbicacion';
 import { ETIQUETA_CATEGORIA } from '@/lib/reportes/tipos';
+import { radio } from '@/lib/tema';
 
 const formatoFecha = new Intl.DateTimeFormat('es-AR', {
   dateStyle: 'medium',
@@ -48,6 +50,14 @@ export default function DetalleReporte() {
     <Pantalla>
       <Texto variante="titulo">{reporte.titulo}</Texto>
       <EtiquetaEstado estado={reporte.estado} />
+      {reporte.fotoUri ? (
+        <Image
+          source={{ uri: reporte.fotoUri }}
+          style={estilos.foto}
+          accessibilityLabel={`Foto del reporte ${reporte.titulo}`}
+          resizeMode="cover"
+        />
+      ) : null}
       <Tarjeta>
         <Texto variante="secundario">Aula</Texto>
         <Texto>{reporte.aula}</Texto>
@@ -75,3 +85,11 @@ export default function DetalleReporte() {
     </Pantalla>
   );
 }
+
+const estilos = StyleSheet.create({
+  foto: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    borderRadius: radio.m,
+  },
+});

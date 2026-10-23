@@ -81,6 +81,11 @@ export default function NuevoReporte() {
         pista="Usa la ubicación del celular para indicar dónde está el desperfecto"
         onPress={() => router.push('/reporte/ubicacion')}
       />
+      <Boton
+        titulo={borrador.fotoUri ? 'Foto agregada ✓' : 'Agregar foto (opcional)'}
+        variante="secundario"
+        onPress={() => router.push('/reporte/foto')}
+      />
       <SelectorCategoria
         valor={borrador.categoria}
         onCambiar={(categoria) => actualizar({ categoria })}
