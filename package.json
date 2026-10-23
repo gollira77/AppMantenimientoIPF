@@ -52,13 +52,14 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "npm run tipos:rutas && tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "prepare": "husky"
+    "prepare": "husky",
+    "tipos:rutas": "expo customize tsconfig.json"
   },
   "private": true,
   "jest": {
@@ -68,7 +69,7 @@
       "/src/app/"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|standard-navigation|@sentry/react-native|native-base|react-native-svg)"
     ],
     "collectCoverageFrom": [
       "src/**/*.{ts,tsx}",

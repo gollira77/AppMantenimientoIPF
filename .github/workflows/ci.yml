@@ -23,10 +23,6 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Generar los tipos de Expo
-        # expo-env.d.ts está en .gitignore; lo creo para que tsc conozca los tipos de Expo.
-        run: echo '/// <reference types="expo/types" />' > expo-env.d.ts
-
       - name: Lint
         run: npx expo lint
 

@@ -254,3 +254,29 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Qué es un grupo de rutas?* — Una carpeta entre paréntesis. Sirve para compartir un layout (acá, la barra de tabs) sin que el nombre aparezca en la URL.
 - *¿Por qué ninguna tab pide permisos?* — Porque abrir una pantalla no es el momento de pedir: el permiso se pide cuando la persona toca la función que lo necesita (escanear, sacar foto, activar avisos).
 - *¿Qué diferencia hay entre `expo-router/js-tabs` y las tabs nativas de la plantilla?* — `js-tabs` dibuja la barra con React Navigation (JavaScript) y se ve igual en las dos plataformas. Las nativas (`unstable-native-tabs`) usan los componentes del sistema y todavía son inestables.
+
+---
+
+## M11 · Creé las rutas de reporte y ajustes-app vacías
+
+**Qué hice**
+
+- Creé las pantallas vacías (solo título y una línea de texto): `reporte/nuevo`, `reporte/escanear`, `reporte/foto`, `reporte/ubicacion`, `reporte/[id]`, `ajustes-app` y `herramientas/qr`.
+- Las registré en el `Stack` raíz con su título.
+- En la tab Reportes agregué dos `Link`: "Nuevo reporte" y "Ajustes de la app".
+- `reporte/[id].tsx` lee el parámetro con `useLocalSearchParams<{ id: string }>()`.
+- Ajustes de herramientas que aparecieron al hacer esto:
+  - **Tipos de rutas:** `typedRoutes` genera `.expo/types/router.d.ts` con las URLs válidas, pero solo se actualiza con el servidor de desarrollo. Agregué el script `tipos:rutas` (`expo customize tsconfig.json`, que los regenera sin levantar Metro) y lo encadené en `typecheck`. El CI usa el mismo script.
+  - **Jest:** `Link` importa el paquete `standard-navigation`, que viene como módulo ESM sin compilar. Lo agregué a `transformIgnorePatterns`.
+
+**Por qué**
+
+- Primero armo el "mapa" de la app con pantallas vacías y después las lleno. Así puedo probar la navegación completa (M13) antes de escribir la lógica.
+- `[id]` entre corchetes es un **segmento dinámico**: `/reporte/abc` y `/reporte/123` abren el mismo archivo con distinto `id`.
+- Con `typedRoutes`, `<Link href="/reporte/nuevoo">` es un error de TypeScript. Me di cuenta porque los tipos viejos no conocían las rutas nuevas y `tsc` falló: por eso los regenero antes de chequear tipos.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué diferencia hay entre `reporte/nuevo.tsx` y `reporte/[id].tsx` si las dos están en la misma carpeta?* — `nuevo` es una ruta estática y tiene prioridad. `/reporte/nuevo` abre el formulario; cualquier otro valor (`/reporte/7`) cae en `[id]`.
+- *¿Qué son las typed routes?* — Expo Router genera tipos con todas las URLs de `src/app`. Si escribo mal una ruta en un `Link` o en `router.push`, TypeScript lo marca antes de ejecutar.
+- *¿Ya se pide algún permiso?* — No. Las pantallas de escanear, foto y ubicación existen pero no tocan ningún módulo nativo todavía.
