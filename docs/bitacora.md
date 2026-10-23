@@ -229,3 +229,28 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 
 - *¿Para qué una plantilla de PR si trabajás solo?* — Me obliga a revisar mi propio cambio antes de mergearlo, y deja documentado cómo lo probé en cada plataforma.
 - *¿Qué cambios de permisos no se pueden publicar por OTA?* — Todo lo que cambia el binario nativo: agregar o quitar un plugin, cambiar un texto de propósito del `Info.plist` o tocar `blockedPermissions`. Una actualización OTA solo cambia el JavaScript y los assets.
+
+---
+
+## M10 · Armé las tabs Reportes, Avisos y Permisos
+
+**Qué hice**
+
+- Creé el grupo `src/app/(tabs)` con su `_layout.tsx` y tres pantallas: `index.tsx` (Reportes), `avisos.tsx` y `permisos.tsx`.
+- Moví la pantalla de inicio a `(tabs)/index.tsx`, así `/` abre la tab Reportes.
+- El layout raíz (`src/app/_layout.tsx`) es un `Stack` que contiene las tabs sin encabezado propio. Las pantallas de reporte, ajustes y la pantalla previa van a abrirse **encima** de las tabs.
+- Íconos con `@expo/vector-icons` (Ionicons), instalado con `npx expo install`.
+- Verifiqué con `npx expo export --platform android` que Metro arma el bundle sin errores.
+
+**Por qué**
+
+- Los paréntesis de `(tabs)` hacen un **grupo**: organiza archivos sin agregar un segmento a la URL. Por eso la tab Avisos es `/avisos` y no `/tabs/avisos`, como pide la tabla de rutas.
+- Stack afuera y tabs adentro: así una pantalla como `/reporte/nuevo` tapa la barra de tabs y tiene botón "atrás".
+- En el SDK 57, importar `Tabs` desde `expo-router` está **deprecado**: la documentación de tipos indica `import { Tabs } from 'expo-router/js-tabs'`. Lo verifiqué en los tipos del paquete instalado antes de usarlo.
+- El ícono de la tab recibe `color` como `ColorValue` (no `string`). TypeScript estricto lo marcó y ajusté el tipo.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es un grupo de rutas?* — Una carpeta entre paréntesis. Sirve para compartir un layout (acá, la barra de tabs) sin que el nombre aparezca en la URL.
+- *¿Por qué ninguna tab pide permisos?* — Porque abrir una pantalla no es el momento de pedir: el permiso se pide cuando la persona toca la función que lo necesita (escanear, sacar foto, activar avisos).
+- *¿Qué diferencia hay entre `expo-router/js-tabs` y las tabs nativas de la plantilla?* — `js-tabs` dibuja la barra con React Navigation (JavaScript) y se ve igual en las dos plataformas. Las nativas (`unstable-native-tabs`) usan los componentes del sistema y todavía son inestables.

@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react-native';
 
-import Inicio from '@/app/index';
+import Reportes from '@/app/(tabs)/index';
 
-describe('Pantalla de inicio', () => {
-  it('muestra el nombre de la app', () => {
-    render(<Inicio />);
+describe('Pantalla de reportes', () => {
+  it('muestra el título de la lista', () => {
+    render(<Reportes />);
 
-    expect(screen.getByText('Mantenimiento IPF')).toBeTruthy();
+    expect(screen.getByText('Mis reportes')).toBeTruthy();
   });
 });

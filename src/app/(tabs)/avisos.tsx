@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-export default function Inicio() {
+export default function Avisos() {
   return (
     <View style={styles.contenedor}>
-      <Text style={styles.titulo}>Mantenimiento IPF</Text>
-      <Text>Reportá desperfectos del edificio.</Text>
+      <Text style={styles.titulo}>Avisos</Text>
+      <Text>Acá vas a ver cuando se resuelva un reporte.</Text>
     </View>
   );
 }
