@@ -1017,3 +1017,31 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *¿Por qué no usar `useCameraPermissions` dentro de `usePermiso`?* — Porque tendría que llamar a `useCameraPermissions` o a `useForegroundPermissions` según el recurso, y las reglas de los hooks prohíben llamarlos de forma condicional. Las funciones `get…/request…` no tienen esa restricción.
 - *¿Para qué sirve la variable `vigente` en el efecto?* — Si la persona sale de la pantalla antes de que el sistema conteste, no actualizo el estado de un componente que ya no existe.
 - *¿Por qué al montar no se pide?* — Porque pedir muestra el diálogo del sistema, y eso solo tiene que pasar cuando la persona toca "Continuar" (pedir en contexto, Parte F1).
+
+---
+
+## M37 · Probé usePermiso con los módulos de Expo simulados
+
+**Qué hice**
+
+- `src/__tests__/usePermiso.test.ts` usa `renderHook` y los mocks de `expo-camera` y `expo-location` (las funciones `get…` y `request…` son `jest.fn()` que cada test hace devolver una respuesta distinta). Verifico que:
+  1. arranca en `cargando` y pasa a lo que dice el sistema;
+  2. al montar **solo consulta**: `request…` nunca se llama;
+  3. cada recurso usa su módulo (ubicación no toca la cámara);
+  4. `pedir()` muestra el diálogo, devuelve el estado nuevo y actualiza el hook;
+  5. el segundo "no" en Android pasa de `preguntable` a `bloqueado`;
+  6. `consultar()` relee sin pedir (sirve para volver de Ajustes, M47);
+  7. `abrirAjustes()` llama a `Linking.openSettings()`;
+  8. `respuesta` expone la respuesta cruda.
+
+**Por qué**
+
+- En M36 los tests de pantalla dejaron de usar los módulos de Expo: simulan `usePermiso` entero. Entonces **este** es el único lugar que prueba que el hook habla bien con Expo. Las dos capas juntas cubren todo: la pantalla en cada estado y el hook en cada respuesta.
+- El test 2 es el más importante para la consigna: garantiza que abrir una pantalla nunca dispara un diálogo del sistema. Pedir es siempre una acción de la persona.
+- `act(async () => …)` envuelve las llamadas que cambian el estado del hook, así React termina de actualizar antes de verificar.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es `renderHook`?* — Una función de Testing Library que monta un componente vacío que solo usa el hook, y te da `result.current` con lo que devuelve. Sirve para probar hooks sin armar una pantalla.
+- *¿Por qué `waitFor`?* — Porque la consulta inicial es asíncrona: el estado pasa de `cargando` a otro un instante después. `waitFor` reintenta la verificación hasta que se cumple o se vence el tiempo.
+- *¿Qué ganás con simular Expo y no correr en un celular?* — Puedo provocar cualquier respuesta (bloqueado, segundo "no") en milisegundos. En un celular tendría que reinstalar o resetear permisos para cada caso. Las pruebas en el dispositivo siguen siendo necesarias (M75), pero para otra cosa.
