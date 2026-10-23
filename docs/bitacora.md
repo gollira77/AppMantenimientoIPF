@@ -809,3 +809,31 @@ Después de M26 y M28 el escáner leía el aula (o la recibía escrita), pero mo
 - *¿Por qué `react-native-qrcode-svg` y no un servicio web que devuelva la imagen?* — Porque funciona sin internet y no manda datos a terceros. Además el SVG se ve nítido en cualquier tamaño.
 - *¿Hace falta una development build por `react-native-svg`?* — No: Expo Go ya incluye ese módulo nativo. Lo que no está en Expo Go sí obliga a una build.
 - *¿Cómo es accesible un QR?* — El contenedor tiene `accessibilityRole="image"` y la etiqueta "Código QR del aula B12". Además el código se muestra como texto.
+
+---
+
+## M31 · Respondí la Parte B y E1 comparando con mi primer escáner
+
+**Qué hice**
+
+- En `RESPUESTAS.md` escribí:
+  - **B1:** la clasificación de los diez permisos (instalación, tiempo de ejecución o especial) y cómo se obtiene cada uno.
+  - **B2:** grupos de permisos, el prefijo `android.permission.` y los permisos de firma.
+  - **B4:** el diálogo de Android, "Solo esta vez", los dos rechazos, la ubicación aproximada y qué pasa al revocar un permiso.
+  - **B5:** la tabla de versiones, `targetSdkVersion` y el requisito de Google Play.
+  - **E1:** los siete problemas del código de la consigna y la versión corregida con los cuatro estados.
+- B3 queda para M70, como indica la consigna, porque se responde con el manifiesto real de la build.
+
+**Por qué**
+
+- Respondo E1 comparando con **mi** escáner de M23 porque cometí casi los mismos errores y los fui corrigiendo uno por uno (M24, M25, M26, M28). Es la mejor forma de explicarlos en el oral: los viví en el código.
+- Los números de versión los verifiqué en fuentes oficiales y en el proyecto:
+  - **SDK 57:** apunta a API 36 (`targetSdk = 36`, `compileSdk = 36`, `minSdk = 24`), según `node_modules/react-native/gradle/libs.versions.toml` y `expo-modules-core`. El mínimo de iOS es 16.4 (podspecs de Expo).
+  - **Google Play:** desde el 31/08/2026 exige API 36 para apps nuevas y actualizaciones (página oficial de requisitos de nivel de API).
+  - **Android 17 (API 37):** suma el permiso `ACCESS_LOCAL_NETWORK` (página oficial "Local network permission").
+
+**Qué podría preguntar el docente**
+
+- *¿Qué diferencia hay entre un permiso especial y uno de tiempo de ejecución?* — El de tiempo de ejecución se concede en un diálogo dentro de la app. El especial no tiene diálogo: la app manda a la persona a una pantalla específica de Ajustes y ahí lo habilita.
+- *¿Por qué tu app no declara `SYSTEM_ALERT_WINDOW` si aparece en el manifiesto de Expo?* — Lo agrega Expo por defecto (para herramientas de desarrollo). La app no lo usa, así que lo bloqueo con `blockedPermissions` en M45.
+- *¿Tu app cumple el requisito de Google Play de agosto de 2026?* — Sí: Expo SDK 57 compila con `targetSdkVersion` 36.
