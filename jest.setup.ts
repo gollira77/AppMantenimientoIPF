@@ -10,4 +10,5 @@ jest.mock('@expo/vector-icons/Ionicons', () => {
 jest.mock('expo-camera', () => ({
   CameraView: () => null,
   useCameraPermissions: jest.fn(() => [null, jest.fn(), jest.fn()]),
+  PermissionStatus: { GRANTED: 'granted', DENIED: 'denied', UNDETERMINED: 'undetermined' },
 }));

@@ -640,3 +640,34 @@ return (/* explicación + botón "Permitir" que llama a pedirPermiso */);
 - *¿Cuánto dura el `null`?* — Muy poco, normalmente un instante. Pero existe siempre, y en un celular lento se nota.
 - *¿Por qué no guardar el permiso en un estado global para no consultar cada vez?* — Porque la persona lo puede cambiar en Ajustes en cualquier momento. La fuente de verdad es el sistema; la app tiene que volver a preguntarle (Parte E5c).
 - *¿Qué hacía el código de E1 en este caso?* — `permiso.status` con `permiso` en `null`: error "Cannot read properties of null" y la pantalla roja.
+
+---
+
+## M25 · Separé los cuatro estados del permiso de cámara
+
+**Qué hice**
+
+El escáner ahora distingue los cuatro estados que pide la consigna:
+
+| # | Estado | Condición | Qué muestra |
+| --- | --- | --- | --- |
+| 1 | Cargando | `permiso === null` | "Consultando el permiso de la cámara…" |
+| 2 | Concedido | `permiso.granted` | La cámara |
+| 3 | Preguntable | `!granted && canAskAgain` | Explicación del beneficio + aclaración de Ajustes + **"Continuar"** |
+| 4 | Bloqueado | `!granted && !canAskAgain` | Cómo habilitarlo + **"Abrir Ajustes"** (`Linking.openSettings()`) |
+
+- Tests de los cuatro estados. El 3 se prueba con "sin decidir" y con "denegado una vez" (los dos tienen `canAskAgain: true`).
+- En el estado bloqueado, el test verifica que **no** se llama a `pedirPermiso`.
+
+**Por qué**
+
+- `granted` solo responde "¿lo tengo?". Para saber qué hacer cuando no lo tengo hace falta `canAskAgain`: "¿el sistema todavía puede mostrar el diálogo?" (Parte D3: son los dos campos que deciden casi todo).
+- En la versión de M23, si el permiso estaba bloqueado, tocar "Permitir" llamaba a `request…()`, el sistema contestaba "no" sin mostrar nada y la persona sentía que el botón no andaba. Ahora el botón la lleva a Ajustes, que es el único lugar donde se puede cambiar.
+- El botón dice **"Continuar"** y no "Permitir": quien concede el permiso es el sistema, en su diálogo. Si mi botón dijera "Permitir", la persona creería que ya aceptó y el diálogo la confundiría.
+- La explicación sigue el molde "Usamos tu cámara para…" y aclara que se puede cambiar en Ajustes, sin botón de "Ahora no" (pauta 5.1.1(iv) de Apple).
+
+**Qué podría preguntar el docente**
+
+- *¿Cuándo pasa un permiso de "preguntable" a "bloqueado"?* — En iOS, después del primer "No permitir". En Android 11+, después del segundo. En los dos casos `canAskAgain` pasa a `false`.
+- *¿Qué hace `Linking.openSettings()`?* — Abre la pantalla de Ajustes de **esta app** en el sistema, donde están sus permisos.
+- *¿Qué pasa cuando la persona vuelve de Ajustes?* — En esta versión, nada: el hook no se entera de que el permiso cambió y la pantalla sigue diciendo "bloqueado". Lo arreglo en M47 con `AppState`.
