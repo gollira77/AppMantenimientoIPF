@@ -2,14 +2,19 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { StyleSheet } from 'react-native';
 
 import { Boton } from '@/components/Boton';
+import { Cargando } from '@/components/Cargando';
 import { Pantalla } from '@/components/Pantalla';
 import { Texto } from '@/components/Texto';
 
 export default function EscanearAula() {
   const [permiso, pedirPermiso] = useCameraPermissions();
 
-  // Versión ingenua: solo miro si está concedido.
-  if (permiso?.granted) {
+  // Primer render: el hook todavía está consultando al sistema.
+  if (!permiso) {
+    return <Cargando mensaje="Consultando el permiso de la cámara…" />;
+  }
+
+  if (permiso.granted) {
     return <CameraView style={estilos.camara} facing="back" />;
   }
 

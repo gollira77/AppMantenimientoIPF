@@ -617,3 +617,26 @@ return (/* explicación + botón "Permitir" que llama a pedirPermiso */);
 - *¿Qué devuelve `useCameraPermissions`?* — Un arreglo: `[permiso, pedir, consultar]`. `permiso` es `null` en el primer render y después un `PermissionResponse`. `pedir()` puede mostrar el diálogo; `consultar()` solo lee el estado.
 - *¿Por qué esta versión "funciona la primera vez"?* — Porque en una instalación nueva el permiso está "sin decidir": al tocar "Permitir" aparece el diálogo y, si se acepta, se ve la cámara. Los problemas aparecen en los otros caminos: el primer render, un "no", o el bloqueo.
 - *¿Por qué un mock global?* — Para que cualquier test que monte el router (como el de rutas) no intente usar la cámara real, y para controlar el estado del permiso desde cada test.
+
+---
+
+## M24 · Manejé el primer render donde el permiso todavía es null
+
+**Qué hice**
+
+- Si `permiso` es `null`, la pantalla muestra el componente nuevo `Cargando` ("Consultando el permiso de la cámara…") en lugar de la explicación con el botón.
+- Después de ese `if`, TypeScript ya sabe que `permiso` no es `null`, así que saqué el `?.` de `permiso.granted`.
+- Test nuevo: con `null` se ve el mensaje de carga y **no** aparece el botón "Permitir".
+
+**Por qué**
+
+- `useCameraPermissions` consulta al sistema de forma asíncrona. En el primer render todavía no tiene respuesta y devuelve `null`. "Todavía no sé" no es lo mismo que "no tengo permiso".
+- En M23, ese instante se trataba como "no concedido": aparecían la explicación y el botón aunque la persona ya hubiera dado el permiso, y medio segundo después aparecía la cámara (un parpadeo). Peor: si tocaba el botón justo en ese momento, se pedía un permiso que ya estaba concedido.
+- El mensaje de carga tiene `accessibilityLiveRegion="polite"` para que TalkBack lo anuncie sin interrumpir.
+- Este es el primero de los cuatro estados que pide la consigna: **cargando**.
+
+**Qué podría preguntar el docente**
+
+- *¿Cuánto dura el `null`?* — Muy poco, normalmente un instante. Pero existe siempre, y en un celular lento se nota.
+- *¿Por qué no guardar el permiso en un estado global para no consultar cada vez?* — Porque la persona lo puede cambiar en Ajustes en cualquier momento. La fuente de verdad es el sistema; la app tiene que volver a preguntarle (Parte E5c).
+- *¿Qué hacía el código de E1 en este caso?* — `permiso.status` con `permiso` en `null`: error "Cannot read properties of null" y la pantalla roja.

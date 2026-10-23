@@ -45,4 +45,12 @@ describe('Escáner (versión ingenua)', () => {
 
     expect(screen.queryByText('vista de cámara')).toBeNull();
   });
+
+  it('mientras el permiso es null muestra que está cargando y no ofrece Permitir', () => {
+    conPermiso(null);
+    render(<EscanearAula />);
+
+    expect(screen.getByText('Consultando el permiso de la cámara…')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Permitir' })).toBeNull();
+  });
 });
