@@ -700,3 +700,26 @@ El escáner ahora distingue los cuatro estados que pide la consigna:
 - *¿Por qué `useRef` y no `useState` para el "ya leído"?* — Cambiar un `ref` no redibuja y el valor nuevo está disponible al instante, incluso dentro de la misma ráfaga de eventos. `useState` recién se actualiza en el próximo render.
 - *¿Qué datos trae `onBarcodeScanned`?* — Un `BarcodeScanningResult` con `data` (el texto del QR), `type` (`'qr'`), los bordes y las esquinas del código.
 - *¿El escáner necesita permiso de galería o de internet?* — No. Solo la cámara: lee el QR en el momento, en el dispositivo.
+
+---
+
+## M27 · Probé el parser de códigos de aula
+
+**Qué hice**
+
+- `src/__tests__/codigoQr.test.ts`, con 21 casos:
+  - **QR válidos:** `IPF-AULA:B12`, `LAB-2`, `PB-BAÑO`, en minúsculas, con espacios alrededor y con espacios después de los dos puntos. Todos se leen como el aula en mayúsculas.
+  - **QR ajenos:** vacío, una URL, otro prefijo, el prefijo solo o con espacios, espacio en el medio del código, símbolos (`B12;DROP`), guion al final, código de más de 12 caracteres y el prefijo en el medio del texto.
+  - **Ida y vuelta:** el QR que arma `codigoQrDeAula` se lee como la misma aula. Esto asegura que el generador (M30) y el escáner hablen el mismo formato.
+
+**Por qué**
+
+- El parser recibe **datos de afuera**: cualquier QR que alguien ponga delante de la cámara. Es el punto donde más importa probar los casos raros.
+- Como es una función pura en `lib`, se prueba en milisegundos y sin simular la cámara. El test de pantalla de M26 solo verifica que la pantalla **use** el parser; los casos de borde están acá.
+- El test de ida y vuelta es el más valioso: si mañana cambio el prefijo en un solo lado, falla.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `B12;DROP` es un caso?* — Representa un QR malicioso o mal armado. El código del aula termina en un formulario y, más adelante, en el almacenamiento: no tiene que entrar nada fuera del formato.
+- *¿Qué diferencia hay entre estos tests y los del escáner?* — Estos son **unitarios** (una función, sin interfaz). Los del escáner son de **componente**: verifican la pantalla con la cámara simulada.
+- *¿Por qué aceptar minúsculas?* — Si alguien imprime el QR con un generador externo en minúsculas, igual tiene que funcionar. Normalizo a mayúsculas, como hace el esquema de zod.
