@@ -127,3 +127,27 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Qué diferencia hay entre ESLint y Prettier?* — ESLint analiza el código y detecta errores o malas prácticas (por ejemplo, llamar un hook dentro de un `if`). Prettier solo reescribe el formato. Los conecté para que `npx expo lint` falle si el formato no está bien.
 - *¿Qué agrega `strict`?* — Entre otras cosas, `strictNullChecks` (null y undefined son tipos aparte) y `noImplicitAny` (prohíbe los `any` implícitos).
 - *¿Por qué LF y no CRLF?* — El CI corre en Linux. Si en Windows los archivos tienen CRLF, Prettier marca todos los archivos como mal formateados.
+
+---
+
+## M06 · Configuré Jest con jest-expo y escribí el primer test
+
+**Qué hice**
+
+- Instalé `jest`, `jest-expo`, `@types/jest` y `@testing-library/react-native` 13 (con `npx expo install`, para que las versiones coincidan con el SDK 57).
+- Configuré Jest en `package.json` con el preset `jest-expo` y el `transformIgnorePatterns` que recomienda la guía de Expo. Ignoré `src/app` como carpeta de tests.
+- Scripts: `npm test` (una corrida, para el CI y los hooks), `test:watch` y `test:coverage`.
+- Primer test en `src/__tests__/inicio.test.tsx`: renderiza la pantalla de inicio y verifica que aparece "Mantenimiento IPF".
+
+**Por qué**
+
+- `jest-expo` ya simula (mockea) la parte nativa de los módulos de Expo. Sin eso, importar `expo-camera` en un test fallaría porque en Node no hay cámara.
+- En el SDK 57, `expo-router/testing-library` funciona solo con Testing Library **13** (la 14 es para el SDK 58). La versión 13 necesita `react-test-renderer` como dependencia par: la fijé en `19.2.3`, igual que React, porque npm intentaba traer la 19.3.1 y chocaba.
+- Los tests no van dentro de `src/app` porque Expo Router trataría cada archivo como una ruta.
+- TypeScript 6 ya no carga automáticamente todos los `@types`, así que agregué `"types": ["jest"]` en `tsconfig.json` (como indica la guía de Expo).
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es un preset de Jest?* — Una configuración base. `jest-expo` define cómo transformar el código (Babel), qué archivos son tests y los mocks de los módulos nativos.
+- *¿Para qué sirve `transformIgnorePatterns`?* — Jest no transforma `node_modules` por defecto, pero React Native y Expo publican código sin compilar. Ese patrón le dice que sí transforme esos paquetes.
+- *¿Por qué `getByText` y no buscar por estilo o por id interno?* — Testing Library propone probar lo que ve la persona usuaria. Si cambio la implementación pero el texto sigue, el test sigue pasando.
