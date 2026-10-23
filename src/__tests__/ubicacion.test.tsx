@@ -1,28 +1,24 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { Linking, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import UbicacionReporte from '@/app/reporte/ubicacion';
 import { useBorrador } from '@/hooks/useBorrador';
+import { usePermiso } from '@/hooks/usePermiso';
+import { permisoSimulado } from '@/test-utils/permisoSimulado';
 import { Proveedores } from '@/test-utils/Proveedores';
+
+jest.mock('@/hooks/usePermiso');
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), canGoBack: jest.fn(() => true), replace: jest.fn() },
 }));
 
-const pedir = jest.fn();
-
-function respuesta(
-  status: Location.PermissionStatus,
-  granted: boolean,
-  canAskAgain: boolean,
-): Location.LocationPermissionResponse {
-  return { status, granted, canAskAgain, expires: 'never' };
-}
-
-function conPermiso(permiso: Location.LocationPermissionResponse | null) {
-  jest.mocked(Location.useForegroundPermissions).mockReturnValue([permiso, pedir, jest.fn()]);
+function conPermiso(...args: Parameters<typeof permisoSimulado>) {
+  const simulado = permisoSimulado(...args);
+  jest.mocked(usePermiso).mockReturnValue(simulado);
+  return simulado;
 }
 
 function UbicacionDelBorrador() {
@@ -41,19 +37,19 @@ function renderUbicacion() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  pedir.mockResolvedValue(respuesta(Location.PermissionStatus.DENIED, false, true));
 });
 
 describe('Ubicación: los cuatro estados', () => {
-  it('1. cargando', () => {
-    conPermiso(null);
+  it('pide el permiso de ubicación', () => {
+    conPermiso('cargando');
     renderUbicacion();
 
+    expect(usePermiso).toHaveBeenCalledWith('ubicacion');
     expect(screen.getByText('Consultando el permiso de ubicación…')).toBeTruthy();
   });
 
   it('2. concedido: toma la ubicación y la guarda en el borrador', async () => {
-    conPermiso(respuesta(Location.PermissionStatus.GRANTED, true, true));
+    conPermiso('concedido');
     jest.mocked(Location.getCurrentPositionAsync).mockResolvedValue({
       coords: { latitude: -26.18489, longitude: -58.17313 },
     } as Location.LocationObject);
@@ -68,7 +64,7 @@ describe('Ubicación: los cuatro estados', () => {
   });
 
   it('2. concedido: si el GPS falla, avisa sin romperse', async () => {
-    conPermiso(respuesta(Location.PermissionStatus.GRANTED, true, true));
+    conPermiso('concedido');
     jest.mocked(Location.getCurrentPositionAsync).mockRejectedValue(new Error('GPS apagado'));
     renderUbicacion();
 
@@ -78,25 +74,24 @@ describe('Ubicación: los cuatro estados', () => {
   });
 
   it('3. preguntable: Continuar pide; si dice que no, se sigue sin ubicación', async () => {
-    conPermiso(respuesta(Location.PermissionStatus.UNDETERMINED, false, true));
+    const permiso = conPermiso('preguntable');
     renderUbicacion();
 
     fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
     await waitFor(() => expect(screen.getByText('Seguimos sin ubicación')).toBeTruthy());
-    expect(pedir).toHaveBeenCalledTimes(1);
+    expect(permiso.pedir).toHaveBeenCalledTimes(1);
   });
 
   it('4. bloqueado: ofrece Abrir Ajustes y volver sin ubicación', () => {
-    const abrirAjustes = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
-    conPermiso(respuesta(Location.PermissionStatus.DENIED, false, false));
+    const permiso = conPermiso('bloqueado');
     renderUbicacion();
 
     fireEvent.press(screen.getByRole('button', { name: 'Abrir Ajustes' }));
     fireEvent.press(screen.getByRole('button', { name: 'Volver al reporte' }));
 
-    expect(abrirAjustes).toHaveBeenCalled();
+    expect(permiso.abrirAjustes).toHaveBeenCalled();
     expect(router.back).toHaveBeenCalled();
-    expect(pedir).not.toHaveBeenCalled();
+    expect(permiso.pedir).not.toHaveBeenCalled();
   });
 });

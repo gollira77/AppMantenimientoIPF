@@ -7,8 +7,15 @@ jest.mock('@expo/vector-icons/Ionicons', () => {
 });
 
 // En Node no hay cámara. Por defecto el permiso queda "cargando" (null); cada test lo cambia si necesita.
+// Las consultas quedan pendientes: el permiso se ve como "cargando" y no hay actualizaciones fuera de act().
+const pendiente = () => new Promise(() => {});
+
 jest.mock('expo-camera', () => ({
   CameraView: () => null,
+  Camera: {
+    getCameraPermissionsAsync: jest.fn(pendiente),
+    requestCameraPermissionsAsync: jest.fn(pendiente),
+  },
   useCameraPermissions: jest.fn(() => [null, jest.fn(), jest.fn()]),
   PermissionStatus: { GRANTED: 'granted', DENIED: 'denied', UNDETERMINED: 'undetermined' },
 }));
@@ -25,8 +32,8 @@ jest.mock('react-native-qrcode-svg', () => {
 // En Node no hay GPS. Por defecto el permiso queda "cargando" (null).
 jest.mock('expo-location', () => ({
   useForegroundPermissions: jest.fn(() => [null, jest.fn(), jest.fn()]),
-  getForegroundPermissionsAsync: jest.fn(),
-  requestForegroundPermissionsAsync: jest.fn(),
+  getForegroundPermissionsAsync: jest.fn(pendiente),
+  requestForegroundPermissionsAsync: jest.fn(pendiente),
   getCurrentPositionAsync: jest.fn(),
   Accuracy: { Lowest: 1, Low: 2, Balanced: 3, High: 4, Highest: 5, BestForNavigation: 6 },
   PermissionStatus: { GRANTED: 'granted', DENIED: 'denied', UNDETERMINED: 'undetermined' },

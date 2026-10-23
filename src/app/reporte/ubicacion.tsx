@@ -1,7 +1,6 @@
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Linking } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Cargando } from '@/components/Cargando';
@@ -9,7 +8,7 @@ import { Pantalla } from '@/components/Pantalla';
 import { Tarjeta } from '@/components/Tarjeta';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
-import { interpretarRespuesta } from '@/lib/permisos/interpretar';
+import { usePermiso } from '@/hooks/usePermiso';
 import type { Ubicacion } from '@/lib/reportes/tipos';
 
 function volver() {
@@ -21,8 +20,7 @@ function volver() {
 }
 
 export default function UbicacionReporte() {
-  // Copio la lógica del escáner a propósito: después la unifico (M34 y M36).
-  const [permiso, pedirPermiso] = Location.useForegroundPermissions();
+  const { estado, pedir, abrirAjustes } = usePermiso('ubicacion');
   const [denegadaAhora, setDenegadaAhora] = useState(false);
   const [ubicacion, setUbicacion] = useState<Ubicacion | null>(null);
   const [buscando, setBuscando] = useState(false);
@@ -30,8 +28,8 @@ export default function UbicacionReporte() {
   const { actualizar } = useBorrador();
 
   async function continuar() {
-    const respuesta = await pedirPermiso();
-    setDenegadaAhora(!respuesta.granted);
+    const nuevo = await pedir();
+    setDenegadaAhora(nuevo !== 'concedido');
   }
 
   async function tomarUbicacion() {
@@ -54,8 +52,6 @@ export default function UbicacionReporte() {
     actualizar({ ubicacion });
     volver();
   }
-
-  const estado = interpretarRespuesta(permiso);
 
   // 1. Cargando
   if (estado === 'cargando') {
@@ -127,7 +123,7 @@ export default function UbicacionReporte() {
         Para agregarla, habilitá la ubicación para esta app en Ajustes y volvé a esta pantalla. El
         reporte se puede enviar igual sin ubicación.
       </Texto>
-      <Boton titulo="Abrir Ajustes" variante="secundario" onPress={() => Linking.openSettings()} />
+      <Boton titulo="Abrir Ajustes" variante="secundario" onPress={abrirAjustes} />
       <Boton titulo="Volver al reporte" onPress={volver} />
     </Pantalla>
   );

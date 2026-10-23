@@ -974,3 +974,46 @@ La regla "¿en qué estado está este permiso?" es una sola, pero estaba escrita
 - *¿Cuáles son los dos campos que deciden casi todo?* — `granted` ("¿lo tengo?") y `canAskAgain` ("¿el sistema todavía puede mostrar el diálogo?"). `status` es casi redundante: `granted` ya dice si está concedido.
 - *¿Para qué sirve `status` entonces?* — Para distinguir "nunca se preguntó" (`undetermined`) de "se dijo que no" (`denied`). La interfaz los trata igual (los dos son preguntables), pero sirve para el panel de permisos (M54).
 - *¿Por qué `it.each` con objetos y no con arreglos?* — Porque con `$descripcion` y `$esperado` el título del test se lee como la fila de la tabla.
+
+---
+
+## M36 (evolución) · Unifiqué cámara y ubicación en el hook usePermiso
+
+**El problema**
+
+Con `interpretarRespuesta` (M34) la **regla** quedó en un lugar, pero cada pantalla todavía:
+
+- usaba un hook distinto (`useCameraPermissions` o `Location.useForegroundPermissions`), con firmas parecidas pero no iguales;
+- convertía la respuesta con `interpretarRespuesta` a mano;
+- llamaba a `Linking.openSettings()` por su cuenta;
+- y para saber si la persona dijo que no, leía `respuesta.granted` del objeto crudo de cada módulo.
+
+Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
+
+**Qué hice**
+
+- `src/hooks/usePermiso.ts` con `usePermiso(recurso)`, donde `recurso` es `'camara' | 'ubicacion'`. Devuelve:
+  - `estado`: `'cargando' | 'concedido' | 'preguntable' | 'bloqueado'`;
+  - `respuesta`: la respuesta cruda del sistema, para los detalles;
+  - `pedir()`: muestra el diálogo y **devuelve el estado nuevo**;
+  - `consultar()`: vuelve a leer sin mostrar nada;
+  - `abrirAjustes()`.
+- Por dentro tiene una tabla `FUNCIONES` con cómo consultar y pedir cada recurso: `Camera.getCameraPermissionsAsync` / `requestCameraPermissionsAsync` y `Location.getForegroundPermissionsAsync` / `requestForegroundPermissionsAsync`.
+- Al montar **solo consulta**, nunca pide. El efecto se cancela si la pantalla se desmonta antes de que llegue la respuesta.
+- `escanear.tsx` y `ubicacion.tsx` ahora usan `usePermiso('camara')` y `usePermiso('ubicacion')`. Ya no importan `Linking` ni `interpretarRespuesta`.
+- Los tests de pantalla simulan `usePermiso` con el helper `src/test-utils/permisoSimulado.ts`, en vez de simular cada módulo de Expo. Los mocks globales de `expo-camera` y `expo-location` dejan las consultas pendientes (estado "cargando").
+
+**Por qué este diseño lo resuelve**
+
+- Las pantallas hablan **un solo idioma**: piden un recurso por nombre y reciben uno de cuatro estados. No saben qué módulo de Expo hay detrás.
+- Sumar un recurso (notificaciones, micrófono) es agregar una entrada a `FUNCIONES`, no copiar lógica.
+- `pedir()` devuelve el **estado** ya interpretado, así la pantalla decide con `nuevo !== 'concedido'` y no con campos del sistema.
+- Uso las funciones imperativas (`get…`, `request…`) y no los hooks de cada módulo, porque los hooks de React no se pueden elegir con un `if` según el recurso. Con funciones, la tabla funciona igual para todos.
+- Los tests de pantalla quedaron más simples: prueban la pantalla en cada estado sin saber cómo se obtiene. Cómo se obtiene lo pruebo en M37.
+- Todavía faltan dos cosas de la consigna: el indicador `parcial` (M38) y actualizarse al volver de Ajustes con `AppState` (M47).
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no usar `useCameraPermissions` dentro de `usePermiso`?* — Porque tendría que llamar a `useCameraPermissions` o a `useForegroundPermissions` según el recurso, y las reglas de los hooks prohíben llamarlos de forma condicional. Las funciones `get…/request…` no tienen esa restricción.
+- *¿Para qué sirve la variable `vigente` en el efecto?* — Si la persona sale de la pantalla antes de que el sistema conteste, no actualizo el estado de un componente que ya no existe.
+- *¿Por qué al montar no se pide?* — Porque pedir muestra el diálogo del sistema, y eso solo tiene que pasar cuando la persona toca "Continuar" (pedir en contexto, Parte F1).

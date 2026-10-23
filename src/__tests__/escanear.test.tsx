@@ -1,13 +1,15 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { PermissionStatus, useCameraPermissions, type PermissionResponse } from 'expo-camera';
 import { router } from 'expo-router';
-import { Linking, Text } from 'react-native';
-
-import { leerCodigoAula } from '@/lib/aulas/codigoQr';
+import { Text } from 'react-native';
 
 import EscanearAula from '@/app/reporte/escanear';
 import { useBorrador } from '@/hooks/useBorrador';
+import { usePermiso } from '@/hooks/usePermiso';
+import { leerCodigoAula } from '@/lib/aulas/codigoQr';
+import { permisoSimulado } from '@/test-utils/permisoSimulado';
 import { Proveedores } from '@/test-utils/Proveedores';
+
+jest.mock('@/hooks/usePermiso');
 
 jest.mock('expo-camera', () => ({
   // La cámara simulada tiene dos botones que disparan lecturas, como si enfocara un QR.
@@ -25,13 +27,16 @@ jest.mock('expo-camera', () => ({
       </View>
     );
   },
-  useCameraPermissions: jest.fn(),
-  PermissionStatus: { GRANTED: 'granted', DENIED: 'denied', UNDETERMINED: 'undetermined' },
 }));
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), canGoBack: jest.fn(() => true), replace: jest.fn() },
 }));
+
+jest.mock('@/lib/aulas/codigoQr', () => {
+  const real = jest.requireActual('@/lib/aulas/codigoQr');
+  return { ...real, leerCodigoAula: jest.fn(real.leerCodigoAula) };
+});
 
 /** Muestra el aula del borrador para poder verificarla. */
 function AulaDelBorrador() {
@@ -48,31 +53,26 @@ function renderEscaner() {
   );
 }
 
-const usarPermisos = jest.mocked(useCameraPermissions);
-const pedir = jest.fn();
-
-function respuesta(
-  status: PermissionStatus,
-  granted: boolean,
-  canAskAgain: boolean,
-): PermissionResponse {
-  return { status, granted, canAskAgain, expires: 'never' };
-}
-
-function conPermiso(permiso: PermissionResponse | null) {
-  usarPermisos.mockReturnValue([permiso, pedir, jest.fn()]);
+function conPermiso(...args: Parameters<typeof permisoSimulado>) {
+  const simulado = permisoSimulado(...args);
+  jest.mocked(usePermiso).mockReturnValue(simulado);
+  return simulado;
 }
 
 beforeEach(() => {
-  jest.mocked(router.back).mockClear();
-  pedir.mockReset();
-  // Por defecto, la persona contesta "No permitir" en el diálogo.
-  pedir.mockResolvedValue(respuesta(PermissionStatus.DENIED, false, true));
+  jest.clearAllMocks();
 });
 
 describe('Escáner: los cuatro estados del permiso', () => {
-  it('1. cargando: con null muestra el mensaje de carga y ningún botón', () => {
-    conPermiso(null);
+  it('pide el permiso de la cámara', () => {
+    conPermiso('cargando');
+    renderEscaner();
+
+    expect(usePermiso).toHaveBeenCalledWith('camara');
+  });
+
+  it('1. cargando: muestra el mensaje de carga y ningún botón', () => {
+    conPermiso('cargando');
     renderEscaner();
 
     expect(screen.getByText('Consultando el permiso de la cámara…')).toBeTruthy();
@@ -80,48 +80,38 @@ describe('Escáner: los cuatro estados del permiso', () => {
   });
 
   it('2. concedido: muestra la cámara', () => {
-    conPermiso(respuesta(PermissionStatus.GRANTED, true, true));
+    conPermiso('concedido');
     renderEscaner();
 
     expect(screen.getByText('vista de cámara')).toBeTruthy();
   });
 
-  it.each([
-    ['sin decidir', PermissionStatus.UNDETERMINED],
-    ['denegado una vez', PermissionStatus.DENIED],
-  ])('3. preguntable (%s): explica y pide con Continuar', async (_caso, status) => {
-    conPermiso(respuesta(status, false, true));
+  it('3. preguntable: explica y pide con Continuar', async () => {
+    const permiso = conPermiso('preguntable');
     renderEscaner();
 
     expect(screen.queryByRole('button', { name: 'Permitir' })).toBeNull();
     fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
-    expect(pedir).toHaveBeenCalledTimes(1);
+    expect(permiso.pedir).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.getByText('Escribí el código del aula')).toBeTruthy());
   });
 
   it('4. bloqueado: no vuelve a pedir y ofrece Abrir Ajustes', () => {
-    const abrirAjustes = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
-    conPermiso(respuesta(PermissionStatus.DENIED, false, false));
+    const permiso = conPermiso('bloqueado');
     renderEscaner();
 
     expect(screen.queryByRole('button', { name: 'Continuar' })).toBeNull();
     fireEvent.press(screen.getByRole('button', { name: 'Abrir Ajustes' }));
 
-    expect(abrirAjustes).toHaveBeenCalled();
-    expect(pedir).not.toHaveBeenCalled();
+    expect(permiso.abrirAjustes).toHaveBeenCalled();
+    expect(permiso.pedir).not.toHaveBeenCalled();
   });
-});
-
-jest.mock('@/lib/aulas/codigoQr', () => {
-  const real = jest.requireActual('@/lib/aulas/codigoQr');
-  return { ...real, leerCodigoAula: jest.fn(real.leerCodigoAula) };
 });
 
 describe('Escáner: lectura del QR', () => {
   beforeEach(() => {
-    jest.mocked(leerCodigoAula).mockClear();
-    conPermiso(respuesta(PermissionStatus.GRANTED, true, true));
+    conPermiso('concedido');
   });
 
   it('guarda el aula leída en el borrador y vuelve al formulario', () => {
@@ -160,7 +150,7 @@ describe('Escáner: lectura del QR', () => {
 
 describe('Escáner: carga manual del aula (M28)', () => {
   it('si se deniega en el diálogo, ofrece escribir el aula y no vuelve a explicar', async () => {
-    conPermiso(respuesta(PermissionStatus.UNDETERMINED, false, true));
+    conPermiso('preguntable');
     renderEscaner();
 
     fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
@@ -170,7 +160,7 @@ describe('Escáner: carga manual del aula (M28)', () => {
   });
 
   it('si la cámara está bloqueada, se puede escribir el aula', () => {
-    conPermiso(respuesta(PermissionStatus.DENIED, false, false));
+    conPermiso('bloqueado');
     renderEscaner();
 
     fireEvent.changeText(screen.getByLabelText('Código del aula'), 'lab-2');
@@ -181,7 +171,7 @@ describe('Escáner: carga manual del aula (M28)', () => {
   });
 
   it('valida el aula escrita con la misma regla del formulario', () => {
-    conPermiso(respuesta(PermissionStatus.DENIED, false, false));
+    conPermiso('bloqueado');
     renderEscaner();
 
     fireEvent.changeText(screen.getByLabelText('Código del aula'), 'B 12');

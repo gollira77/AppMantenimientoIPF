@@ -1,5 +1,9 @@
 import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
-import { PermissionStatus, useCameraPermissions } from 'expo-camera';
+
+import { usePermiso } from '@/hooks/usePermiso';
+import { permisoSimulado } from '@/test-utils/permisoSimulado';
+
+jest.mock('@/hooks/usePermiso');
 
 // Cámara concedida con un botón que simula leer el QR del aula B12.
 jest.mock('expo-camera', () => ({
@@ -11,18 +15,10 @@ jest.mock('expo-camera', () => ({
       </Pressable>
     );
   },
-  useCameraPermissions: jest.fn(),
-  PermissionStatus: { GRANTED: 'granted', DENIED: 'denied', UNDETERMINED: 'undetermined' },
 }));
 
 beforeEach(() => {
-  jest
-    .mocked(useCameraPermissions)
-    .mockReturnValue([
-      { status: PermissionStatus.GRANTED, granted: true, canAskAgain: true, expires: 'never' },
-      jest.fn(),
-      jest.fn(),
-    ]);
+  jest.mocked(usePermiso).mockReturnValue(permisoSimulado('concedido'));
 });
 
 describe('Borrador compartido (el problema de M26)', () => {

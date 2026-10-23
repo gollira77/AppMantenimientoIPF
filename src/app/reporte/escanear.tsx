@@ -1,7 +1,7 @@
-import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
+import { CameraView, type BarcodeScanningResult } from 'expo-camera';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Linking, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Cargando } from '@/components/Cargando';
@@ -9,12 +9,12 @@ import { IngresoAulaManual } from '@/components/IngresoAulaManual';
 import { Pantalla } from '@/components/Pantalla';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
-import { interpretarRespuesta } from '@/lib/permisos/interpretar';
+import { usePermiso } from '@/hooks/usePermiso';
 import { leerCodigoAula } from '@/lib/aulas/codigoQr';
 import { colores, espacio } from '@/lib/tema';
 
 export default function EscanearAula() {
-  const [permiso, pedirPermiso] = useCameraPermissions();
+  const { estado, pedir, abrirAjustes } = usePermiso('camara');
   const { actualizar } = useBorrador();
   // Solo guardo en pantalla las lecturas que no sirven; un aula válida va directo al borrador.
   const [qrAjeno, setQrAjeno] = useState(false);
@@ -51,8 +51,8 @@ export default function EscanearAula() {
   }
 
   async function continuar() {
-    const respuesta = await pedirPermiso();
-    setDenegadaAhora(!respuesta.granted);
+    const nuevo = await pedir();
+    setDenegadaAhora(nuevo !== 'concedido');
   }
 
   if (qrAjeno) {
@@ -66,8 +66,6 @@ export default function EscanearAula() {
   }
 
   const cargaManual = <IngresoAulaManual onConfirmar={usarAula} />;
-
-  const estado = interpretarRespuesta(permiso);
 
   // 1. Cargando: el hook todavía está consultando al sistema.
   if (estado === 'cargando') {
@@ -124,7 +122,7 @@ export default function EscanearAula() {
         Para escanear el QR, habilitá la cámara para esta app en Ajustes y volvé a esta pantalla.
         Mientras tanto, podés escribir el código del aula.
       </Texto>
-      <Boton titulo="Abrir Ajustes" variante="secundario" onPress={() => Linking.openSettings()} />
+      <Boton titulo="Abrir Ajustes" variante="secundario" onPress={abrirAjustes} />
       {cargaManual}
     </Pantalla>
   );
