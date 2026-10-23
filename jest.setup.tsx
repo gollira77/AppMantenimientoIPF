@@ -12,3 +12,12 @@ jest.mock('expo-camera', () => ({
   useCameraPermissions: jest.fn(() => [null, jest.fn(), jest.fn()]),
   PermissionStatus: { GRANTED: 'granted', DENIED: 'denied', UNDETERMINED: 'undetermined' },
 }));
+
+// El QR se dibuja con SVG nativo. En los tests alcanza con ver qué texto lleva.
+jest.mock('react-native-qrcode-svg', () => {
+  const { Text } = jest.requireActual('react-native');
+  return {
+    __esModule: true,
+    default: ({ value }: { value: string }) => <Text>{`qr:${value}`}</Text>,
+  };
+});

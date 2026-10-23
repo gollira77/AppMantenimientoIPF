@@ -22,6 +22,7 @@ export default function Reportes() {
             <Texto variante="titulo">Mis reportes</Texto>
             <Boton titulo="Nuevo reporte" onPress={() => router.push('/reporte/nuevo')} />
             <Enlace href="/ajustes-app">Ajustes de la app</Enlace>
+            <Enlace href="/herramientas/qr">Generador de QR de aulas</Enlace>
           </View>
         }
         ListEmptyComponent={<Texto>Todavía no cargaste ningún reporte.</Texto>}

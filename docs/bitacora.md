@@ -780,3 +780,32 @@ Después de M26 y M28 el escáner leía el aula (o la recibía escrita), pero mo
 - *¿Por qué no pasar el aula por parámetro con `router.push('/reporte/nuevo?aula=B12')`?* — Porque crearía otra pantalla de formulario encima de la anterior: la persona tendría dos formularios en el historial y perdería lo que ya había escrito.
 - *¿Qué pasa con el borrador si cierro la app?* — Por ahora se pierde. En M65 lo persisto con AsyncStorage.
 - *¿Por qué `actualizar` recibe un `Partial<Borrador>`?* — Para cambiar un solo campo (`{ aula: 'B12' }`) sin tener que pasar los demás.
+
+---
+
+## M30 · Agregué un generador de QR por aula para probar el escáner
+
+**Qué hice**
+
+- Instalé `react-native-svg` y `react-native-qrcode-svg` con `npx expo install`. `react-native-svg` viene incluido en Expo Go, así que no hace falta una build nueva.
+- `/herramientas/qr`:
+  - botones con las aulas frecuentes (`A1`, `B12`, `LAB-2`, `PB-BAÑO`…) y un campo para escribir cualquier otra;
+  - el aula se valida con `esquemaReporte.shape.aula`, la misma regla de siempre;
+  - muestra el QR (con `codigoQrDeAula`, que arma `IPF-AULA:<aula>`), el aula en grande y el texto exacto del código.
+- Enlace "Generador de QR de aulas" en la tab Reportes.
+- En los tests, el QR se reemplaza por un texto `qr:<contenido>` (mock en `jest.setup.tsx`, que renombré de `.ts` porque ahora tiene JSX).
+- Tests: aula inicial, cambio de aula, aula escrita a mano en minúsculas, aula inválida sin QR y **el QR generado lo entiende el escáner**.
+- Verifiqué `expo-doctor` (21/21) y el bundle de Android.
+
+**Por qué**
+
+- Para probar el escáner necesito QR reales con el formato `IPF-AULA:`. Con esta herramienta abro el generador en un celular (o en la compu con `npx expo start --web`) y escaneo con el otro.
+- Uso la misma función `codigoQrDeAula` que el parser de M27 conoce. El último test cierra el círculo: lo que genera el generador, lo lee el escáner.
+- El texto del aula va **debajo** del QR: es lo que la persona copia si no tiene cámara (carga manual de M28).
+- Esta pantalla no pide **ningún** permiso: generar y mostrar un QR no toca datos del celular.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `react-native-qrcode-svg` y no un servicio web que devuelva la imagen?* — Porque funciona sin internet y no manda datos a terceros. Además el SVG se ve nítido en cualquier tamaño.
+- *¿Hace falta una development build por `react-native-svg`?* — No: Expo Go ya incluye ese módulo nativo. Lo que no está en Expo Go sí obliga a una build.
+- *¿Cómo es accesible un QR?* — El contenedor tiene `accessibilityRole="image"` y la etiqueta "Código QR del aula B12". Además el código se muestra como texto.
