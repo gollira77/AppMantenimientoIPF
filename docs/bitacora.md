@@ -280,3 +280,25 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Qué diferencia hay entre `reporte/nuevo.tsx` y `reporte/[id].tsx` si las dos están en la misma carpeta?* — `nuevo` es una ruta estática y tiene prioridad. `/reporte/nuevo` abre el formulario; cualquier otro valor (`/reporte/7`) cae en `[id]`.
 - *¿Qué son las typed routes?* — Expo Router genera tipos con todas las URLs de `src/app`. Si escribo mal una ruta en un `Link` o en `router.push`, TypeScript lo marca antes de ejecutar.
 - *¿Ya se pide algún permiso?* — No. Las pantallas de escanear, foto y ubicación existen pero no tocan ningún módulo nativo todavía.
+
+---
+
+## M12 · Agregué la pantalla previa como modal y la página 404
+
+**Qué hice**
+
+- Creé `src/app/permisos/[recurso].tsx`, la futura pantalla previa al diálogo del sistema. Por ahora solo muestra qué recurso se va a pedir (`/permisos/camara`, `/permisos/ubicacion`…).
+- La registré en el `Stack` raíz con `presentation: 'modal'` y título "Antes de continuar".
+- Creé `src/app/+not-found.tsx`: cualquier URL que no exista muestra "Esta pantalla no existe" y un enlace para volver a la lista de reportes.
+
+**Por qué**
+
+- La pantalla previa es un **modal** porque interrumpe una tarea (estoy escaneando, sacando una foto) y después vuelvo a ella. En iOS el modal sube desde abajo y se ve como algo "de paso", no como una sección más de la app.
+- `[recurso]` es dinámico: una sola pantalla sirve para cámara, ubicación y notificaciones. El texto cambia según el recurso (M49).
+- La página 404 es importante porque la app recibe enlaces desde afuera: al tocar una notificación se abre `/reporte/<id>` (M62). Si la URL está mal, la persona tiene que ver un mensaje y una salida, no una pantalla rota.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué el archivo se llama `+not-found`?* — Los archivos con `+` son especiales en Expo Router. `+not-found` es la pantalla que se muestra cuando ninguna ruta coincide con la URL.
+- *¿`/permisos` y `/permisos/camara` no chocan?* — No. `/permisos` es la tab (`(tabs)/permisos.tsx`, el grupo no suma a la URL) y `/permisos/camara` es el modal (`permisos/[recurso].tsx`). Son URLs distintas.
+- *¿Por qué la pantalla previa no tiene botón "Cerrar"?* — Por la pauta 5.1.1(iv) de Apple: antes del diálogo del sistema no se puede ofrecer una salida que evite la pregunta. Va a tener un único botón "Continuar" (M49).
