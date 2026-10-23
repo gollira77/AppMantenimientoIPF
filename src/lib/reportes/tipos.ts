@@ -9,6 +9,8 @@ export type Estado = (typeof ESTADOS)[number];
 export type Ubicacion = {
   latitud: number;
   longitud: number;
+  /** true si la persona compartió solo la ubicación aproximada (Android coarse / iOS reduced). */
+  aproximada: boolean;
 };
 
 export type Reporte = {

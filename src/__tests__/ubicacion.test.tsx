@@ -59,7 +59,9 @@ describe('Ubicación: los cuatro estados', () => {
     await waitFor(() => expect(screen.getByText('-26.18489, -58.17313')).toBeTruthy());
     fireEvent.press(screen.getByRole('button', { name: 'Usar esta ubicación' }));
 
-    expect(screen.getByText('borrador: {"latitud":-26.18489,"longitud":-58.17313}')).toBeTruthy();
+    expect(
+      screen.getByText('borrador: {"latitud":-26.18489,"longitud":-58.17313,"aproximada":false}'),
+    ).toBeTruthy();
     expect(router.back).toHaveBeenCalled();
   });
 
@@ -109,5 +111,34 @@ describe('Ubicación aproximada (M38)', () => {
     renderUbicacion();
 
     expect(screen.queryByText('Ubicación aproximada')).toBeNull();
+  });
+});
+
+describe('Coordenadas ocultas si es aproximada (M39)', () => {
+  beforeEach(() => {
+    jest.mocked(Location.getCurrentPositionAsync).mockResolvedValue({
+      coords: { latitude: -26.18489, longitude: -58.17313 },
+    } as Location.LocationObject);
+  });
+
+  it('con ubicación aproximada no muestra las coordenadas y la guarda marcada', async () => {
+    conPermiso('concedido', { parcial: true });
+    renderUbicacion();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Tomar mi ubicación' }));
+    await waitFor(() => expect(screen.getByText('Ubicación tomada')).toBeTruthy());
+
+    expect(screen.queryByText(/-26.18489/)).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Usar esta ubicación' }));
+    expect(screen.getByText(/"aproximada":true/)).toBeTruthy();
+  });
+
+  it('con ubicación precisa sí muestra las coordenadas', async () => {
+    conPermiso('concedido');
+    renderUbicacion();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Tomar mi ubicación' }));
+
+    await waitFor(() => expect(screen.getByText('-26.18489, -58.17313')).toBeTruthy());
   });
 });

@@ -7,6 +7,7 @@ import { Tarjeta } from '@/components/Tarjeta';
 import { Texto } from '@/components/Texto';
 import { useReportes } from '@/hooks/useReportes';
 import { buscarReporte } from '@/lib/reportes/buscar';
+import { textoUbicacion } from '@/lib/reportes/textoUbicacion';
 import { ETIQUETA_CATEGORIA } from '@/lib/reportes/tipos';
 
 const formatoFecha = new Intl.DateTimeFormat('es-AR', {
@@ -52,6 +53,12 @@ export default function DetalleReporte() {
         <Texto>{reporte.aula}</Texto>
         <Texto variante="secundario">Categoría</Texto>
         <Texto>{ETIQUETA_CATEGORIA[reporte.categoria]}</Texto>
+        {reporte.ubicacion ? (
+          <>
+            <Texto variante="secundario">Ubicación</Texto>
+            <Texto>{textoUbicacion(reporte.ubicacion)}</Texto>
+          </>
+        ) : null}
         <Texto variante="secundario">Creado</Texto>
         <Texto>{formatoFecha.format(new Date(reporte.creadoEn))}</Texto>
       </Tarjeta>

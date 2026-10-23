@@ -9,6 +9,7 @@ import { Tarjeta } from '@/components/Tarjeta';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
 import { usePermiso } from '@/hooks/usePermiso';
+import { textoUbicacion } from '@/lib/reportes/textoUbicacion';
 import type { Ubicacion } from '@/lib/reportes/tipos';
 
 function volver() {
@@ -39,7 +40,11 @@ export default function UbicacionReporte() {
       const posicion = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-      setUbicacion({ latitud: posicion.coords.latitude, longitud: posicion.coords.longitude });
+      setUbicacion({
+        latitud: posicion.coords.latitude,
+        longitud: posicion.coords.longitude,
+        aproximada: parcial,
+      });
     } catch {
       // GPS apagado, sin señal, etc. No es un error de permiso.
       setError(true);
@@ -74,10 +79,8 @@ export default function UbicacionReporte() {
         ) : null}
         {ubicacion ? (
           <Tarjeta>
-            <Texto variante="secundario">Coordenadas</Texto>
-            <Texto>
-              {ubicacion.latitud.toFixed(5)}, {ubicacion.longitud.toFixed(5)}
-            </Texto>
+            <Texto variante="secundario">Ubicación tomada</Texto>
+            <Texto>{textoUbicacion(ubicacion)}</Texto>
           </Tarjeta>
         ) : (
           <Texto>Parate cerca del desperfecto y tomá la ubicación.</Texto>

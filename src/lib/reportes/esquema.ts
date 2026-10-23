@@ -29,6 +29,7 @@ export const esquemaReporte = z.object({
     .object({
       latitud: z.number().min(-90).max(90),
       longitud: z.number().min(-180).max(180),
+      aproximada: z.boolean(),
     })
     .nullish(),
 });

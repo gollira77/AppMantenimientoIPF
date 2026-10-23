@@ -1073,3 +1073,29 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *¿Cómo elige la persona "aproximada" en cada plataforma?* — En Android 12+, el diálogo de ubicación tiene dos opciones: "Precisa" y "Aproximada". En iOS 14+, el diálogo tiene un interruptor "Precisa" que se puede apagar.
 - *¿Se puede pedir que pase a precisa?* — En Android, volviendo a pedir el permiso (el diálogo ofrece mejorar a precisa). En iOS existe una petición temporal de precisión completa, que necesita otra clave en el `Info.plist`. Esta app no la usa: si es aproximada, ofrece elegir el sector a mano.
 - *¿Por qué `parcial` también contempla las fotos si la app no pide galería?* — Porque el hook es genérico. Hoy no lo usa nadie, pero el panel de permisos (M54) va a mostrar ese matiz para explicar por qué la app no lo necesita.
+
+---
+
+## M39 · Oculté las coordenadas cuando la ubicación es aproximada
+
+**Qué hice**
+
+- `Ubicacion` suma el campo `aproximada: boolean` (también en el esquema de zod).
+- Al tomar la ubicación, la pantalla guarda `aproximada: parcial`, según lo que informó el permiso (M38).
+- Función pura `textoUbicacion(ubicacion)` en `src/lib/reportes/textoUbicacion.ts`: si es aproximada devuelve **"Ubicación aproximada"**; si es precisa, las coordenadas con 5 decimales.
+- La uso en `/reporte/ubicacion` y en el detalle del reporte, que ahora muestra la ubicación si existe.
+- Tests: la función con los dos casos; la pantalla con ubicación aproximada **no** muestra `-26.18489` y guarda `aproximada: true`; con ubicación precisa sí muestra las coordenadas.
+
+**Por qué**
+
+- La consigna lo pide explícitamente: si es aproximada, se muestra "Ubicación aproximada" y no las coordenadas.
+- Mostrar `-26.18489, -58.17313` cuando el error real es de kilómetros es **engañoso**: cinco decimales sugieren una precisión de un metro. Quien atiende el reporte podría ir a buscar el desperfecto a un lugar equivocado.
+- Además respeta la decisión de la persona: eligió no compartir su ubicación exacta, así que la app no la presenta como si lo fuera.
+- Guardo las coordenadas igual (marcadas como aproximadas) porque sirven para saber que el reporte se hizo **desde el instituto**. Lo que nunca hago es mostrarlas.
+- Mostrar la ubicación pasa siempre por `textoUbicacion`: así es imposible que una pantalla nueva se olvide de la regla.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no borrar directamente las coordenadas si es aproximada?* — Porque igual dicen algo útil (el barrio, el instituto). El problema es mostrarlas con una precisión que no tienen.
+- *¿Por qué 5 decimales?* — 5 decimales de latitud son alrededor de 1 metro, que es lo máximo que puede dar un GPS de celular. Más decimales serían ruido.
+- *¿Dónde se aplica la regla?* — En `textoUbicacion`, una función pura con su test. Las pantallas no deciden cómo mostrar la ubicación: le preguntan a esa función.
