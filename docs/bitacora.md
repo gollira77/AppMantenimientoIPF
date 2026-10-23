@@ -1228,3 +1228,31 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *Si no pedís permiso, ¿cómo accede la app a la foto?* — El sistema le da una URI temporal a **ese archivo**, elegido por la persona. Es acceso por elección, no por permiso.
 - *¿Cuándo sí haría falta el permiso de galería?* — Si la app mostrara la galería entera dentro de su propia interfaz (por ejemplo, un editor de fotos con su propia grilla). Para elegir una foto, nunca.
 - *¿Y en iOS con videos?* — La documentación de `expo-image-picker` aclara una excepción: para **videos** en iOS con ciertas opciones conviene pedir permiso antes. Esta app solo elige imágenes, así que no le aplica.
+
+---
+
+## M44 · Saqué la foto reutilizando el permiso de cámara
+
+**Qué hice**
+
+- `/reporte/foto` suma el botón **"Sacar foto"**, que usa `ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 })`.
+- El permiso lo maneja **`usePermiso('camara')`**, el mismo hook y el mismo recurso que el escáner:
+  - **concedido:** abre la cámara directo, sin explicar ni pedir;
+  - **preguntable:** primero muestra la explicación ("Usamos tu cámara para sacar la foto del desperfecto que reportás.") con "Continuar"; recién ahí pide;
+  - **si dice que no:** vuelve a la pantalla con el aviso "Sin cámara también podés agregar una foto: elegila de la galería", sin insistir;
+  - **bloqueado:** "Abrir Ajustes" y "Elegir de la galería".
+- "Elegir de la galería" sigue disponible siempre, sin permiso.
+- Tests: usa el recurso `'camara'`; concedido abre la cámara sin `pedir`; preguntable explica y pide solo con "Continuar"; un "no" ofrece la galería sin volver a pedir; bloqueado ofrece Ajustes y galería.
+
+**Por qué**
+
+- En Android y en iOS el permiso de cámara es **uno solo** para toda la app, sin importar qué módulo la use. Si la persona ya la autorizó para el escáner, sacar la foto no le vuelve a preguntar. Gracias a `usePermiso` (M36), reutilizarlo fue escribir `usePermiso('camara')`: la regla de los cuatro estados ya estaba resuelta.
+- Por eso el texto de propósito de M22 nombra **los dos usos** (el QR y la foto): el diálogo del sistema aparece una vez, y la persona tiene que saber para qué lo autoriza.
+- La foto tiene dos caminos y solo uno necesita permiso. Si la cámara se deniega, la galería sigue funcionando: la regla 7 se cumple sin hacer nada especial.
+- No muestro el diálogo al tocar "Sacar foto" si el permiso es preguntable: primero la explicación con el beneficio (regla 6). Es la misma pantalla previa que voy a unificar en M49–M51.
+
+**Qué podría preguntar el docente**
+
+- *¿`launchCameraAsync` y `CameraView` comparten el permiso?* — Sí. Los dos usan el permiso `CAMERA` en Android y `NSCameraUsageDescription` en iOS. El sistema no sabe qué módulo lo usa: el permiso es de la app.
+- *¿Por qué no usar `useCameraPermissions` de `expo-image-picker`?* — Porque `usePermiso('camara')` ya consulta el mismo permiso y me da los cuatro estados. Usar otro hook duplicaría la lógica que unifiqué en M36.
+- *¿Qué diferencia hay entre `launchCameraAsync` y `CameraView`?* — `launchCameraAsync` abre la app de cámara del sistema y devuelve la foto: es ideal para sacar una foto y listo. `CameraView` es una vista dentro de mi pantalla, que necesito para leer el QR en vivo.
