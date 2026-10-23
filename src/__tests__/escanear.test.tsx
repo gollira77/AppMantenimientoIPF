@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { PermissionStatus, useCameraPermissions, type PermissionResponse } from 'expo-camera';
 import { Linking } from 'react-native';
 
@@ -43,6 +43,8 @@ function conPermiso(permiso: PermissionResponse | null) {
 
 beforeEach(() => {
   pedir.mockReset();
+  // Por defecto, la persona contesta "No permitir" en el diálogo.
+  pedir.mockResolvedValue(respuesta(PermissionStatus.DENIED, false, true));
 });
 
 describe('Escáner: los cuatro estados del permiso', () => {
@@ -64,7 +66,7 @@ describe('Escáner: los cuatro estados del permiso', () => {
   it.each([
     ['sin decidir', PermissionStatus.UNDETERMINED],
     ['denegado una vez', PermissionStatus.DENIED],
-  ])('3. preguntable (%s): explica y pide con Continuar', (_caso, status) => {
+  ])('3. preguntable (%s): explica y pide con Continuar', async (_caso, status) => {
     conPermiso(respuesta(status, false, true));
     render(<EscanearAula />);
 
@@ -72,6 +74,7 @@ describe('Escáner: los cuatro estados del permiso', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
     expect(pedir).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByText('Escribí el código del aula')).toBeTruthy());
   });
 
   it('4. bloqueado: no vuelve a pedir y ofrece Abrir Ajustes', () => {
@@ -128,5 +131,38 @@ describe('Escáner: lectura del QR', () => {
 
     expect(screen.getByText('Aula B12')).toBeTruthy();
     expect(leerCodigoAula).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('Escáner: carga manual del aula (M28)', () => {
+  it('si se deniega en el diálogo, ofrece escribir el aula y no vuelve a explicar', async () => {
+    conPermiso(respuesta(PermissionStatus.UNDETERMINED, false, true));
+    render(<EscanearAula />);
+
+    fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Código del aula')).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Continuar' })).toBeNull();
+  });
+
+  it('si la cámara está bloqueada, se puede escribir el aula', () => {
+    conPermiso(respuesta(PermissionStatus.DENIED, false, false));
+    render(<EscanearAula />);
+
+    fireEvent.changeText(screen.getByLabelText('Código del aula'), 'lab-2');
+    fireEvent.press(screen.getByRole('button', { name: 'Usar esta aula' }));
+
+    expect(screen.getByText('Aula LAB-2')).toBeTruthy();
+  });
+
+  it('valida el aula escrita con la misma regla del formulario', () => {
+    conPermiso(respuesta(PermissionStatus.DENIED, false, false));
+    render(<EscanearAula />);
+
+    fireEvent.changeText(screen.getByLabelText('Código del aula'), 'B 12');
+    fireEvent.press(screen.getByRole('button', { name: 'Usar esta aula' }));
+
+    expect(screen.getByText('Usá letras, números y guiones, por ejemplo B12.')).toBeTruthy();
+    expect(screen.queryByText('Aula B 12')).toBeNull();
   });
 });

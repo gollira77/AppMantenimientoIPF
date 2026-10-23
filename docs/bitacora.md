@@ -723,3 +723,30 @@ El escáner ahora distingue los cuatro estados que pide la consigna:
 - *¿Por qué `B12;DROP` es un caso?* — Representa un QR malicioso o mal armado. El código del aula termina en un formulario y, más adelante, en el almacenamiento: no tiene que entrar nada fuera del formato.
 - *¿Qué diferencia hay entre estos tests y los del escáner?* — Estos son **unitarios** (una función, sin interfaz). Los del escáner son de **componente**: verifican la pantalla con la cámara simulada.
 - *¿Por qué aceptar minúsculas?* — Si alguien imprime el QR con un generador externo en minúsculas, igual tiene que funcionar. Normalizo a mayúsculas, como hace el esquema de zod.
+
+---
+
+## M28 · Permití cargar el aula a mano si se deniega la cámara
+
+**Qué hice**
+
+- Componente `IngresoAulaManual`: un campo "Código del aula" y un botón "Usar esta aula". Valida con `esquemaReporte.shape.aula`, **la misma regla** que el formulario y que el QR.
+- En el escáner, la carga manual aparece en dos casos:
+  - **Se acaba de denegar** (la persona tocó "Continuar" y en el diálogo eligió "No permitir"): la pantalla pasa directo a "Escribí el código del aula" y **no** vuelve a mostrar la explicación.
+  - **Bloqueado**: muestra "Abrir Ajustes" (ahora como botón secundario) y, debajo, la carga manual.
+- "Continuar" ahora espera la respuesta de `pedirPermiso()` para saber si la persona dijo que no.
+- El resultado (leído o escrito) se muestra igual: "Aula LAB-2". "Escanear otra vez" solo aparece si hay cámara.
+- Tests: después de un "no" se ofrece la carga manual sin "Continuar"; con la cámara bloqueada se puede escribir `lab-2` y queda `LAB-2`; un aula inválida muestra el error del esquema.
+
+**Por qué**
+
+- La regla 7 de la consigna: **ningún permiso denegado impide crear un reporte**. Antes de este módulo, sin cámara la persona quedaba trabada en el escáner.
+- Después de un "no" no vuelvo a mostrar la explicación con "Continuar": eso sería insistir (regla 8). Si la persona quiere usar la cámara, vuelve a tocar la función.
+- No puse la opción "escribir a mano" **en la explicación previa** al diálogo. La pauta 5.1.1(iv) de Apple no permite una salida que evite la pregunta en esa pantalla. Recién después de la respuesta del sistema ofrezco la alternativa.
+- Valido con `esquemaReporte.shape.aula`: un solo lugar define qué es un aula válida, la escriba o la escanee.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué devuelve `pedirPermiso()`?* — Una promesa con el `PermissionResponse` nuevo. Con eso sé si la persona aceptó o no sin esperar al próximo render del hook.
+- *¿Qué es `esquemaReporte.shape.aula`?* — El esquema de zod de un solo campo dentro del objeto. Me deja validar el aula sola con las mismas reglas.
+- *¿Y si la persona no sabe el código del aula?* — Está escrito en el QR pegado en la puerta, debajo del código (lo muestra el generador de M30).
