@@ -356,3 +356,28 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Por qué `Pressable` y no `TouchableOpacity`?* — `Pressable` es el componente actual de React Native para toques: da el estado `pressed` para el estilo y es más configurable. `TouchableOpacity` sigue existiendo pero se considera legado.
 - *¿Por qué 48 px de alto mínimo?* — Es el área táctil mínima recomendada por Material Design (48 dp). Apple recomienda 44 pt. Con 48 se cumplen las dos.
 - *¿Qué hace `accessibilityState={{ disabled, busy }}`?* — Le avisa al lector de pantalla (TalkBack o VoiceOver) que el botón está deshabilitado o procesando.
+
+---
+
+## M15 · Definí los tipos de reporte, categoría y estado
+
+**Qué hice**
+
+- `src/lib/reportes/tipos.ts` con:
+  - `CATEGORIAS` (electricidad, agua, mobiliario, equipos) y el tipo `Categoria`.
+  - `ESTADOS` (pendiente, en proceso, resuelto) y el tipo `Estado`.
+  - El tipo `Reporte`: id, título, descripción, aula, categoría, estado y fecha de creación (ISO 8601).
+  - Etiquetas para mostrar en pantalla (`ETIQUETA_CATEGORIA`, `ETIQUETA_ESTADO`) y la función `esCategoria`.
+- Tests: las cuatro categorías, que todo tenga etiqueta y que `esCategoria` rechace valores inválidos.
+
+**Por qué**
+
+- Defino las categorías como un arreglo `as const` y saco el tipo de ahí (`(typeof CATEGORIAS)[number]`). Así hay **una sola fuente de verdad**: el arreglo sirve para dibujar los botones del formulario y el tipo para que TypeScript controle. Si agrego una categoría, TypeScript me obliga a ponerle etiqueta (`Record<Categoria, string>`).
+- La fecha se guarda como texto ISO y no como `Date` porque después la voy a guardar en AsyncStorage (M64), que solo guarda texto.
+- Todavía no agrego foto, ubicación ni sector: esos campos aparecen cuando llegan sus módulos. Así el modelo crece con la app.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué hace `as const`?* — Hace que TypeScript tome el arreglo como de solo lectura y con los valores literales (`'agua'`), no como `string[]`. Sin eso no podría derivar el tipo `Categoria`.
+- *¿Qué es `valor is Categoria`?* — Un *type guard*: si la función devuelve `true`, TypeScript sabe que a partir de ahí `valor` es una `Categoria`.
+- *¿Por qué `en_proceso` con guion bajo?* — Es el valor interno (estable, sin espacios ni tildes). Lo que ve la persona sale de `ETIQUETA_ESTADO`: "En proceso".
