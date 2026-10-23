@@ -85,3 +85,21 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Desde qué versión Android pide permisos en ejecución?* — Desde Android 6.0 (API 23). Antes se aceptaban todos al instalar.
 - *¿Qué significa `canAskAgain: false`?* — Que el sistema ya no va a mostrar el diálogo (por ejemplo, la persona denegó dos veces en Android o una vez en iOS). La única salida es mandarla a Ajustes.
 - *¿Qué es un permiso parcial?* — Uno concedido pero con menos alcance: ubicación aproximada en vez de precisa, o acceso solo a algunas fotos.
+
+---
+
+## M04 (corrección) · Reescribí la Parte A con el enunciado oficial
+
+**Qué hice**
+
+- Guardé el enunciado completo de las Partes A–F en `docs/consignas.md`.
+- Reescribí la Parte A de `RESPUESTAS.md` siguiendo la numeración oficial: A1 (conceptos, sandbox, cuatro razones, analogía del portero), A2 (tabla declarar/solicitar), A3 (verdadero o falso) y A4 (diagramas de estados y tabla de Expo).
+
+**Por qué**
+
+- En M04 respondí la Parte A sin tener el enunciado literal. Cuando lo recibí, lo corregí en un commit nuevo en lugar de modificar el de M04, porque la consigna pide no reescribir el historial.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué hay un commit que no está en la lista de módulos?* — Porque corregí la Parte A después de recibir el enunciado. Preferí un commit honesto a reescribir el historial con `--amend` o `rebase`.
+- *¿Cuál es la diferencia central entre Android e iOS en los estados?* — iOS muestra el diálogo una sola vez; Android da dos oportunidades y recién el segundo "no" bloquea.
