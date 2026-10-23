@@ -1287,3 +1287,26 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *¿Funciona `blockedPermissions` en Expo Go?* — No. Expo Go es una app ya compilada con su propio manifiesto. `blockedPermissions` modifica el manifiesto de **mi** build, así que solo se ve en una development build o en producción (M67).
 - *¿Por qué no simplemente borrar el permiso del `AndroidManifest.xml`?* — Porque en Expo ese archivo se regenera desde `app.json` en cada `prebuild`. Y aunque lo borrara, el de la librería volvería a entrar al fusionar.
 - *¿Qué pasa en M73, cuando necesite el micrófono?* — Saco `RECORD_AUDIO` de la lista, configuro el plugin de audio y hago una build nueva. El test se actualiza en ese mismo módulo, a propósito.
+
+---
+
+## M46 · Respondí E4 y F3 sobre fotos y mínimo privilegio
+
+**Qué hice**
+
+- En `RESPUESTAS.md` escribí:
+  - **E4:** la tabla de herramientas y permisos para cada necesidad de fotos, por qué Google Play restringe `READ_MEDIA_IMAGES` y `READ_MEDIA_VIDEO`, desde cuándo y qué es "el mejor permiso".
+  - **F3:** la opción más chica que alcanza en los cuatro casos de mínimo privilegio.
+- Verifiqué las fechas de la política de Google Play en sus páginas oficiales: la declaración se pidió desde el 18/09/2024, el límite fue el 22/01/2025 y la prórroga llegaba al 28/05/2025.
+- Al cerrar M45, lint-staged frenó el commit porque ESLint no reconocía `__dirname` en `scripts/`. Agregué en `eslint.config.js` una sección para los scripts de Node con sus variables globales y `console` permitido. Lo dejo anotado acá porque ese ajuste viajó en el commit de M45.
+
+**Por qué**
+
+- Las dos respuestas se apoyan en decisiones que ya están en el código: el selector sin permiso (M43), la cámara compartida (M44), el micrófono apagado (M22) y los permisos bloqueados (M45). En el oral puedo mostrar el código mientras respondo.
+- En F3 b) aclaro que "mínimo privilegio" no significa "siempre lo más chico": significa **lo más chico que alcanza**. Registrar una carrera con la pantalla apagada necesita segundo plano; pedirlo escalonado y justificado es la parte de "mínimo".
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es el mejor permiso?* — El que no hay que pedir: usar una herramienta del sistema (selector de fotos, de contactos o de archivos) que resuelve la necesidad sin dar acceso amplio.
+- *¿Tu app tendría problemas con la política de fotos de Google Play?* — No: no declara `READ_MEDIA_IMAGES` ni `READ_MEDIA_VIDEO`, y además los bloquea. No hay formulario que completar.
+- *¿Por qué ubicación aproximada para el reciclaje y no para tu app?* — Porque el reciclaje es a escala de barrio y mi app necesita el **sector de un edificio**. Por eso mi app pide la precisa, pero funciona con la aproximada eligiendo el sector a mano (M40).

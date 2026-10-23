@@ -500,3 +500,41 @@ export async function obtenerUbicacion(): Promise<UbicacionObtenida | null> {
 - Android Developers, *Request background location*: https://developer.android.com/develop/sensors-and-location/location/permissions/background
 - Google Play Console Help, *Requesting access to location in the background*: https://support.google.com/googleplay/android-developer/answer/9799150
 - Expo, *Location (SDK 57)*: https://docs.expo.dev/versions/v57.0.0/sdk/location/
+
+### E4. Fotos sin pedir permiso
+
+| Necesidad | Herramienta | Permiso |
+| --- | --- | --- |
+| Elegir una foto de perfil | Selector del sistema: `ImagePicker.launchImageLibraryAsync()` | **Ninguno** |
+| Sacar una foto en el momento | Cámara del sistema: `ImagePicker.launchCameraAsync()` (o `CameraView` si necesito la vista en vivo) | **Cámara** |
+| Editor que muestra toda la galería | `expo-media-library` con su propia grilla | **Galería completa** (`READ_MEDIA_IMAGES` / `NSPhotoLibraryUsageDescription`), y en Play hay que justificarlo |
+| Adjuntar la foto de un comprobante | Selector del sistema: `launchImageLibraryAsync()` (o la cámara del sistema si lo saca en el momento) | **Ninguno** (o cámara) |
+
+En esta app, `/reporte/foto` es exactamente la primera y la segunda fila: "Elegir de la galería" no pide nada y "Sacar foto" reutiliza el permiso de cámara del escáner (M43 y M44).
+
+**¿Por qué Google Play restringe `READ_MEDIA_IMAGES` y `READ_MEDIA_VIDEO`?** Porque dan acceso a **todas** las fotos y videos de la persona, cuando la mayoría de las apps solo necesitan una foto puntual que la persona elige. Desde que existe el selector del sistema, pedir la galería entera para elegir una imagen es exceso de privilegio. La política de *Permisos de fotos y videos* exige que solo las apps cuya **función principal** necesita acceso amplio (galerías, editores, apps de respaldo) declaren esos permisos, con un formulario en Play Console. El resto tiene que usar el selector.
+
+**¿Desde cuándo?** Google anunció la política en 2023. Entre el 18 de septiembre de 2024 y el **22 de enero de 2025**, Play Console pidió a las apps con esos permisos que enviaran la declaración o los quitaran. Desde el 22 de enero de 2025, las apps sin declaración aprobada no pueden publicar actualizaciones (había una prórroga opcional hasta el 28 de mayo de 2025).
+
+**"El mejor permiso"** es **el que no hace falta pedir**: resolver la necesidad con una herramienta del sistema que no requiere permiso (el selector de fotos, el selector de contactos o de archivos). No hay diálogo que la persona pueda rechazar, no hay nada que justificar en las tiendas y no hay riesgo de privacidad. Por eso esta app no declara `READ_MEDIA_IMAGES` y además lo bloquea (M45).
+
+**Fuentes (E4):**
+
+- Google Play Console Help, *Photo and Video Permissions policy*: https://support.google.com/googleplay/android-developer/answer/14115180
+- Google Play Console Help, *Policy deadlines*: https://support.google.com/googleplay/android-developer/answer/9876714
+- Android Developers, *Photo picker*: https://developer.android.com/training/data-storage/shared/photopicker
+- Expo, *ImagePicker (SDK 57)*: https://docs.expo.dev/versions/v57.0.0/sdk/imagepicker/
+
+---
+
+## Parte F · Buenas prácticas y tiendas
+
+### F3. Mínimo privilegio
+
+**a) "Puntos de reciclaje de tu barrio" → ubicación aproximada.** Un barrio mide del orden de kilómetros, y la ubicación aproximada (unos 3 km²) alcanza para ordenar los puntos del más cercano al más lejano. La precisa no agrega nada útil y expone la dirección exacta de la persona.
+
+**b) "Registrar una carrera con el celular en el bolsillo" → "Siempre" (segundo plano).** Es el caso que justifica la opción más grande: con la pantalla apagada, la app sigue en segundo plano y "Mientras la app está en uso" no alcanza. Igual se pide **escalonado**: primero "en uso" y, recién cuando la persona activa el registro, "Siempre" (Parte E2), con la declaración que exige Google Play. La opción más chica es la que **alcanza**, no la más chica que existe.
+
+**c) "Subir la foto del DNI" → selector del sistema.** Se necesita **una** foto que la persona elige. El selector se la entrega sin dar acceso a la galería, y no hay permiso que pedir ni que justificar. Pedir la galería entera para un DNI sería además un riesgo: la app tendría acceso a todas las fotos personales. Esta app hace lo mismo con la foto del desperfecto (M43).
+
+**d) "Escanear el QR del aula" → `expo-camera` sin micrófono.** Leer un QR solo usa imágenes. Con `microphonePermission: false` y `recordAudioAndroid: false` (M22), la app no declara `NSMicrophoneUsageDescription` en iOS ni `RECORD_AUDIO` en Android, que además bloqueé (M45). Si la app declarara el micrófono sin usarlo, Apple podría rechazarla y la persona vería en Ajustes un permiso que no se explica.
