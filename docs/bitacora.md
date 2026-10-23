@@ -327,3 +327,32 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Por qué no probaste con `render(<NuevoReporte />)` directamente?* — Porque eso prueba el componente, no la ruta. `renderRouter` usa el mismo mapeo archivo → URL que la app real, que es lo que quiero verificar.
 - *¿Qué es `getSegments()`?* — Los segmentos de archivo que coincidieron con la URL. Para `/reporte/42` es `['reporte', '[id]']`: demuestra que la URL cayó en la ruta dinámica y no en otra.
 - *¿Qué es un mock?* — Un reemplazo falso de un módulo para el test. `jest.mock` hace que cualquier `import` de ese módulo reciba la versión falsa.
+
+---
+
+## M14 · Creé el tema y los componentes base
+
+**Qué hice**
+
+- `src/lib/tema.ts`: tokens de diseño (colores, espacios, radios y tipografía). Es un archivo sin React, por eso va en `lib`.
+- Componentes base en `src/components`:
+  - `Pantalla`: contenedor con fondo, márgenes y scroll (o sin scroll, para la cámara o listas).
+  - `Texto`: variantes `titulo`, `subtitulo`, `cuerpo` y `secundario`. Los títulos se anuncian como encabezado (`accessibilityRole="header"`).
+  - `Boton`: variantes `primario`, `secundario` y `peligro`, con estados deshabilitado y cargando. Alto mínimo de 48 px, rol `button` y etiqueta accesible.
+  - `Campo`: etiqueta + `TextInput` + mensaje de error. Lo uso en el formulario de M17.
+  - `Tarjeta` y `Enlace`.
+- Pasé todas las pantallas provisorias a estos componentes y apliqué el color primario a encabezados y tabs.
+- Tests de `Boton` (responde al toque, no responde deshabilitado ni cargando) y de `Campo`. Borré el test de inicio de M06 porque la pantalla ya la cubre el test de rutas.
+
+**Por qué**
+
+- Antes cada pantalla repetía el mismo `StyleSheet`. Con los componentes, cambiar el color primario o el margen se hace en un solo lugar.
+- Los tokens van a facilitar el modo oscuro (M74): alcanza con tener un segundo juego de colores.
+- La accesibilidad empieza acá: si `Boton` ya tiene rol, etiqueta y estado, todas las pantallas lo heredan. En la pantalla previa el botón "Continuar" va a ser un `Boton` primario.
+- En los tests busco por rol y nombre (`getByRole('button', { name: 'Continuar' })`), igual que un lector de pantalla. Si el botón no fuera accesible, el test no lo encontraría.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `Pressable` y no `TouchableOpacity`?* — `Pressable` es el componente actual de React Native para toques: da el estado `pressed` para el estilo y es más configurable. `TouchableOpacity` sigue existiendo pero se considera legado.
+- *¿Por qué 48 px de alto mínimo?* — Es el área táctil mínima recomendada por Material Design (48 dp). Apple recomienda 44 pt. Con 48 se cumplen las dos.
+- *¿Qué hace `accessibilityState={{ disabled, busy }}`?* — Le avisa al lector de pantalla (TalkBack o VoiceOver) que el botón está deshabilitado o procesando.

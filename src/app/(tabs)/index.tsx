@@ -1,35 +1,14 @@
-import { Link } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Enlace } from '@/components/Enlace';
+import { Pantalla } from '@/components/Pantalla';
+import { Texto } from '@/components/Texto';
 
 export default function Reportes() {
   return (
-    <View style={styles.contenedor}>
-      <Text style={styles.titulo}>Mis reportes</Text>
-      <Text>Todavía no cargaste ningún reporte.</Text>
-      <Link href="/reporte/nuevo" style={styles.enlace}>
-        Nuevo reporte
-      </Link>
-      <Link href="/ajustes-app" style={styles.enlace}>
-        Ajustes de la app
-      </Link>
-    </View>
+    <Pantalla centrada>
+      <Texto variante="titulo">Mis reportes</Texto>
+      <Texto>Todavía no cargaste ningún reporte.</Texto>
+      <Enlace href="/reporte/nuevo">Nuevo reporte</Enlace>
+      <Enlace href="/ajustes-app">Ajustes de la app</Enlace>
+    </Pantalla>
   );
 }
-
-const styles = StyleSheet.create({
-  contenedor: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  titulo: {
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  enlace: {
-    color: '#1565C0',
-    fontSize: 16,
-    paddingVertical: 8,
-  },
-});

@@ -1,8 +1,14 @@
 import { Stack } from 'expo-router';
 
+import { colores } from '@/lib/tema';
+
 export default function RootLayout() {
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        headerTintColor: colores.primario,
+        contentStyle: { backgroundColor: colores.fondo },
+      }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="reporte/nuevo" options={{ title: 'Nuevo reporte' }} />
       <Stack.Screen name="reporte/escanear" options={{ title: 'Escanear aula' }} />

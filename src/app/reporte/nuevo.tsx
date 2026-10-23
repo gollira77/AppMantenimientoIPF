@@ -1,24 +1,11 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pantalla } from '@/components/Pantalla';
+import { Texto } from '@/components/Texto';
 
 export default function NuevoReporte() {
   return (
-    <View style={styles.contenedor}>
-      <Text style={styles.titulo}>Nuevo reporte</Text>
-      <Text>Acá va el formulario del reporte.</Text>
-    </View>
+    <Pantalla centrada>
+      <Texto variante="titulo">Nuevo reporte</Texto>
+      <Texto>Acá va el formulario del reporte.</Texto>
+    </Pantalla>
   );
 }
-
-const styles = StyleSheet.create({
-  contenedor: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    padding: 16,
-  },
-  titulo: {
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-});

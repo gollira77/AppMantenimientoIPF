@@ -2,6 +2,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router/js-tabs';
 import type { ColorValue } from 'react-native';
 
+import { colores } from '@/lib/tema';
+
 type NombreIcono = keyof typeof Ionicons.glyphMap;
 
 function icono(nombre: NombreIcono) {
@@ -13,7 +15,11 @@ function icono(nombre: NombreIcono) {
 
 export default function TabsLayout() {
   return (
-    <Tabs>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: colores.primario,
+        tabBarInactiveTintColor: colores.textoSecundario,
+      }}>
       <Tabs.Screen name="index" options={{ title: 'Reportes', tabBarIcon: icono('construct') }} />
       <Tabs.Screen
         name="avisos"

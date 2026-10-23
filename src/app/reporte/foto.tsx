@@ -1,24 +1,11 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pantalla } from '@/components/Pantalla';
+import { Texto } from '@/components/Texto';
 
 export default function FotoReporte() {
   return (
-    <View style={styles.contenedor}>
-      <Text style={styles.titulo}>Foto del desperfecto</Text>
-      <Text>Acá se saca o se elige la foto.</Text>
-    </View>
+    <Pantalla centrada>
+      <Texto variante="titulo">Foto del desperfecto</Texto>
+      <Texto>Acá se saca o se elige la foto.</Texto>
+    </Pantalla>
   );
 }
-
-const styles = StyleSheet.create({
-  contenedor: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    padding: 16,
-  },
-  titulo: {
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-});
