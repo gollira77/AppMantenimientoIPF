@@ -39,3 +39,21 @@ RESPUESTAS.md   respuestas a las Partes A–F del TP
 - `main` solo recibe el merge final con el tag `v1.0.0`.
 
 > Este README se completa en el módulo M76 con el árbol final, los plugins, la tabla de permisos y las capturas.
+
+## Permisos bloqueados en Android (`blockedPermissions`)
+
+`app.json` bloquea con `android.blockedPermissions` los permisos que la app **no usa**. Expo los agrega al manifiesto con `tools:node="remove"`, así ninguna librería los puede sumar al fusionar los manifiestos. Lo verifica el test `src/__tests__/permisosNativos.test.ts` con `expo config --type introspect`, y también se puede ver con `npm run permisos:nativos`.
+
+| Permiso bloqueado | Quién lo agregaría | Por qué no lo necesito |
+| --- | --- | --- |
+| `SYSTEM_ALERT_WINDOW` | Expo, por defecto | Sirve para dibujar sobre otras apps. La app nunca muestra ventanas flotantes. |
+| `READ_EXTERNAL_STORAGE` | `expo-image-picker` y `expo-file-system` (hasta API 32) | Las fotos se eligen con el selector del sistema, que no necesita permiso, y la app solo guarda archivos en su carpeta privada. |
+| `WRITE_EXTERNAL_STORAGE` | `expo-image-picker` y `expo-file-system` (hasta API 32) | La app no escribe en el almacenamiento compartido. La cámara del sistema guarda la foto en el caché de la app. |
+| `READ_MEDIA_IMAGES` | Ninguna hoy (lo bloqueo por las dudas) | La consigna pide no declararlo: la foto sale del selector del sistema. Además, Google Play lo restringe a apps cuya función principal es la galería. |
+| `READ_MEDIA_VIDEO` | Ninguna hoy | La app no trabaja con videos. |
+| `READ_MEDIA_AUDIO` | Ninguna hoy | La app no lee archivos de audio. |
+| `READ_MEDIA_VISUAL_USER_SELECTED` | Ninguna hoy | Es el acceso parcial a fotos de Android 14. Con el selector del sistema no hace falta. |
+| `ACCESS_BACKGROUND_LOCATION` | `expo-location` si se activa el segundo plano | La ubicación se usa solo con la app abierta, al reportar. Google Play exige una justificación especial para pedirlo. |
+| `RECORD_AUDIO` | `expo-camera` y `expo-image-picker` (para grabar video) | La app no graba audio ni video. Se habilita recién en M73 para la nota de voz. |
+
+Permisos que **sí** quedan: `INTERNET` (instalación), `VIBRATE` (instalación, para las notificaciones), `CAMERA` (escáner y foto) y `ACCESS_COARSE_LOCATION` / `ACCESS_FINE_LOCATION` (ubicación en primer plano).

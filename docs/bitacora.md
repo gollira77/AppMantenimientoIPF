@@ -1256,3 +1256,34 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *¿`launchCameraAsync` y `CameraView` comparten el permiso?* — Sí. Los dos usan el permiso `CAMERA` en Android y `NSCameraUsageDescription` en iOS. El sistema no sabe qué módulo lo usa: el permiso es de la app.
 - *¿Por qué no usar `useCameraPermissions` de `expo-image-picker`?* — Porque `usePermiso('camara')` ya consulta el mismo permiso y me da los cuatro estados. Usar otro hook duplicaría la lógica que unifiqué en M36.
 - *¿Qué diferencia hay entre `launchCameraAsync` y `CameraView`?* — `launchCameraAsync` abre la app de cámara del sistema y devuelve la foto: es ideal para sacar una foto y listo. `CameraView` es una vista dentro de mi pantalla, que necesito para leer el QR en vivo.
+
+---
+
+## M45 · Bloqueé los permisos que la app no usa y lo verifiqué con un test
+
+**Qué hice**
+
+- `android.blockedPermissions` en `app.json` con nueve permisos: `SYSTEM_ALERT_WINDOW`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO`, `READ_MEDIA_VISUAL_USER_SELECTED`, `ACCESS_BACKGROUND_LOCATION` y `RECORD_AUDIO`.
+- En el README, una tabla que justifica **cada uno**: quién lo agregaría y por qué la app no lo necesita (lo pide la consigna).
+- `scripts/permisos-nativos.js` ahora exporta `leerPermisosNativos()`, así lo usan el comando y el test.
+- `src/__tests__/permisosNativos.test.ts`:
+  - **estático:** `app.json` bloquea exactamente esos nueve y no agrega permisos a mano;
+  - **con introspect** (corre los plugins de verdad):
+    - en Android solo quedan activos `INTERNET`, `VIBRATE`, `CAMERA`, `ACCESS_COARSE_LOCATION` y `ACCESS_FINE_LOCATION`;
+    - los nueve bloqueados aparecen con `tools:node="remove"`;
+    - en iOS solo hay dos textos de propósito (cámara y ubicación en uso);
+    - no hay modos de segundo plano.
+
+**Por qué**
+
+- **Mínimo privilegio:** cada permiso declarado es algo que la persona ve en la ficha de Play Store y que Google revisa. Si no lo uso, no lo declaro.
+- `blockedPermissions` no solo "no agrega": escribe `tools:node="remove"`. Eso le ordena a Gradle **sacar** el permiso aunque lo traiga una librería al fusionar los manifiestos. Es la única forma de garantizar que `READ_EXTERNAL_STORAGE` de `expo-file-system` no llegue al APK.
+- Bloqueo también permisos que **hoy** ninguna librería agrega (`READ_MEDIA_*`). Si mañana una actualización los suma, el bloqueo los saca igual y el test avisa.
+- El test con introspect convierte la auditoría de permisos en algo automático: si alguien agrega un plugin que suma un permiso, el CI falla y obliga a decidir a conciencia si lo bloquea o lo justifica.
+- Dejo `VIBRATE`: es de instalación y lo usan las notificaciones (M57).
+
+**Qué podría preguntar el docente**
+
+- *¿Funciona `blockedPermissions` en Expo Go?* — No. Expo Go es una app ya compilada con su propio manifiesto. `blockedPermissions` modifica el manifiesto de **mi** build, así que solo se ve en una development build o en producción (M67).
+- *¿Por qué no simplemente borrar el permiso del `AndroidManifest.xml`?* — Porque en Expo ese archivo se regenera desde `app.json` en cada `prebuild`. Y aunque lo borrara, el de la librería volvería a entrar al fusionar.
+- *¿Qué pasa en M73, cuando necesite el micrófono?* — Saco `RECORD_AUDIO` de la lista, configuro el plugin de audio y hago una build nueva. El test se actualiza en ese mismo módulo, a propósito.
