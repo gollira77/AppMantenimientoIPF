@@ -68,6 +68,12 @@ export default function NuevoReporte() {
         pista="Abre la cámara para leer el código pegado en la puerta"
         onPress={() => router.push('/reporte/escanear')}
       />
+      <Boton
+        titulo={borrador.ubicacion ? 'Ubicación agregada ✓' : 'Agregar ubicación (opcional)'}
+        variante="secundario"
+        pista="Usa la ubicación del celular para indicar dónde está el desperfecto"
+        onPress={() => router.push('/reporte/ubicacion')}
+      />
       <SelectorCategoria
         valor={borrador.categoria}
         onCambiar={(categoria) => actualizar({ categoria })}

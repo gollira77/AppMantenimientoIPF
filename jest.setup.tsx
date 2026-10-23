@@ -21,3 +21,13 @@ jest.mock('react-native-qrcode-svg', () => {
     default: ({ value }: { value: string }) => <Text>{`qr:${value}`}</Text>,
   };
 });
+
+// En Node no hay GPS. Por defecto el permiso queda "cargando" (null).
+jest.mock('expo-location', () => ({
+  useForegroundPermissions: jest.fn(() => [null, jest.fn(), jest.fn()]),
+  getForegroundPermissionsAsync: jest.fn(),
+  requestForegroundPermissionsAsync: jest.fn(),
+  getCurrentPositionAsync: jest.fn(),
+  Accuracy: { Lowest: 1, Low: 2, Balanced: 3, High: 4, Highest: 5, BestForNavigation: 6 },
+  PermissionStatus: { GRANTED: 'granted', DENIED: 'denied', UNDETERMINED: 'undetermined' },
+}));

@@ -24,6 +24,13 @@ export const esquemaReporte = z.object({
     .max(12, { error: 'El código de aula es demasiado largo.' })
     .regex(PATRON_AULA, { error: 'Usá letras, números y guiones, por ejemplo B12.' }),
   categoria: z.enum(CATEGORIAS, { error: 'Elegí una categoría.' }),
+  // Opcional: un permiso denegado nunca impide crear el reporte.
+  ubicacion: z
+    .object({
+      latitud: z.number().min(-90).max(90),
+      longitud: z.number().min(-180).max(180),
+    })
+    .nullish(),
 });
 
 export type DatosReporte = z.infer<typeof esquemaReporte>;

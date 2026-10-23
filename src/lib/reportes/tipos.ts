@@ -6,6 +6,11 @@ export type Categoria = (typeof CATEGORIAS)[number];
 export const ESTADOS = ['pendiente', 'en_proceso', 'resuelto'] as const;
 export type Estado = (typeof ESTADOS)[number];
 
+export type Ubicacion = {
+  latitud: number;
+  longitud: number;
+};
+
 export type Reporte = {
   id: string;
   titulo: string;
@@ -16,6 +21,8 @@ export type Reporte = {
   estado: Estado;
   /** Fecha de creación en formato ISO 8601. */
   creadoEn: string;
+  /** Opcional: solo si la persona compartió su ubicación. */
+  ubicacion?: Ubicacion | null;
 };
 
 export const ETIQUETA_CATEGORIA: Record<Categoria, string> = {

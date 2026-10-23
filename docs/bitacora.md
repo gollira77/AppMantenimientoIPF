@@ -875,3 +875,31 @@ Después de M26 y M28 el escáner leía el aula (o la recibía escrita), pero mo
 - *¿Por qué no `locationAlwaysAndWhenInUsePermission`?* — Esa clave es para pedir "Siempre" en iOS. Sin ella, aunque el código lo intentara, iOS no podría pedirlo. Es una protección extra.
 - *¿Qué es un servicio en primer plano (foreground service)?* — En Android, la forma de seguir trabajando (por ejemplo, rastrear la ubicación) con una notificación fija mientras la app no está a la vista. Esta app no lo necesita.
 - *¿Por qué el texto habla del sector del instituto?* — Porque el molde pide un beneficio concreto: la ubicación sirve para saber dónde está el desperfecto, no "para mejorar la experiencia".
+
+---
+
+## M33 · Pedí la ubicación en /reporte/ubicacion
+
+**Qué hice**
+
+- `/reporte/ubicacion` usa `Location.useForegroundPermissions()` con **la misma estructura de cuatro estados que el escáner**, copiada a propósito:
+  1. **cargando:** "Consultando el permiso de ubicación…";
+  2. **concedido:** botón "Tomar mi ubicación" → `getCurrentPositionAsync({ accuracy: Balanced })` → muestra las coordenadas y "Usar esta ubicación", que las guarda en el borrador y vuelve al formulario;
+  3. **preguntable:** explicación con el molde + "Continuar". Si la persona dice que no, "Seguimos sin ubicación" y un botón para volver;
+  4. **bloqueado:** "Abrir Ajustes" y "Volver al reporte".
+- El modelo suma una `ubicacion` **opcional** (`Ubicacion = { latitud, longitud }`) en el tipo `Reporte`, en el borrador y en el esquema de zod (`nullish`, con latitud y longitud en rango).
+- En el formulario, botón "Agregar ubicación (opcional)", que pasa a "Ubicación agregada ✓" cuando ya hay una.
+- Si el GPS falla (apagado o sin señal), aviso con un mensaje y no rompo la pantalla: no es un problema de permiso.
+- Mock global de `expo-location` en `jest.setup.tsx` y tests de los cuatro estados, del GPS fallando y de la ubicación guardada en el borrador.
+
+**Por qué**
+
+- La consigna pide duplicar la lógica de la cámara **a propósito**, para sentir el problema antes de resolverlo. Y se siente: `escanear.tsx` y `ubicacion.tsx` repiten los mismos `if (!permiso)`, `if (permiso.granted)`, `if (permiso.canAskAgain)`, el mismo `denegadaAhora` y el mismo "Abrir Ajustes". Si mañana cambia la regla de cuándo un permiso está "bloqueado", tengo que acordarme de cambiarla en dos lugares (y pronto en tres, con la foto). Lo resuelvo en M34 y M36.
+- La ubicación es **opcional** en el esquema: la regla 7 dice que ningún permiso denegado puede impedir crear un reporte. Con el aula alcanza.
+- `Accuracy.Balanced` (unos 100 m) alcanza para ubicar el edificio y gasta menos batería que `High`.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué diferencia hay entre `useForegroundPermissions` y `getCurrentPositionAsync`?* — El primero maneja el **permiso** (consultar o pedir). El segundo lee la **posición**, y solo funciona si el permiso ya está concedido.
+- *¿Por qué atrapás el error de `getCurrentPositionAsync`?* — Porque puede fallar aunque haya permiso: GPS apagado, interior sin señal o tiempo agotado. La app avisa y deja reintentar.
+- *¿Qué pasa en iOS si la persona elige "Permitir una vez"?* — El permiso vale para esta sesión. Cuando la app se cierra, vuelve a "sin decidir" y la próxima vez aparece el diálogo de nuevo.

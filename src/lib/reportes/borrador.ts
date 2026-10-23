@@ -1,4 +1,4 @@
-import type { Categoria } from '@/lib/reportes/tipos';
+import type { Categoria, Ubicacion } from '@/lib/reportes/tipos';
 
 /** Lo que la persona va cargando en el formulario, todavía sin validar. */
 export type Borrador = {
@@ -6,6 +6,7 @@ export type Borrador = {
   descripcion: string;
   aula: string;
   categoria: Categoria | null;
+  ubicacion: Ubicacion | null;
 };
 
 export const BORRADOR_VACIO: Borrador = {
@@ -13,4 +14,5 @@ export const BORRADOR_VACIO: Borrador = {
   descripcion: '',
   aula: '',
   categoria: null,
+  ubicacion: null,
 };
