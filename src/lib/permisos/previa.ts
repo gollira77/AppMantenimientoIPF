@@ -11,15 +11,20 @@ type TextoPrevia = {
   titulo: string;
   /** El beneficio concreto, en una frase. */
   beneficio: string;
+  /** Qué ve la persona si el permiso está bloqueado y solo se cambia desde Ajustes. */
+  comoHabilitar: string;
 };
 
 export const TEXTOS_PREVIA: Record<Recurso, TextoPrevia> = {
   camara: {
     titulo: 'Usar la cámara',
     beneficio: 'Usamos tu cámara para leer el QR del aula y sacar la foto del desperfecto.',
+    comoHabilitar: 'La cámara está desactivada. Habilitala para esta app en Ajustes y volvé acá.',
   },
   ubicacion: {
     titulo: 'Usar tu ubicación',
     beneficio: 'Usamos tu ubicación para saber en qué sector del instituto está el desperfecto.',
+    comoHabilitar:
+      'La ubicación está desactivada. Habilitala para esta app en Ajustes y volvé acá.',
   },
 };

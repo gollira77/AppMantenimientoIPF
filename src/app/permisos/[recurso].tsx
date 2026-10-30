@@ -17,8 +17,8 @@ function cerrar() {
 }
 
 function Previa({ recurso }: { recurso: Recurso }) {
-  const { estado, pedir } = usePermiso(recurso);
-  const { titulo, beneficio } = TEXTOS_PREVIA[recurso];
+  const { estado, pedir, abrirAjustes } = usePermiso(recurso);
+  const { titulo, beneficio, comoHabilitar } = TEXTOS_PREVIA[recurso];
 
   async function continuar() {
     await pedir();
@@ -27,6 +27,17 @@ function Previa({ recurso }: { recurso: Recurso }) {
 
   if (estado === 'cargando') {
     return <Cargando mensaje="Consultando el permiso…" />;
+  }
+
+  // Bloqueado: el sistema ya no muestra el diálogo, así que "Continuar" no haría nada.
+  if (estado === 'bloqueado') {
+    return (
+      <Pantalla centrada>
+        <Texto variante="titulo">{titulo}</Texto>
+        <Texto>{comoHabilitar}</Texto>
+        <Boton titulo="Abrir Ajustes" onPress={abrirAjustes} />
+      </Pantalla>
+    );
   }
 
   // Un único botón: el "no" se le da al sistema, no a esta pantalla (pauta 5.1.1(iv) de Apple).

@@ -26,6 +26,26 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
+describe('Pantalla previa con el permiso bloqueado', () => {
+  it('explica cómo habilitarlo y el botón pasa a ser Abrir Ajustes', () => {
+    abrir('camara', 'bloqueado');
+
+    expect(screen.getByText(TEXTOS_PREVIA.camara.comoHabilitar)).toBeTruthy();
+    expect(screen.getAllByRole('button').map((b) => b.props.accessibilityLabel)).toEqual([
+      'Abrir Ajustes',
+    ]);
+  });
+
+  it('Abrir Ajustes abre los Ajustes y no pide el permiso', () => {
+    const permiso = abrir('ubicacion', 'bloqueado');
+
+    fireEvent.press(screen.getByRole('button', { name: 'Abrir Ajustes' }));
+
+    expect(permiso.abrirAjustes).toHaveBeenCalled();
+    expect(permiso.pedir).not.toHaveBeenCalled();
+  });
+});
+
 describe('Pantalla previa', () => {
   it('muestra el beneficio y aclara que se puede cambiar en Ajustes', () => {
     abrir('camara', 'preguntable');

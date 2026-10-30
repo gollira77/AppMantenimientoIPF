@@ -1381,3 +1381,23 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M50 · Mostré Abrir Ajustes en la pantalla previa si está bloqueado
+
+**Qué hice**
+
+- Agregué `comoHabilitar` a los textos de cada recurso.
+- Si `estado` es `bloqueado`, la pantalla previa explica cómo habilitarlo y su único botón pasa a ser "Abrir Ajustes".
+- Dos tests nuevos: el botón cambia y al tocarlo no se llama a `pedir()`.
+
+**Por qué**
+
+- Con el permiso bloqueado, `pedir()` contesta `denied` sin mostrar nada (paso 4 de D4). Un botón "Continuar" parecería roto.
+- El único camino que queda es Ajustes, y al volver M47 actualiza el estado solo.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no mostrar siempre "Abrir Ajustes"?* — Porque mientras el sistema pueda preguntar, el diálogo es un camino más corto. Ajustes es el último recurso.
+- *¿Y si la persona habilita el permiso y vuelve?* — `AppState` relee el estado, la pantalla pasa a "Continuar" y `pedir()` contesta `granted` sin mostrar diálogo. Se cierra sola al tocar el botón.
+
+---
+
