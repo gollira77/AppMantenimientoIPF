@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { act } from 'react';
-import { Text } from 'react-native';
+import { Platform, Text } from 'react-native';
 
 import FotoReporte from '@/app/reporte/foto';
 import { useBorrador } from '@/hooks/useBorrador';
@@ -118,6 +118,38 @@ describe('Foto desde la galería (sin permiso)', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Quitar la foto' }));
 
     expect(screen.queryByLabelText('Foto elegida del desperfecto')).toBeNull();
+  });
+});
+
+describe('Sacar foto en web', () => {
+  const plataformaReal = Platform.OS;
+
+  beforeEach(() => {
+    Platform.OS = 'web';
+  });
+
+  afterEach(() => {
+    Platform.OS = plataformaReal;
+  });
+
+  it('abre la cámara dentro de la app y no el selector de archivos', async () => {
+    conCamara('concedido');
+    renderFoto();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Sacar foto' }));
+
+    expect(await screen.findByRole('button', { name: 'Tomar foto' })).toBeTruthy();
+    expect(ImagePicker.launchCameraAsync).not.toHaveBeenCalled();
+  });
+
+  it('Cancelar vuelve a las opciones', async () => {
+    conCamara('concedido');
+    renderFoto();
+    fireEvent.press(screen.getByRole('button', { name: 'Sacar foto' }));
+
+    fireEvent.press(await screen.findByRole('button', { name: 'Cancelar' }));
+
+    expect(await screen.findByRole('button', { name: 'Sacar foto' })).toBeTruthy();
   });
 });
 

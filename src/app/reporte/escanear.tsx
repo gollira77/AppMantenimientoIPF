@@ -6,6 +6,7 @@ import { Boton } from '@/components/Boton';
 import { Cargando } from '@/components/Cargando';
 import { IngresoAulaManual } from '@/components/IngresoAulaManual';
 import { Pantalla } from '@/components/Pantalla';
+import { ProblemaCamara } from '@/components/ProblemaCamara';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
 import { usePantallaPrevia } from '@/hooks/usePantallaPrevia';
@@ -20,6 +21,9 @@ export default function EscanearAula() {
   const { actualizar } = useBorrador();
   // Solo guardo en pantalla las lecturas que no sirven; un aula válida va directo al borrador.
   const [qrAjeno, setQrAjeno] = useState(false);
+  // El permiso está dado, pero la cámara puede fallar igual: ocupada, desconectada o bloqueada.
+  const [errorCamara, setErrorCamara] = useState<string | null>(null);
+  const [intento, setIntento] = useState(0);
   // La cámara dispara el evento muchas veces por segundo mientras el QR está enfocado.
   // El ref corta en la primera lectura, antes de que React vuelva a dibujar.
   const yaLeido = useRef(false);
@@ -63,11 +67,29 @@ export default function EscanearAula() {
     return <Cargando mensaje="Consultando el permiso de la cámara…" />;
   }
 
+  // 2. Concedido, pero la cámara no arrancó: lo digo y dejo escribir el aula.
+  if (estado === 'concedido' && errorCamara) {
+    return (
+      <Pantalla>
+        <ProblemaCamara
+          detalle={errorCamara}
+          onReintentar={() => {
+            setErrorCamara(null);
+            setIntento(intento + 1);
+          }}
+        />
+        {cargaManual}
+      </Pantalla>
+    );
+  }
+
   // 2. Concedido: muestro la cámara.
   if (estado === 'concedido') {
     return (
       <View style={estilos.contenedor}>
         <CameraView
+          key={intento}
+          onMountError={({ message }) => setErrorCamara(message)}
           style={estilos.camara}
           facing="back"
           barcodeScannerSettings={{ barcodeTypes: ['qr'] }}

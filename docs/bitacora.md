@@ -1888,3 +1888,27 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## Web · Saqué la foto con la cámara en vivo y mostré por qué falla la cámara
+
+**Qué hice**
+
+- `src/components/CamaraEnVivo.tsx`: `CameraView` con "Tomar foto" y "Cancelar", para web.
+- `/reporte/foto`: en web abre esa cámara. En Android e iOS sigue usando la cámara del sistema.
+- `src/components/ProblemaCamara.tsx`: si la cámara no arranca, muestra el motivo y "Reintentar". El escáner escucha `onMountError` y además ofrece escribir el aula.
+- `src/lib/fotos/reducir.web.ts`: en web achica la foto antes de guardarla.
+
+**Por qué**
+
+- **Problema real 1:** en una compu, `launchCameraAsync` abre el selector de archivos. Por eso "Sacar foto" parecía abrir la galería.
+- **Problema real 2:** con el permiso concedido, la cámara igual puede fallar: otra app la está usando o está desconectada. El código ignoraba `onMountError` y quedaba una pantalla negra, sin explicación.
+- Un permiso concedido **no garantiza** que el recurso funcione. Son dos fallas distintas, y solo una se resuelve en Ajustes.
+- En web, la foto es texto base64 guardado en `localStorage`, que tiene pocos MB. Sin achicarla, una foto grande llenaría el espacio y dejarían de guardarse los reportes sin ningún aviso.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no usar `CameraView` también en el celular?* — Porque la cámara del sistema ya resuelve enfoque, flash y previsualización. El cambio es solo para donde no existe esa cámara.
+- *¿Hace falta algo para usar la cámara en web?* — El navegador solo la habilita en HTTPS o en `localhost`.
+- *¿Por qué dos archivos `reducir`?* — Porque Metro elige por plataforma, y el celular no tiene `canvas` ni necesita achicar nada.
+
+---
+

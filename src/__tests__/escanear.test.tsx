@@ -14,11 +14,20 @@ jest.mock('@/hooks/usePermiso');
 
 jest.mock('expo-camera', () => ({
   // La cámara simulada tiene dos botones que disparan lecturas, como si enfocara un QR.
-  CameraView: ({ onBarcodeScanned }: { onBarcodeScanned?: (r: { data: string }) => void }) => {
+  CameraView: ({
+    onBarcodeScanned,
+    onMountError,
+  }: {
+    onBarcodeScanned?: (r: { data: string }) => void;
+    onMountError?: (e: { message: string }) => void;
+  }) => {
     const { Pressable, Text: TextoMock, View } = jest.requireActual('react-native');
     return (
       <View>
         <TextoMock>vista de cámara</TextoMock>
+        <Pressable onPress={() => onMountError?.({ message: 'Device in use' })}>
+          <TextoMock>fallar al abrir</TextoMock>
+        </Pressable>
         <Pressable onPress={() => onBarcodeScanned?.({ data: 'IPF-AULA:B12' })}>
           <TextoMock>leer QR de aula</TextoMock>
         </Pressable>
@@ -135,6 +144,29 @@ describe('Escáner: no insistir después de un no (M52)', () => {
     renderEscaner();
 
     expect(router.push).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('Escáner: la cámara no arranca', () => {
+  beforeEach(() => {
+    conPermiso('concedido');
+    renderEscaner();
+    fireEvent.press(screen.getByText('fallar al abrir'));
+  });
+
+  it('muestra el motivo en lugar de una pantalla negra', () => {
+    expect(screen.getByText('No pudimos abrir la cámara')).toBeTruthy();
+    expect(screen.getByText('Detalle: Device in use')).toBeTruthy();
+  });
+
+  it('deja escribir el aula', () => {
+    expect(screen.getByLabelText('Código del aula')).toBeTruthy();
+  });
+
+  it('Reintentar vuelve a la cámara', () => {
+    fireEvent.press(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(screen.getByText('vista de cámara')).toBeTruthy();
   });
 });
 

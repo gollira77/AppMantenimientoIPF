@@ -1,14 +1,16 @@
 import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Image, StyleSheet } from 'react-native';
+import { Image, Platform, StyleSheet } from 'react-native';
 
 import { Boton } from '@/components/Boton';
+import { CamaraEnVivo } from '@/components/CamaraEnVivo';
 import { Pantalla } from '@/components/Pantalla';
 import { Tarjeta } from '@/components/Tarjeta';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
 import { usePermiso } from '@/hooks/usePermiso';
+import { reducirFoto } from '@/lib/fotos/reducir';
 import { volver } from '@/lib/navegacion';
 import { radio } from '@/lib/tema';
 
@@ -20,30 +22,45 @@ export default function FotoReporte() {
   // Es el mismo permiso de cámara que usa el escáner: si ya se dio ahí, acá no se vuelve a pedir.
   const camara = usePermiso('camara');
   const [sinCamara, setSinCamara] = useState(false);
+  const [camaraAbierta, setCamaraAbierta] = useState(false);
   // La persona tocó "Sacar foto" y fue a la pantalla previa: al volver, retomo desde acá.
   const queriaSacarFoto = useRef(false);
 
-  const guardarResultado = useCallback(
-    (resultado: ImagePicker.ImagePickerResult) => {
-      if (!resultado.canceled && resultado.assets[0]) {
-        const nueva = resultado.assets[0].uri;
-        setUri(nueva);
-        actualizar({ fotoUri: nueva });
-      }
+  const guardarFoto = useCallback(
+    async (original: string) => {
+      const nueva = await reducirFoto(original);
+      setUri(nueva);
+      actualizar({ fotoUri: nueva });
     },
     [actualizar],
+  );
+
+  const guardarResultado = useCallback(
+    async (resultado: ImagePicker.ImagePickerResult) => {
+      if (!resultado.canceled && resultado.assets[0]) {
+        await guardarFoto(resultado.assets[0].uri);
+      }
+    },
+    [guardarFoto],
   );
 
   async function elegirDeGaleria() {
     // El selector del sistema corre fuera de la app: la persona elige una foto y
     // el sistema nos da solo esa. No hace falta (ni se pide) permiso de galería.
-    guardarResultado(
+    await guardarResultado(
       await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 }),
     );
   }
 
   const abrirCamara = useCallback(async () => {
-    guardarResultado(await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 }));
+    // En una compu, launchCameraAsync abre el selector de archivos: la cámara va dentro de la app.
+    if (Platform.OS === 'web') {
+      setCamaraAbierta(true);
+      return;
+    }
+    await guardarResultado(
+      await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 }),
+    );
   }, [guardarResultado]);
 
   useFocusEffect(
@@ -77,6 +94,18 @@ export default function FotoReporte() {
   function quitarFoto() {
     setUri(null);
     actualizar({ fotoUri: null });
+  }
+
+  if (camaraAbierta) {
+    return (
+      <CamaraEnVivo
+        onFoto={(foto) => {
+          setCamaraAbierta(false);
+          void guardarFoto(foto);
+        }}
+        onCancelar={() => setCamaraAbierta(false)}
+      />
+    );
   }
 
   return (
