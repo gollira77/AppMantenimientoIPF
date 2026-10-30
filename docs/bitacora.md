@@ -1401,3 +1401,28 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M51 · Conecté cada función con su pantalla previa
+
+**Qué hice**
+
+- `src/hooks/usePantallaPrevia.ts`: cuando una pantalla recibe el foco con el permiso en `preguntable`, abre `/permisos/[recurso]`.
+- El escáner y la ubicación dejaron de tener su propia explicación. Debajo del modal queda la alternativa: escribir el aula o elegir el sector, con un botón para volver a intentar.
+- "Sacar foto" abre la pantalla previa y, al volver, retoma: abre la cámara si dijo que sí o sugiere la galería si dijo que no.
+- `src/lib/permisos/difusion.ts`: `usePermiso` ahora publica cada respuesta nueva a todas las instancias del mismo recurso.
+- `src/test-utils/routerSimulado.ts`: reemplazo de `expo-router` con `useFocusEffect` y `volverAlFoco()`.
+
+**Por qué**
+
+- Antes había tres explicaciones distintas, cada una escrita a mano en su pantalla. Ahora hay una sola y todas las funciones pasan por ella.
+- **Problema que apareció:** cada pantalla tiene su propia instancia de `usePermiso`. Si el modal consigue el permiso, la pantalla de abajo no se entera, porque sigue teniendo la respuesta vieja. La difusión lo resuelve: quien averigua algo se lo cuenta a las demás instancias del recurso.
+- Uso `useFocusEffect` y no `useEffect` porque el modal no desmonta la pantalla de abajo: al cerrarlo solo recupera el foco.
+- **Defecto que deja este módulo:** después de un "no", la pantalla recupera el foco, sigue en `preguntable` y la previa se abre otra vez. Lo corrijo en M52.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no un contexto para los permisos?* — Porque el sistema operativo ya guarda el permiso. Solo necesito avisar que algo cambió, no guardar una copia global. Con una lista de oyentes alcanza.
+- *¿El escáner sigue teniendo cuatro estados?* — Sí: cargando, cámara, explicación con "Continuar" (que ahora es la pantalla previa) y bloqueado con "Abrir Ajustes".
+- *¿Por qué `queriaSacarFoto` es un `useRef` y no estado?* — Porque es una nota interna entre dos momentos: no cambia nada de lo que se dibuja, así que no tiene que provocar un render.
+
+---
+

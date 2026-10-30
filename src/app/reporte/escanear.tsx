@@ -9,17 +9,17 @@ import { IngresoAulaManual } from '@/components/IngresoAulaManual';
 import { Pantalla } from '@/components/Pantalla';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
+import { usePantallaPrevia } from '@/hooks/usePantallaPrevia';
 import { usePermiso } from '@/hooks/usePermiso';
 import { leerCodigoAula } from '@/lib/aulas/codigoQr';
 import { colores, espacio } from '@/lib/tema';
 
 export default function EscanearAula() {
-  const { estado, pedir, abrirAjustes } = usePermiso('camara');
+  const { estado, abrirAjustes } = usePermiso('camara');
+  const abrirPrevia = usePantallaPrevia('camara', estado);
   const { actualizar } = useBorrador();
   // Solo guardo en pantalla las lecturas que no sirven; un aula válida va directo al borrador.
   const [qrAjeno, setQrAjeno] = useState(false);
-  // Si la persona dijo que no en esta visita, paso directo a la carga manual.
-  const [denegadaAhora, setDenegadaAhora] = useState(false);
   // La cámara dispara el evento muchas veces por segundo mientras el QR está enfocado.
   // El ref corta en la primera lectura, antes de que React vuelva a dibujar.
   const yaLeido = useRef(false);
@@ -48,11 +48,6 @@ export default function EscanearAula() {
   function escanearOtraVez() {
     yaLeido.current = false;
     setQrAjeno(false);
-  }
-
-  async function continuar() {
-    const nuevo = await pedir();
-    setDenegadaAhora(nuevo !== 'concedido');
   }
 
   if (qrAjeno) {
@@ -89,27 +84,17 @@ export default function EscanearAula() {
     );
   }
 
-  // Se acaba de denegar: no insisto, ofrezco escribir el aula.
-  if (denegadaAhora && estado === 'preguntable') {
+  // 3. Preguntable: la explicación con "Continuar" está en la pantalla previa, que se abre encima.
+  // Debajo queda la carga manual para quien diga que no.
+  if (estado === 'preguntable') {
     return (
       <Pantalla>
         <Texto variante="titulo">Escribí el código del aula</Texto>
         <Texto>
           Sin cámara también podés hacer el reporte: el código está en la puerta del aula.
         </Texto>
+        <Boton titulo="Usar la cámara" variante="secundario" onPress={abrirPrevia} />
         {cargaManual}
-      </Pantalla>
-    );
-  }
-
-  // 3. Preguntable: el sistema todavía puede mostrar el diálogo.
-  if (estado === 'preguntable') {
-    return (
-      <Pantalla centrada>
-        <Texto variante="titulo">Escanear el QR del aula</Texto>
-        <Texto>Usamos tu cámara para leer el código QR del aula y completar el reporte solo.</Texto>
-        <Texto variante="secundario">Podés cambiar este permiso cuando quieras en Ajustes.</Texto>
-        <Boton titulo="Continuar" onPress={continuar} />
       </Pantalla>
     );
   }

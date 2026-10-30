@@ -109,6 +109,38 @@ describe('usePermiso', () => {
   });
 });
 
+describe('usePermiso: varias instancias', () => {
+  it('cuando una instancia pide, la otra se entera sin consultar', async () => {
+    consultarCamara.mockResolvedValue(sinDecidir as never);
+    pedirCamara.mockResolvedValue(concedido as never);
+    const pantalla = renderHook(() => usePermiso('camara'));
+    const modal = renderHook(() => usePermiso('camara'));
+    await waitFor(() => expect(pantalla.result.current.estado).toBe('preguntable'));
+    await waitFor(() => expect(modal.result.current.estado).toBe('preguntable'));
+
+    await act(async () => {
+      await modal.result.current.pedir();
+    });
+
+    expect(pantalla.result.current.estado).toBe('concedido');
+  });
+
+  it('no mezcla recursos distintos', async () => {
+    consultarCamara.mockResolvedValue(sinDecidir as never);
+    consultarUbicacion.mockResolvedValue(sinDecidir as never);
+    pedirCamara.mockResolvedValue(concedido as never);
+    const camara = renderHook(() => usePermiso('camara'));
+    const ubicacion = renderHook(() => usePermiso('ubicacion'));
+    await waitFor(() => expect(ubicacion.result.current.estado).toBe('preguntable'));
+
+    await act(async () => {
+      await camara.result.current.pedir();
+    });
+
+    expect(ubicacion.result.current.estado).toBe('preguntable');
+  });
+});
+
 describe('usePermiso: regreso desde Ajustes', () => {
   // Reemplazo AppState para decidir yo cuándo "vuelve" la app.
   function simularAppState() {

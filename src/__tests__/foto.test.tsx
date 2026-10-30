@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
+import { act } from 'react';
 import { Text } from 'react-native';
 
 import FotoReporte from '@/app/reporte/foto';
@@ -8,12 +9,14 @@ import { useBorrador } from '@/hooks/useBorrador';
 import { usePermiso } from '@/hooks/usePermiso';
 import { permisoSimulado } from '@/test-utils/permisoSimulado';
 import { Proveedores } from '@/test-utils/Proveedores';
+import { volverAlFoco } from '@/test-utils/routerSimulado';
 
 jest.mock('@/hooks/usePermiso');
 
-jest.mock('expo-router', () => ({
-  router: { back: jest.fn(), canGoBack: jest.fn(() => true), replace: jest.fn() },
-}));
+jest.mock(
+  'expo-router',
+  () => jest.requireActual('@/test-utils/routerSimulado').expoRouterSimulado,
+);
 
 function FotoDelBorrador() {
   const { borrador } = useBorrador();
@@ -127,48 +130,54 @@ describe('Sacar foto reutilizando el permiso de cámara (M44)', () => {
     expect(camara.pedir).not.toHaveBeenCalled();
   });
 
-  it('si es preguntable, explica primero y pide recién con Continuar', async () => {
-    const camara = conCamara('preguntable', { pedir: jest.fn().mockResolvedValue('concedido') });
-    jest.mocked(ImagePicker.launchCameraAsync).mockResolvedValue(elegida);
+  it('si es preguntable, abre la pantalla previa y recién ahí se pide', () => {
+    const camara = conCamara('preguntable');
     renderFoto();
 
     fireEvent.press(screen.getByRole('button', { name: 'Sacar foto' }));
-    expect(camara.pedir).not.toHaveBeenCalled();
-    expect(
-      screen.getByText('Usamos tu cámara para sacar la foto del desperfecto que reportás.'),
-    ).toBeTruthy();
 
-    fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
+    expect(router.push).toHaveBeenCalledWith('/permisos/camara');
+    expect(camara.pedir).not.toHaveBeenCalled();
+    expect(ImagePicker.launchCameraAsync).not.toHaveBeenCalled();
+  });
+
+  it('si al volver de la pantalla previa dijo que sí, abre la cámara', async () => {
+    conCamara('preguntable');
+    jest.mocked(ImagePicker.launchCameraAsync).mockResolvedValue(elegida);
+    const { rerender } = renderFoto();
+    fireEvent.press(screen.getByRole('button', { name: 'Sacar foto' }));
+
+    conCamara('concedido');
+    rerender(
+      <Proveedores>
+        <FotoReporte />
+      </Proveedores>,
+    );
+    await act(async () => volverAlFoco());
 
     await waitFor(() => expect(ImagePicker.launchCameraAsync).toHaveBeenCalled());
-    expect(camara.pedir).toHaveBeenCalledTimes(1);
   });
 
-  it('si dice que no, ofrece la galería y no insiste', async () => {
+  it('si al volver de la pantalla previa dijo que no, ofrece la galería', async () => {
     conCamara('preguntable');
     renderFoto();
-
     fireEvent.press(screen.getByRole('button', { name: 'Sacar foto' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
-    await waitFor(() =>
-      expect(
-        screen.getByText('Sin cámara también podés agregar una foto: elegila de la galería.'),
-      ).toBeTruthy(),
-    );
+    await act(async () => volverAlFoco());
+
+    expect(
+      screen.getByText('Sin cámara también podés agregar una foto: elegila de la galería.'),
+    ).toBeTruthy();
     expect(ImagePicker.launchCameraAsync).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: 'Continuar' })).toBeNull();
   });
 
-  it('si está bloqueada, ofrece Abrir Ajustes y la galería', () => {
-    const camara = conCamara('bloqueado');
+  it('si está bloqueada, la pantalla previa explica y la galería sigue disponible', () => {
+    conCamara('bloqueado');
     renderFoto();
 
     fireEvent.press(screen.getByRole('button', { name: 'Sacar foto' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Abrir Ajustes' }));
 
-    expect(camara.abrirAjustes).toHaveBeenCalled();
-    expect(camara.pedir).not.toHaveBeenCalled();
+    expect(router.push).toHaveBeenCalledWith('/permisos/camara');
     expect(screen.getByRole('button', { name: 'Elegir de la galería' })).toBeTruthy();
   });
 });

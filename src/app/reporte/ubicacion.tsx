@@ -9,6 +9,7 @@ import { SelectorSector } from '@/components/SelectorSector';
 import { Tarjeta } from '@/components/Tarjeta';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
+import { usePantallaPrevia } from '@/hooks/usePantallaPrevia';
 import { usePermiso } from '@/hooks/usePermiso';
 import type { Sector } from '@/lib/aulas/sectores';
 import { textoUbicacion } from '@/lib/reportes/textoUbicacion';
@@ -23,17 +24,12 @@ function volver() {
 }
 
 export default function UbicacionReporte() {
-  const { estado, parcial, pedir, abrirAjustes } = usePermiso('ubicacion');
-  const [denegadaAhora, setDenegadaAhora] = useState(false);
+  const { estado, parcial, abrirAjustes } = usePermiso('ubicacion');
+  const abrirPrevia = usePantallaPrevia('ubicacion', estado);
   const [ubicacion, setUbicacion] = useState<Ubicacion | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [error, setError] = useState(false);
   const { borrador, actualizar } = useBorrador();
-
-  async function continuar() {
-    const nuevo = await pedir();
-    setDenegadaAhora(nuevo !== 'concedido');
-  }
 
   async function tomarUbicacion() {
     setBuscando(true);
@@ -114,29 +110,16 @@ export default function UbicacionReporte() {
     );
   }
 
-  // Se acaba de denegar: no insisto.
-  if (denegadaAhora && estado === 'preguntable') {
+  // 3. Preguntable: la explicación está en la pantalla previa, que se abre encima.
+  // Debajo queda el sector a mano para quien diga que no.
+  if (estado === 'preguntable') {
     return (
       <Pantalla>
         <Texto variante="titulo">Seguimos sin ubicación</Texto>
         <Texto>Elegí el sector a mano. Si no lo sabés, con el aula alcanza para encontrarlo.</Texto>
+        <Boton titulo="Usar mi ubicación" variante="secundario" onPress={abrirPrevia} />
         {elegirSector}
         <Boton titulo="Volver al reporte" variante="secundario" onPress={volver} />
-      </Pantalla>
-    );
-  }
-
-  // 3. Preguntable
-  if (estado === 'preguntable') {
-    return (
-      <Pantalla centrada>
-        <Texto variante="titulo">Agregar la ubicación</Texto>
-        <Texto>
-          Usamos tu ubicación para saber en qué sector del instituto está el desperfecto que
-          reportás.
-        </Texto>
-        <Texto variante="secundario">Podés cambiar este permiso cuando quieras en Ajustes.</Texto>
-        <Boton titulo="Continuar" onPress={continuar} />
       </Pantalla>
     );
   }

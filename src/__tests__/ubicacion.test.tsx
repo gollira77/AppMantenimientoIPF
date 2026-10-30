@@ -11,9 +11,10 @@ import { Proveedores } from '@/test-utils/Proveedores';
 
 jest.mock('@/hooks/usePermiso');
 
-jest.mock('expo-router', () => ({
-  router: { back: jest.fn(), canGoBack: jest.fn(() => true), replace: jest.fn() },
-}));
+jest.mock(
+  'expo-router',
+  () => jest.requireActual('@/test-utils/routerSimulado').expoRouterSimulado,
+);
 
 function conPermiso(...args: Parameters<typeof permisoSimulado>) {
   const simulado = permisoSimulado(...args);
@@ -80,14 +81,13 @@ describe('Ubicación: los cuatro estados', () => {
     await waitFor(() => expect(screen.getByText(/No pudimos obtener la ubicación/)).toBeTruthy());
   });
 
-  it('3. preguntable: Continuar pide; si dice que no, se sigue sin ubicación', async () => {
+  it('3. preguntable: abre la pantalla previa y deja seguir sin ubicación', () => {
     const permiso = conPermiso('preguntable');
     renderUbicacion();
 
-    fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
-
-    await waitFor(() => expect(screen.getByText('Seguimos sin ubicación')).toBeTruthy());
-    expect(permiso.pedir).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith('/permisos/ubicacion');
+    expect(permiso.pedir).not.toHaveBeenCalled();
+    expect(screen.getByText('Seguimos sin ubicación')).toBeTruthy();
   });
 
   it('4. bloqueado: ofrece Abrir Ajustes y volver sin ubicación', () => {
@@ -150,12 +150,10 @@ describe('Coordenadas ocultas si es aproximada (M39)', () => {
 });
 
 describe('Sector elegido a mano (M40)', () => {
-  it('si se deniega en el diálogo, ofrece elegir el sector', async () => {
+  it('si no hay permiso, ofrece elegir el sector', () => {
     conPermiso('preguntable');
     renderUbicacion();
 
-    fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
-    await waitFor(() => expect(screen.getByText('Seguimos sin ubicación')).toBeTruthy());
     fireEvent.press(screen.getByRole('radio', { name: 'Primer piso · Laboratorios' }));
 
     expect(screen.getByText('sector: Primer piso · Laboratorios')).toBeTruthy();

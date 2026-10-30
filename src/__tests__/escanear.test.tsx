@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { Text } from 'react-native';
 
@@ -29,9 +29,10 @@ jest.mock('expo-camera', () => ({
   },
 }));
 
-jest.mock('expo-router', () => ({
-  router: { back: jest.fn(), canGoBack: jest.fn(() => true), replace: jest.fn() },
-}));
+jest.mock(
+  'expo-router',
+  () => jest.requireActual('@/test-utils/routerSimulado').expoRouterSimulado,
+);
 
 jest.mock('@/lib/aulas/codigoQr', () => {
   const real = jest.requireActual('@/lib/aulas/codigoQr');
@@ -86,22 +87,19 @@ describe('Escáner: los cuatro estados del permiso', () => {
     expect(screen.getByText('vista de cámara')).toBeTruthy();
   });
 
-  it('3. preguntable: explica y pide con Continuar', async () => {
+  it('3. preguntable: abre la pantalla previa y no pide nada por su cuenta', () => {
     const permiso = conPermiso('preguntable');
     renderEscaner();
 
-    expect(screen.queryByRole('button', { name: 'Permitir' })).toBeNull();
-    fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
-
-    expect(permiso.pedir).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.getByText('Escribí el código del aula')).toBeTruthy());
+    expect(router.push).toHaveBeenCalledWith('/permisos/camara');
+    expect(permiso.pedir).not.toHaveBeenCalled();
   });
 
   it('4. bloqueado: no vuelve a pedir y ofrece Abrir Ajustes', () => {
     const permiso = conPermiso('bloqueado');
     renderEscaner();
 
-    expect(screen.queryByRole('button', { name: 'Continuar' })).toBeNull();
+    expect(router.push).not.toHaveBeenCalled();
     fireEvent.press(screen.getByRole('button', { name: 'Abrir Ajustes' }));
 
     expect(permiso.abrirAjustes).toHaveBeenCalled();
@@ -149,14 +147,11 @@ describe('Escáner: lectura del QR', () => {
 });
 
 describe('Escáner: carga manual del aula (M28)', () => {
-  it('si se deniega en el diálogo, ofrece escribir el aula y no vuelve a explicar', async () => {
+  it('debajo de la pantalla previa se puede escribir el aula', () => {
     conPermiso('preguntable');
     renderEscaner();
 
-    fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
-
-    await waitFor(() => expect(screen.getByLabelText('Código del aula')).toBeTruthy());
-    expect(screen.queryByRole('button', { name: 'Continuar' })).toBeNull();
+    expect(screen.getByLabelText('Código del aula')).toBeTruthy();
   });
 
   it('si la cámara está bloqueada, se puede escribir el aula', () => {

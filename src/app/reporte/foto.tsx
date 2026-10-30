@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 
 import { Boton } from '@/components/Boton';
@@ -24,14 +24,15 @@ export default function FotoReporte() {
   const [uri, setUri] = useState<string | null>(borrador.fotoUri);
   // Es el mismo permiso de cámara que usa el escáner: si ya se dio ahí, acá no se vuelve a pedir.
   const camara = usePermiso('camara');
-  const [explicandoCamara, setExplicandoCamara] = useState(false);
   const [sinCamara, setSinCamara] = useState(false);
+  // La persona tocó "Sacar foto" y fue a la pantalla previa: al volver, retomo desde acá.
+  const queriaSacarFoto = useRef(false);
 
-  function guardarResultado(resultado: ImagePicker.ImagePickerResult) {
+  const guardarResultado = useCallback((resultado: ImagePicker.ImagePickerResult) => {
     if (!resultado.canceled && resultado.assets[0]) {
       setUri(resultado.assets[0].uri);
     }
-  }
+  }, []);
 
   async function elegirDeGaleria() {
     // El selector del sistema corre fuera de la app: la persona elige una foto y
@@ -41,9 +42,21 @@ export default function FotoReporte() {
     );
   }
 
-  async function abrirCamara() {
+  const abrirCamara = useCallback(async () => {
     guardarResultado(await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 }));
-  }
+  }, [guardarResultado]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!queriaSacarFoto.current) return;
+      queriaSacarFoto.current = false;
+      if (camara.estado === 'concedido') {
+        void abrirCamara();
+      } else {
+        setSinCamara(true);
+      }
+    }, [camara.estado, abrirCamara]),
+  );
 
   function sacarFoto() {
     setSinCamara(false);
@@ -51,17 +64,8 @@ export default function FotoReporte() {
       void abrirCamara();
     } else if (camara.estado !== 'cargando') {
       // Preguntable o bloqueado: primero explico, nunca muestro el diálogo de golpe.
-      setExplicandoCamara(true);
-    }
-  }
-
-  async function continuar() {
-    const nuevo = await camara.pedir();
-    setExplicandoCamara(false);
-    if (nuevo === 'concedido') {
-      await abrirCamara();
-    } else {
-      setSinCamara(true);
+      queriaSacarFoto.current = true;
+      router.push('/permisos/camara');
     }
   }
 
@@ -73,38 +77,6 @@ export default function FotoReporte() {
   function quitarFoto() {
     setUri(null);
     actualizar({ fotoUri: null });
-  }
-
-  if (explicandoCamara && camara.estado === 'preguntable') {
-    return (
-      <Pantalla centrada>
-        <Texto variante="titulo">Sacar una foto</Texto>
-        <Texto>Usamos tu cámara para sacar la foto del desperfecto que reportás.</Texto>
-        <Texto variante="secundario">Podés cambiar este permiso cuando quieras en Ajustes.</Texto>
-        <Boton titulo="Continuar" onPress={continuar} />
-      </Pantalla>
-    );
-  }
-
-  if (explicandoCamara && camara.estado === 'bloqueado') {
-    return (
-      <Pantalla centrada>
-        <Texto variante="titulo">La cámara está desactivada</Texto>
-        <Texto>
-          Para sacar la foto, habilitá la cámara para esta app en Ajustes. También podés elegir una
-          foto de la galería, que no necesita ningún permiso.
-        </Texto>
-        <Boton titulo="Abrir Ajustes" onPress={camara.abrirAjustes} />
-        <Boton
-          titulo="Elegir de la galería"
-          variante="secundario"
-          onPress={() => {
-            setExplicandoCamara(false);
-            void elegirDeGaleria();
-          }}
-        />
-      </Pantalla>
-    );
   }
 
   return (

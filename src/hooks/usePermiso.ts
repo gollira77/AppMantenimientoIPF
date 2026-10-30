@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, Linking } from 'react-native';
 
+import { escucharPermiso, publicarPermiso } from '@/lib/permisos/difusion';
 import {
   esParcial,
   interpretarRespuesta,
@@ -47,17 +48,20 @@ export function usePermiso(recurso: Recurso): ResultadoPermiso {
 
   const consultar = useCallback(async () => {
     const nueva = await funciones.consultar();
-    setRespuesta(nueva);
+    publicarPermiso(recurso, nueva);
     return interpretarRespuesta(nueva);
-  }, [funciones]);
+  }, [recurso, funciones]);
 
   const pedir = useCallback(async () => {
     const nueva = await funciones.pedir();
-    setRespuesta(nueva);
+    publicarPermiso(recurso, nueva);
     return interpretarRespuesta(nueva);
-  }, [funciones]);
+  }, [recurso, funciones]);
 
   const abrirAjustes = useCallback(() => Linking.openSettings(), []);
+
+  // Cada instancia se entera de lo que averigua cualquier otra del mismo recurso.
+  useEffect(() => escucharPermiso(recurso, setRespuesta), [recurso]);
 
   // Al montar, solo consulto: nunca muestro un diálogo sin que la persona lo pida.
   useEffect(() => {
