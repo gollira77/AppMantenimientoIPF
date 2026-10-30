@@ -1608,3 +1608,26 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M60 (evolución) · Creé un servicio de avisos con la bandeja como alternativa
+
+**Qué hice**
+
+- `src/lib/avisos/servicio.ts`: `avisarResolucion()` decide el camino. Con interruptor y permiso, programa la notificación. En cualquier otro caso, o si algo falla, deja el aviso en la bandeja.
+- `src/hooks/useAvisos.tsx`: contexto con la lista de avisos.
+- El detalle ya no decide nada: llama al servicio y muestra adónde fue el aviso.
+
+**Por qué**
+
+- **Problema real de M59:** sin permiso, el aviso se perdía. Eso rompe el requisito 7: un permiso denegado no puede dejar a la persona sin la función.
+- Además, la decisión estaba dentro de una pantalla. Si otra parte de la app resolviera reportes, tendría que copiarla.
+- El servicio consulta el permiso **en el momento de avisar**, y no usa el estado de una pantalla, porque pudo cambiar en Ajustes.
+- El `catch` hace que un error al programar no pierda el aviso: la bandeja es la red de seguridad.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué el servicio recibe `agregarABandeja` en vez de usar `useAvisos`?* — Porque `src/lib` no usa React. Recibe la función de afuera y eso además lo hace fácil de probar.
+- *¿Por qué si la persona no activó los avisos también va a la bandeja?* — Porque la bandeja no pide nada y no molesta: es información que espera adentro de la app.
+- *¿La bandeja reemplaza a las notificaciones?* — Es la alternativa: la persona se entera cuando abre la app, sin recibir nada afuera.
+
+---
+

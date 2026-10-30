@@ -8,10 +8,11 @@ import { EtiquetaEstado } from '@/components/EtiquetaEstado';
 import { Pantalla } from '@/components/Pantalla';
 import { Tarjeta } from '@/components/Tarjeta';
 import { Texto } from '@/components/Texto';
-import { usePermiso } from '@/hooks/usePermiso';
+import { useAvisos } from '@/hooks/useAvisos';
 import { usePreferencias } from '@/hooks/usePreferencias';
 import { useReportes } from '@/hooks/useReportes';
-import { programarAvisoResolucion, SEGUNDOS_AVISO } from '@/lib/notificaciones/programar';
+import { avisarResolucion } from '@/lib/avisos/servicio';
+import { SEGUNDOS_AVISO } from '@/lib/notificaciones/programar';
 import { buscarReporte } from '@/lib/reportes/buscar';
 import { textoUbicacion } from '@/lib/reportes/textoUbicacion';
 import { ETIQUETA_CATEGORIA } from '@/lib/reportes/tipos';
@@ -25,7 +26,7 @@ const formatoFecha = new Intl.DateTimeFormat('es-AR', {
 export default function DetalleReporte() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { reportes, resolver } = useReportes();
-  const { estado } = usePermiso('notificaciones');
+  const { agregar: agregarABandeja } = useAvisos();
   const { quiereAvisos } = usePreferencias();
   const [mensaje, setMensaje] = useState<string | null>(null);
   const busqueda = buscarReporte(reportes, id);
@@ -57,10 +58,12 @@ export default function DetalleReporte() {
 
   async function simularResolucion() {
     resolver(reporte.id);
-    if (quiereAvisos && estado === 'concedido') {
-      await programarAvisoResolucion(reporte);
-      setMensaje(`Te llega una notificación en ${SEGUNDOS_AVISO} segundos.`);
-    }
+    const destino = await avisarResolucion(reporte, { quiereAvisos, agregarABandeja });
+    setMensaje(
+      destino === 'notificacion'
+        ? `Te llega una notificación en ${SEGUNDOS_AVISO} segundos.`
+        : 'El aviso quedó en la pestaña Avisos.',
+    );
   }
 
   return (

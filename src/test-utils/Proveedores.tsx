@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { ProveedorAvisos } from '@/hooks/useAvisos';
 import { ProveedorBorrador } from '@/hooks/useBorrador';
 import { ProveedorPreferencias } from '@/hooks/usePreferencias';
 import { ProveedorReportes } from '@/hooks/useReportes';
@@ -9,7 +10,9 @@ export function Proveedores({ children }: { children: ReactNode }) {
   return (
     <ProveedorPreferencias>
       <ProveedorReportes>
-        <ProveedorBorrador>{children}</ProveedorBorrador>
+        <ProveedorAvisos>
+          <ProveedorBorrador>{children}</ProveedorBorrador>
+        </ProveedorAvisos>
       </ProveedorReportes>
     </ProveedorPreferencias>
   );
