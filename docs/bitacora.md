@@ -1653,3 +1653,27 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M62 · Abrí el reporte al tocar la notificación
+
+**Qué hice**
+
+- `src/hooks/useAbrirNotificacion.ts`: lee `useLastNotificationResponse()`, toma `reporteId` de `data` y navega a `/reporte/[id]`.
+- Lo llamo en el layout raíz.
+- Al terminar llamo a `clearLastNotificationResponseAsync()`.
+- Tests de `undefined` y `null`, de `data` sin `reporteId` y de una acción distinta de tocar.
+
+**Por qué**
+
+- Una notificación que abre la app en la pantalla de inicio obliga a buscar el reporte a mano.
+- `useLastNotificationResponse` cubre también el arranque en frío: si la notificación abrió la app desde cerrada, un oyente registrado después ya no la recibiría.
+- Valido que `reporteId` sea texto porque `data` viene de afuera del flujo normal. El detalle vuelve a validar el id, como con cualquier URL (M20).
+- Sin limpiar la respuesta, recargar la app volvería a abrir el mismo reporte, porque el sistema la recuerda.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué significa `DEFAULT_ACTION_IDENTIFIER`?* — Que la persona tocó la notificación en sí. Las notificaciones pueden tener botones, con otros identificadores.
+- *¿Por qué en el layout raíz?* — Porque tiene que funcionar en cualquier pantalla y existir antes de la navegación. El layout raíz nunca se desmonta.
+- *¿Qué pasa si el reporte ya no existe?* — El detalle muestra "No encontramos el reporte" (M20).
+
+---
+

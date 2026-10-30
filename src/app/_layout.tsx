@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 
+import { useAbrirNotificacion } from '@/hooks/useAbrirNotificacion';
 import { ProveedorAvisos } from '@/hooks/useAvisos';
 import { ProveedorBorrador } from '@/hooks/useBorrador';
 import { ProveedorPreferencias } from '@/hooks/usePreferencias';
@@ -10,6 +11,8 @@ import { colores } from '@/lib/tema';
 configurarNotificaciones();
 
 export default function RootLayout() {
+  useAbrirNotificacion();
+
   return (
     <ProveedorPreferencias>
       <ProveedorReportes>

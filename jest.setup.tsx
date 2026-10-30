@@ -55,6 +55,8 @@ jest.mock('expo-notifications', () => ({
   setNotificationHandler: jest.fn(),
   scheduleNotificationAsync: jest.fn().mockResolvedValue('id-simulado'),
   useLastNotificationResponse: jest.fn(() => undefined),
+  clearLastNotificationResponseAsync: jest.fn().mockResolvedValue(undefined),
+  DEFAULT_ACTION_IDENTIFIER: 'expo.modules.notifications.actions.DEFAULT',
   AndroidImportance: { HIGH: 5 },
   SchedulableTriggerInputTypes: { TIME_INTERVAL: 'timeInterval' },
   IosAuthorizationStatus: { NOT_DETERMINED: 0, DENIED: 1, AUTHORIZED: 2, PROVISIONAL: 3 },
