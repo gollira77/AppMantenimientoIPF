@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, Linking } from 'react-native';
+import { AppState, Linking, Platform } from 'react-native';
 
 import { escucharPermiso, publicarPermiso } from '@/lib/permisos/difusion';
 import {
@@ -24,6 +24,9 @@ export type ResultadoPermiso = {
   abrirAjustes: () => Promise<void>;
 };
 
+const AVISO_AJUSTES_WEB =
+  'En el navegador, los permisos se cambian desde el ícono que está junto a la dirección de la página.';
+
 export function usePermiso(recurso: Recurso): ResultadoPermiso {
   const [respuesta, setRespuesta] = useState<RespuestaPermiso | null>(null);
   const funciones = REGISTRO[recurso];
@@ -40,7 +43,14 @@ export function usePermiso(recurso: Recurso): ResultadoPermiso {
     return interpretarRespuesta(nueva);
   }, [recurso, funciones]);
 
-  const abrirAjustes = useCallback(() => Linking.openSettings(), []);
+  const abrirAjustes = useCallback(async () => {
+    // El navegador no tiene una pantalla de Ajustes que se pueda abrir desde el código.
+    if (Platform.OS === 'web') {
+      globalThis.alert?.(AVISO_AJUSTES_WEB);
+      return;
+    }
+    await Linking.openSettings();
+  }, []);
 
   // Cada instancia se entera de lo que averigua cualquier otra del mismo recurso.
   useEffect(() => escucharPermiso(recurso, setRespuesta), [recurso]);

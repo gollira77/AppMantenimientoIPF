@@ -1829,3 +1829,22 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## Rediseño (corrección) · Expliqué cómo cambiar el permiso en web
+
+**Qué hice**
+
+- `abrirAjustes` de `usePermiso` ahora revisa la plataforma. En web muestra un aviso con `alert` y no llama a `Linking.openSettings()`.
+- Agregué un test para web.
+
+**Por qué**
+
+- **Problema real:** al tocar "Abrir Ajustes" en el navegador aparecía `Linking.default.openSettings is not a function`, porque `react-native-web` no implementa esa función.
+- Lo resolví en el hook porque es el único lugar por el que pasan todas las pantallas con ese botón.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué acá un `if (Platform.OS === 'web')` y en `useAbrirNotificacion` un archivo `.web.ts`?* — Porque acá la condición está adentro de una función común. Allá había que evitar llamar a un hook, y eso no se puede hacer con una condición.
+- *¿Cambia algo en Android o iOS?* — No: siguen abriendo los Ajustes de la app.
+
+---
+

@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { Camera } from 'expo-camera';
 import * as Location from 'expo-location';
-import { AppState, Linking, type AppStateStatus } from 'react-native';
+import { AppState, Linking, Platform, type AppStateStatus } from 'react-native';
 
 import { usePermiso } from '@/hooks/usePermiso';
 
@@ -99,6 +99,25 @@ describe('usePermiso', () => {
     });
 
     expect(abrir).toHaveBeenCalled();
+  });
+
+  it('en web explica cómo cambiarlo, porque openSettings no existe', async () => {
+    const plataformaReal = Platform.OS;
+    Platform.OS = 'web';
+    const abrir = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
+    const avisar = jest.fn();
+    globalThis.alert = avisar;
+    consultarCamara.mockResolvedValue(bloqueado as never);
+    const { result } = renderHook(() => usePermiso('camara'));
+    await waitFor(() => expect(result.current.estado).toBe('bloqueado'));
+
+    await act(async () => {
+      await result.current.abrirAjustes();
+    });
+    Platform.OS = plataformaReal;
+
+    expect(abrir).not.toHaveBeenCalled();
+    expect(avisar).toHaveBeenCalledWith(expect.stringContaining('En el navegador'));
   });
 
   it('expone la respuesta cruda del sistema', async () => {
