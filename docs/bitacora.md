@@ -1912,3 +1912,23 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## Web · Preparé la app para presentarla desde la compu
+
+**Qué hice**
+
+- En el layout raíz, la app se muestra en una columna centrada de 520 px sobre fondo verde oscuro.
+- `src/lib/notificaciones/programar.web.ts`: en web, "Simular resolución" muestra una notificación real del navegador a los 10 s. Al tocarla, abre el reporte.
+
+**Por qué**
+
+- La defensa se hace compartiendo la pantalla de la compu. Estirada a todo el ancho, la app se veía rara: botones de más de un metro y tarjetas vacías.
+- `expo-notifications` no programa notificaciones en web. Sin este archivo, el aviso siempre iba a la bandeja y no se podía mostrar el requisito 5 en la presentación.
+- Web no reemplaza la prueba en el celular: los permisos del navegador se comportan distinto.
+
+**Qué podría preguntar el docente**
+
+- *¿La notificación web funciona con la pestaña cerrada?* — No: depende de `setTimeout`. Para eso haría falta un service worker. En Android e iOS la programa el sistema, y por eso sí llega.
+- *¿En qué se diferencian los permisos web?* — No hay Ajustes de la app: se cambian desde el ícono junto a la dirección. Tampoco existen `android.permission.*` ni textos de propósito.
+
+---
+

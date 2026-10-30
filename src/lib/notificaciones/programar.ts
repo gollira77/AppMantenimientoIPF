@@ -1,9 +1,10 @@
 import * as Notifications from 'expo-notifications';
 
 import { CANAL_REPORTES } from '@/lib/notificaciones/canal';
+import { SEGUNDOS_AVISO } from '@/lib/notificaciones/constantes';
 import type { Reporte } from '@/lib/reportes/tipos';
 
-export const SEGUNDOS_AVISO = 10;
+export { SEGUNDOS_AVISO };
 
 /** Sin esto, una notificación que llega con la app abierta no se muestra. */
 export function configurarNotificaciones(): void {
