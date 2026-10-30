@@ -1868,3 +1868,23 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## Web · Guardé la ubicación y la foto apenas se obtienen
+
+**Qué hice**
+
+- La ubicación vive en el borrador: `tomarUbicacion` la escribe ahí directamente. Ya no hay estado local en la pantalla.
+- Saqué el botón "Usar esta ubicación". Quedó "Volver al reporte", y un texto que confirma que está guardada.
+- La foto hace lo mismo: se guarda al elegirla o sacarla.
+
+**Por qué**
+
+- **Problema real:** después de tomar la ubicación había que tocar otro botón. Si la persona volvía con la flecha, se perdía, y al abrir la pantalla otra vez aparecía vacía.
+- Tener una sola fuente de verdad evita el problema: al abrir la pantalla se lee el borrador, que además persiste (M65).
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no un botón de confirmación?* — Porque tomar la ubicación ya fue una decisión. Pedir otra es un paso de más que invita a perder el dato.
+- *¿Y si la ubicación está mal?* — "Tomar de nuevo" la reemplaza.
+
+---
+

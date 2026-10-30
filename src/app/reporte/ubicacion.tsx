@@ -13,17 +13,17 @@ import { usePermiso } from '@/hooks/usePermiso';
 import type { Sector } from '@/lib/aulas/sectores';
 import { volver } from '@/lib/navegacion';
 import { textoUbicacion } from '@/lib/reportes/textoUbicacion';
-import type { Ubicacion } from '@/lib/reportes/tipos';
 
 const volverAlFormulario = () => volver('/reporte/nuevo');
 
 export default function UbicacionReporte() {
   const { estado, parcial, abrirAjustes } = usePermiso('ubicacion');
   const abrirPrevia = usePantallaPrevia('ubicacion', estado);
-  const [ubicacion, setUbicacion] = useState<Ubicacion | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [error, setError] = useState(false);
   const { borrador, actualizar } = useBorrador();
+  // Vive en el borrador: se guarda al tomarla y sigue ahí al volver a esta pantalla.
+  const { ubicacion } = borrador;
 
   async function tomarUbicacion() {
     setBuscando(true);
@@ -32,10 +32,12 @@ export default function UbicacionReporte() {
       const posicion = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-      setUbicacion({
-        latitud: posicion.coords.latitude,
-        longitud: posicion.coords.longitude,
-        aproximada: parcial,
+      actualizar({
+        ubicacion: {
+          latitud: posicion.coords.latitude,
+          longitud: posicion.coords.longitude,
+          aproximada: parcial,
+        },
       });
     } catch {
       // GPS apagado, sin señal, etc. No es un error de permiso.
@@ -45,14 +47,9 @@ export default function UbicacionReporte() {
     }
   }
 
-  function usarUbicacion() {
-    actualizar({ ubicacion });
-    volverAlFormulario();
-  }
-
   // Sin ubicación precisa, el sector elegido a mano es lo que ubica el reporte.
   function usarSector(sector: Sector) {
-    actualizar(ubicacion ? { ubicacion, sector } : { sector });
+    actualizar({ sector });
     volverAlFormulario();
   }
 
@@ -79,7 +76,7 @@ export default function UbicacionReporte() {
         ) : null}
         {ubicacion ? (
           <Tarjeta>
-            <Texto variante="secundario">Ubicación tomada</Texto>
+            <Texto variante="secundario">Ubicación guardada en el reporte</Texto>
             <Texto>{textoUbicacion(ubicacion)}</Texto>
           </Tarjeta>
         ) : (
@@ -97,7 +94,7 @@ export default function UbicacionReporte() {
           onPress={tomarUbicacion}
         />
         {ubicacion && !parcial ? (
-          <Boton titulo="Usar esta ubicación" onPress={usarUbicacion} />
+          <Boton titulo="Volver al reporte" onPress={volverAlFormulario} />
         ) : null}
         {parcial ? elegirSector : null}
       </Pantalla>

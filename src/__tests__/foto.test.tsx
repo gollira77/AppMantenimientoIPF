@@ -73,6 +73,15 @@ describe('Foto desde la galería (sin permiso)', () => {
     );
   });
 
+  it('guarda la foto en el borrador apenas se elige', async () => {
+    jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue(elegida);
+    renderFoto();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Elegir de la galería' }));
+
+    expect(await screen.findByText('borrador: file:///fotos/canilla.jpg')).toBeTruthy();
+  });
+
   it('muestra la foto elegida y la guarda en el borrador', async () => {
     jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue(elegida);
     renderFoto();

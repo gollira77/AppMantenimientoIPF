@@ -64,12 +64,37 @@ describe('Ubicación: los cuatro estados', () => {
 
     fireEvent.press(screen.getByRole('button', { name: 'Tomar mi ubicación' }));
     await waitFor(() => expect(screen.getByText('-26.18489, -58.17313')).toBeTruthy());
-    fireEvent.press(screen.getByRole('button', { name: 'Usar esta ubicación' }));
 
+    // Se guarda sola, sin ningún paso de confirmación.
     expect(
       screen.getByText('borrador: {"latitud":-26.18489,"longitud":-58.17313,"aproximada":false}'),
     ).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Volver al reporte' }));
     expect(router.back).toHaveBeenCalled();
+  });
+
+  it('2. concedido: al volver a la pantalla la ubicación sigue ahí', async () => {
+    conPermiso('concedido');
+    jest.mocked(Location.getCurrentPositionAsync).mockResolvedValue({
+      coords: { latitude: -26.18489, longitude: -58.17313 },
+    } as Location.LocationObject);
+    const { rerender } = renderUbicacion();
+    fireEvent.press(screen.getByRole('button', { name: 'Tomar mi ubicación' }));
+    await screen.findByText('-26.18489, -58.17313');
+
+    rerender(
+      <Proveedores>
+        <></>
+      </Proveedores>,
+    );
+    rerender(
+      <Proveedores>
+        <UbicacionReporte />
+      </Proveedores>,
+    );
+
+    expect(screen.getByText('-26.18489, -58.17313')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Tomar de nuevo' })).toBeTruthy();
   });
 
   it('2. concedido: si el GPS falla, avisa sin romperse', async () => {
@@ -152,9 +177,9 @@ describe('Coordenadas ocultas si es aproximada (M39)', () => {
     renderUbicacion();
 
     fireEvent.press(screen.getByRole('button', { name: 'Tomar mi ubicación' }));
-    await waitFor(() => expect(screen.getByText('Ubicación tomada')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Ubicación guardada en el reporte')).toBeTruthy());
 
-    expect(screen.queryByText(/-26.18489/)).toBeNull();
+    expect(screen.queryByText('-26.18489, -58.17313')).toBeNull();
     fireEvent.press(screen.getByRole('radio', { name: 'Biblioteca' }));
     expect(screen.getByText(/"aproximada":true/)).toBeTruthy();
     expect(screen.getByText('sector: Biblioteca')).toBeTruthy();

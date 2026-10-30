@@ -23,11 +23,16 @@ export default function FotoReporte() {
   // La persona tocó "Sacar foto" y fue a la pantalla previa: al volver, retomo desde acá.
   const queriaSacarFoto = useRef(false);
 
-  const guardarResultado = useCallback((resultado: ImagePicker.ImagePickerResult) => {
-    if (!resultado.canceled && resultado.assets[0]) {
-      setUri(resultado.assets[0].uri);
-    }
-  }, []);
+  const guardarResultado = useCallback(
+    (resultado: ImagePicker.ImagePickerResult) => {
+      if (!resultado.canceled && resultado.assets[0]) {
+        const nueva = resultado.assets[0].uri;
+        setUri(nueva);
+        actualizar({ fotoUri: nueva });
+      }
+    },
+    [actualizar],
+  );
 
   async function elegirDeGaleria() {
     // El selector del sistema corre fuera de la app: la persona elige una foto y
