@@ -1470,3 +1470,26 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M54 · Armé el panel con estado, plataforma y matiz de cada permiso
+
+**Qué hice**
+
+- `src/hooks/usePanelPermisos.ts`: consulta todo con `consultarTodos()` al recibir el foco y al volver de Ajustes, y escucha lo que publican las otras pantallas.
+- `src/lib/permisos/matiz.ts`: `ETIQUETA_PERMISO` y `textoMatiz()`, que muestra `accuracy` y `accessPrivileges`.
+- `src/app/(tabs)/permisos.tsx`: una tarjeta por recurso con su estado y su matiz, `Platform.OS`, y la galería como "no requerida (selector del sistema)".
+- El botón "Activar" o "Cómo habilitarlo" lleva a la pantalla previa. El panel nunca pide nada por su cuenta.
+
+**Por qué**
+
+- Requisito 9: el panel hace visible lo que normalmente es invisible, y sirve para demostrar el ciclo en la defensa.
+- Muestro `accuracy` tal cual lo devuelve el sistema (`coarse`, `reduced`) porque el panel es una herramienta técnica: el matiz es el dato, no un texto para el público general.
+- La galería no tiene botón: figura para dejar claro que **no hace falta** el permiso, porque la app usa el selector del sistema.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué se actualiza al entrar y al volver de Ajustes?* — Son casos distintos. Cambiar de pestaña da foco pero no cambia `AppState`. Ir a Ajustes y volver cambia `AppState`, pero la pestaña nunca perdió el foco.
+- *¿Por qué el panel no usa `usePermiso`?* — Porque no se puede llamar en un bucle (M53). Comparte con él las piezas de abajo: el registro y la difusión.
+- *¿Qué es `accessPrivileges`?* — El alcance del acceso a la galería: `all`, `limited` o `none`. Mi app no pide ese permiso, así que hoy no aparece. Queda para quien lo sume al registro.
+
+---
+
