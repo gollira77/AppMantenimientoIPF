@@ -3,7 +3,10 @@ import { Stack } from 'expo-router';
 import { ProveedorBorrador } from '@/hooks/useBorrador';
 import { ProveedorPreferencias } from '@/hooks/usePreferencias';
 import { ProveedorReportes } from '@/hooks/useReportes';
+import { configurarNotificaciones } from '@/lib/notificaciones/programar';
 import { colores } from '@/lib/tema';
+
+configurarNotificaciones();
 
 export default function RootLayout() {
   return (

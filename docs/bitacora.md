@@ -1583,3 +1583,28 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M59 · Programé la notificación local de resolución a los 10 s
+
+**Qué hice**
+
+- `src/lib/notificaciones/programar.ts`:
+  - `programarAvisoResolucion()` usa `scheduleNotificationAsync` con trigger `TIME_INTERVAL`, `seconds: 10` y `channelId: 'reportes'`, y guarda `reporteId` en `data`.
+  - `configurarNotificaciones()` define `setNotificationHandler`.
+- `useReportes` ganó `resolver(id)`.
+- En `/reporte/[id]`, el botón "Simular resolución" marca el reporte como resuelto y programa la notificación si hay interruptor y permiso.
+
+**Por qué**
+
+- Los 10 segundos dan tiempo a salir de la app o bloquear el celular y ver que la notificación llega igual: la dispara el sistema, no mi código.
+- Sin `setNotificationHandler`, una notificación que llega con la app en primer plano no se muestra.
+- Uso `shouldShowBanner` y `shouldShowList` porque `shouldShowAlert` está deprecado en el SDK 57.
+- **Problema que deja este módulo:** sin permiso, el aviso se pierde. Y la decisión quedó dentro de la pantalla. Lo resuelvo en M60.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `reporteId` en `data`?* — Para saber qué reporte abrir cuando la persona toque la notificación (M62).
+- *¿Notificación local o push?* — Local: la programa el propio celular, sin servidor. Una push llega desde un servidor mediante FCM o APNs. Para este TP alcanza con la local, y además funciona en Expo Go.
+- *¿Qué pasa si cierro la app durante esos 10 segundos?* — Llega igual: el sistema ya tiene la notificación programada.
+
+---
+

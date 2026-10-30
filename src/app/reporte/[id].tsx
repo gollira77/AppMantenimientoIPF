@@ -1,12 +1,17 @@
 import { useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 
+import { Boton } from '@/components/Boton';
 import { Enlace } from '@/components/Enlace';
 import { EtiquetaEstado } from '@/components/EtiquetaEstado';
 import { Pantalla } from '@/components/Pantalla';
 import { Tarjeta } from '@/components/Tarjeta';
 import { Texto } from '@/components/Texto';
+import { usePermiso } from '@/hooks/usePermiso';
+import { usePreferencias } from '@/hooks/usePreferencias';
 import { useReportes } from '@/hooks/useReportes';
+import { programarAvisoResolucion, SEGUNDOS_AVISO } from '@/lib/notificaciones/programar';
 import { buscarReporte } from '@/lib/reportes/buscar';
 import { textoUbicacion } from '@/lib/reportes/textoUbicacion';
 import { ETIQUETA_CATEGORIA } from '@/lib/reportes/tipos';
@@ -19,7 +24,10 @@ const formatoFecha = new Intl.DateTimeFormat('es-AR', {
 
 export default function DetalleReporte() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { reportes } = useReportes();
+  const { reportes, resolver } = useReportes();
+  const { estado } = usePermiso('notificaciones');
+  const { quiereAvisos } = usePreferencias();
+  const [mensaje, setMensaje] = useState<string | null>(null);
   const busqueda = buscarReporte(reportes, id);
 
   if (busqueda.tipo === 'invalido') {
@@ -46,6 +54,15 @@ export default function DetalleReporte() {
   }
 
   const { reporte } = busqueda;
+
+  async function simularResolucion() {
+    resolver(reporte.id);
+    if (quiereAvisos && estado === 'concedido') {
+      await programarAvisoResolucion(reporte);
+      setMensaje(`Te llega una notificación en ${SEGUNDOS_AVISO} segundos.`);
+    }
+  }
+
   return (
     <Pantalla>
       <Texto variante="titulo">{reporte.titulo}</Texto>
@@ -82,6 +99,15 @@ export default function DetalleReporte() {
         <Texto variante="secundario">Descripción</Texto>
         <Texto>{reporte.descripcion}</Texto>
       </Tarjeta>
+      {mensaje ? <Texto variante="secundario">{mensaje}</Texto> : null}
+      {reporte.estado === 'resuelto' ? null : (
+        <Boton
+          titulo="Simular resolución"
+          variante="secundario"
+          pista="Marca el reporte como resuelto, como si lo hiciera el personal del instituto"
+          onPress={simularResolucion}
+        />
+      )}
     </Pantalla>
   );
 }

@@ -8,6 +8,7 @@ import type { Reporte } from '@/lib/reportes/tipos';
 type ValorReportes = {
   reportes: Reporte[];
   agregar: (datos: DatosReporte) => Reporte;
+  resolver: (id: string) => void;
 };
 
 const ContextoReportes = createContext<ValorReportes | null>(null);
@@ -28,7 +29,13 @@ export function ProveedorReportes({ children, iniciales = REPORTES_DE_PRUEBA }: 
     return nuevo;
   }, []);
 
-  const valor = useMemo(() => ({ reportes, agregar }), [reportes, agregar]);
+  const resolver = useCallback((id: string) => {
+    setReportes((actuales) =>
+      actuales.map((reporte) => (reporte.id === id ? { ...reporte, estado: 'resuelto' } : reporte)),
+    );
+  }, []);
+
+  const valor = useMemo(() => ({ reportes, agregar, resolver }), [reportes, agregar, resolver]);
 
   return <ContextoReportes.Provider value={valor}>{children}</ContextoReportes.Provider>;
 }
