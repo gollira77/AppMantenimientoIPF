@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
@@ -8,6 +8,7 @@ import { Enlace } from '@/components/Enlace';
 import { Pantalla } from '@/components/Pantalla';
 import { Texto } from '@/components/Texto';
 import { usePermiso } from '@/hooks/usePermiso';
+import { volver } from '@/lib/navegacion';
 import { esRecurso, TEXTOS_PREVIA, type Recurso } from '@/lib/permisos/previa';
 import { colores, espacio } from '@/lib/tema';
 
@@ -25,21 +26,13 @@ function IconoRecurso({ recurso }: { recurso: Recurso }) {
   );
 }
 
-function cerrar() {
-  if (router.canGoBack()) {
-    router.back();
-  } else {
-    router.replace('/');
-  }
-}
-
 function Previa({ recurso }: { recurso: Recurso }) {
   const { estado, pedir, abrirAjustes } = usePermiso(recurso);
   const { titulo, beneficio, comoHabilitar } = TEXTOS_PREVIA[recurso];
 
   async function continuar() {
     await pedir();
-    cerrar();
+    volver();
   }
 
   if (estado === 'cargando') {

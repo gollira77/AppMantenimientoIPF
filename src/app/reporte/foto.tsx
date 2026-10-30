@@ -9,15 +9,10 @@ import { Tarjeta } from '@/components/Tarjeta';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
 import { usePermiso } from '@/hooks/usePermiso';
+import { volver } from '@/lib/navegacion';
 import { radio } from '@/lib/tema';
 
-function volver() {
-  if (router.canGoBack()) {
-    router.back();
-  } else {
-    router.replace('/reporte/nuevo');
-  }
-}
+const volverAlFormulario = () => volver('/reporte/nuevo');
 
 export default function FotoReporte() {
   const { borrador, actualizar } = useBorrador();
@@ -71,7 +66,7 @@ export default function FotoReporte() {
 
   function usarFoto() {
     actualizar({ fotoUri: uri });
-    volver();
+    volverAlFormulario();
   }
 
   function quitarFoto() {

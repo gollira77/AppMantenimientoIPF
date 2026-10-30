@@ -1848,3 +1848,23 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## Web · Volví al inicio cuando no hay historial
+
+**Qué hice**
+
+- `src/lib/navegacion.ts`: `volver(destino)` reemplaza las cuatro copias que tenían las pantallas. También la usa el guardado del formulario.
+- `src/lib/avisar.ts`: `avisar()` usa `Alert` en el celular y el aviso del navegador en web.
+
+**Por qué**
+
+- **Problema real:** guardar un reporte mostraba `The action 'GO_BACK' was not handled by any navigator`. El formulario llamaba a `router.back()` sin comprobar nada. En web pasa al recargar la página: el historial queda vacío.
+- Las otras pantallas ya lo controlaban, con el mismo código copiado cuatro veces. Por eso el formulario quedó afuera: una copia menos para olvidarse.
+- En web, `Alert.alert` no muestra nada: el reporte se guardaba sin ninguna confirmación.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `replace` y no `push`?* — Para que "atrás" no vuelva a la pantalla que se acaba de cerrar.
+- *¿Se perdía el reporte con ese error?* — No: ya estaba guardado. Fallaba solo la navegación.
+
+---
+

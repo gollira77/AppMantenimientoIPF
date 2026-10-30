@@ -1,5 +1,4 @@
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
 import { useState } from 'react';
 
 import { Boton } from '@/components/Boton';
@@ -12,16 +11,11 @@ import { useBorrador } from '@/hooks/useBorrador';
 import { usePantallaPrevia } from '@/hooks/usePantallaPrevia';
 import { usePermiso } from '@/hooks/usePermiso';
 import type { Sector } from '@/lib/aulas/sectores';
+import { volver } from '@/lib/navegacion';
 import { textoUbicacion } from '@/lib/reportes/textoUbicacion';
 import type { Ubicacion } from '@/lib/reportes/tipos';
 
-function volver() {
-  if (router.canGoBack()) {
-    router.back();
-  } else {
-    router.replace('/reporte/nuevo');
-  }
-}
+const volverAlFormulario = () => volver('/reporte/nuevo');
 
 export default function UbicacionReporte() {
   const { estado, parcial, abrirAjustes } = usePermiso('ubicacion');
@@ -53,13 +47,13 @@ export default function UbicacionReporte() {
 
   function usarUbicacion() {
     actualizar({ ubicacion });
-    volver();
+    volverAlFormulario();
   }
 
   // Sin ubicación precisa, el sector elegido a mano es lo que ubica el reporte.
   function usarSector(sector: Sector) {
     actualizar(ubicacion ? { ubicacion, sector } : { sector });
-    volver();
+    volverAlFormulario();
   }
 
   const elegirSector = <SelectorSector valor={borrador.sector} onElegir={usarSector} />;
@@ -119,7 +113,7 @@ export default function UbicacionReporte() {
         <Texto>Elegí el sector a mano. Si no lo sabés, con el aula alcanza para encontrarlo.</Texto>
         <Boton titulo="Usar mi ubicación" variante="secundario" onPress={abrirPrevia} />
         {elegirSector}
-        <Boton titulo="Volver al reporte" variante="secundario" onPress={volver} />
+        <Boton titulo="Volver al reporte" variante="secundario" onPress={volverAlFormulario} />
       </Pantalla>
     );
   }
@@ -134,7 +128,7 @@ export default function UbicacionReporte() {
       </Texto>
       <Boton titulo="Abrir Ajustes" variante="secundario" onPress={abrirAjustes} />
       {elegirSector}
-      <Boton titulo="Volver al reporte" variante="secundario" onPress={volver} />
+      <Boton titulo="Volver al reporte" variante="secundario" onPress={volverAlFormulario} />
     </Pantalla>
   );
 }

@@ -1,5 +1,4 @@
 import { CameraView, type BarcodeScanningResult } from 'expo-camera';
-import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -12,6 +11,7 @@ import { useBorrador } from '@/hooks/useBorrador';
 import { usePantallaPrevia } from '@/hooks/usePantallaPrevia';
 import { usePermiso } from '@/hooks/usePermiso';
 import { leerCodigoAula } from '@/lib/aulas/codigoQr';
+import { volver } from '@/lib/navegacion';
 import { colores, espacio } from '@/lib/tema';
 
 export default function EscanearAula() {
@@ -27,11 +27,7 @@ export default function EscanearAula() {
   function usarAula(aula: string) {
     actualizar({ aula });
     // Vuelvo al formulario; si se abrió el escáner directo por URL, lo abro.
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/reporte/nuevo');
-    }
+    volver('/reporte/nuevo');
   }
 
   function alLeer({ data }: BarcodeScanningResult) {

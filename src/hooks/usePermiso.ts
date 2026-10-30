@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, Linking, Platform } from 'react-native';
 
+import { avisar } from '@/lib/avisar';
 import { escucharPermiso, publicarPermiso } from '@/lib/permisos/difusion';
 import {
   esParcial,
@@ -46,7 +47,7 @@ export function usePermiso(recurso: Recurso): ResultadoPermiso {
   const abrirAjustes = useCallback(async () => {
     // El navegador no tiene una pantalla de Ajustes que se pueda abrir desde el código.
     if (Platform.OS === 'web') {
-      globalThis.alert?.(AVISO_AJUSTES_WEB);
+      avisar('Cambiar el permiso', AVISO_AJUSTES_WEB);
       return;
     }
     await Linking.openSettings();

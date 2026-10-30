@@ -1,6 +1,5 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Campo } from '@/components/Campo';
@@ -9,6 +8,8 @@ import { SelectorCategoria } from '@/components/SelectorCategoria';
 import { Texto } from '@/components/Texto';
 import { useBorrador } from '@/hooks/useBorrador';
 import { useReportes } from '@/hooks/useReportes';
+import { avisar } from '@/lib/avisar';
+import { volver } from '@/lib/navegacion';
 import type { Borrador } from '@/lib/reportes/borrador';
 import { validarReporte, type ErroresReporte } from '@/lib/reportes/esquema';
 
@@ -34,8 +35,8 @@ export default function NuevoReporte() {
     setErrores({});
     const nuevo = agregar(resultado.datos);
     limpiar();
-    Alert.alert('Reporte creado', `"${nuevo.titulo}" quedó registrado.`);
-    router.back();
+    avisar('Reporte creado', `"${nuevo.titulo}" quedó registrado.`);
+    volver();
   }
 
   return (
