@@ -46,3 +46,16 @@ jest.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: jest.fn(),
   getMediaLibraryPermissionsAsync: jest.fn(),
 }));
+
+// Las notificaciones las maneja el sistema operativo: en Node solo verifico cómo se las pido.
+jest.mock('expo-notifications', () => ({
+  getPermissionsAsync: jest.fn(pendiente),
+  requestPermissionsAsync: jest.fn(pendiente),
+  setNotificationChannelAsync: jest.fn().mockResolvedValue(null),
+  setNotificationHandler: jest.fn(),
+  scheduleNotificationAsync: jest.fn().mockResolvedValue('id-simulado'),
+  useLastNotificationResponse: jest.fn(() => undefined),
+  AndroidImportance: { HIGH: 5 },
+  SchedulableTriggerInputTypes: { TIME_INTERVAL: 'timeInterval' },
+  IosAuthorizationStatus: { NOT_DETERMINED: 0, DENIED: 1, AUTHORIZED: 2, PROVISIONAL: 3 },
+}));

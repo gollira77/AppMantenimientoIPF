@@ -72,6 +72,13 @@
           "cameraPermission": "Usamos tu cámara para leer el código QR del aula y sacar la foto del desperfecto que reportás.",
           "microphonePermission": false
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#1565C0",
+          "enableBackgroundRemoteNotifications": false
+        }
       ]
     ],
     "experiments": {

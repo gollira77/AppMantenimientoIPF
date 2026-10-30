@@ -1516,3 +1516,24 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M56 · Configuré expo-notifications
+
+**Qué hice**
+
+- Instalé `expo-notifications` con `npx expo install` y agregué su plugin a `app.json` con `color` y `enableBackgroundRemoteNotifications: false`.
+- Agregué el simulacro del módulo a `jest.setup.tsx`.
+- Verifiqué la API en la documentación del SDK 57: trigger con `SchedulableTriggerInputTypes.TIME_INTERVAL`, `channelId` dentro del trigger y `shouldShowBanner` / `shouldShowList` en lugar de `shouldShowAlert`, que está deprecado.
+
+**Por qué**
+
+- Un plugin por módulo (requisito 10). Las notificaciones de esta app son **locales**: no hay servidor ni token de push.
+- `enableBackgroundRemoteNotifications: false` deja explícito que iOS no necesita modos de segundo plano. El test de M45 sigue verificando que `UIBackgroundModes` está vacío.
+
+**Qué podría preguntar el docente**
+
+- *¿Funcionan en Expo Go?* — Las locales sí. Desde el SDK 53, Expo Go en Android no soporta push **remotas**, y mi app no las usa.
+- *¿Por qué el permiso de notificaciones no tiene texto de propósito en iOS?* — Porque iOS no pide una clave `NS...UsageDescription` para las notificaciones: muestra un diálogo fijo. Por eso importa más la pantalla previa.
+- *¿Y en Android?* — Desde Android 13 es un permiso peligroso, `POST_NOTIFICATIONS`. Lo aporta la librería al fusionar manifiestos; se audita en M67.
+
+---
+
