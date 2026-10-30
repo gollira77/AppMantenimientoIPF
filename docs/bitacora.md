@@ -1310,3 +1310,26 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *¿Qué es el mejor permiso?* — El que no hay que pedir: usar una herramienta del sistema (selector de fotos, de contactos o de archivos) que resuelve la necesidad sin dar acceso amplio.
 - *¿Tu app tendría problemas con la política de fotos de Google Play?* — No: no declara `READ_MEDIA_IMAGES` ni `READ_MEDIA_VIDEO`, y además los bloquea. No hay formulario que completar.
 - *¿Por qué ubicación aproximada para el reciclaje y no para tu app?* — Porque el reciclaje es a escala de barrio y mi app necesita el **sector de un edificio**. Por eso mi app pide la precisa, pero funciona con la aproximada eligiendo el sector a mano (M40).
+## M47 (evolución) · Actualicé el estado al volver de Ajustes con AppState
+
+**Qué hice**
+
+- En `usePermiso` agregué una suscripción a `AppState`: cuando la app vuelve a `'active'`, llama a `consultar()`.
+- La suscripción se limpia con `suscripcion.remove()` al desmontar.
+
+**Por qué**
+
+- **Problema real:** el paso 6 de D4. La persona ve "bloqueado", toca "Abrir Ajustes", habilita el permiso y vuelve. El sistema ya lo concedió, pero `respuesta` sigue siendo la vieja y la pantalla muestra "bloqueado".
+- Ajustes es **otra app**: no hay callback ni evento de permiso. Lo único que la app ve es que pasó a segundo plano y volvió. Ese es el momento justo para releer.
+- Uso `consultar()`, nunca `pedir()`: al volver no puede aparecer un diálogo que nadie pidió.
+- Funciona también al revés: si la persona **revoca** el permiso, en Android el sistema reinicia el proceso; y en iOS, al volver, `consultar()` ve el cambio.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no alcanza con `useEffect` al montar?* — Porque la pantalla nunca se desmontó: quedó debajo mientras la persona estaba en Ajustes. Al volver no hay montaje.
+- *¿Por qué `'active'` y no cualquier cambio?* — Porque los otros valores (`'background'`, `'inactive'`) indican que me estoy yendo. En ese momento no hay nada útil para hacer.
+- *¿Puede pasar que `AppState` dispare por el diálogo del sistema?* — Sí: en iOS el diálogo pasa la app por `'inactive'`. La consulta extra es inofensiva: no muestra nada y devuelve lo mismo.
+- *¿Por qué limpiar la suscripción?* — Si no la saco, cada montaje suma un oyente que sigue consultando para una pantalla que ya no existe.
+
+---
+

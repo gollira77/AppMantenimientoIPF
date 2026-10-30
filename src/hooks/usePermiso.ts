@@ -1,7 +1,7 @@
 import { Camera } from 'expo-camera';
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useState } from 'react';
-import { Linking } from 'react-native';
+import { AppState, Linking } from 'react-native';
 
 import {
   esParcial,
@@ -70,6 +70,15 @@ export function usePermiso(recurso: Recurso): ResultadoPermiso {
       vigente = false;
     };
   }, [funciones]);
+
+  // Los Ajustes del sistema están fuera de la app: nadie nos avisa si la persona cambió algo.
+  // Al volver al primer plano, releo el permiso. Consultar no muestra ningún diálogo.
+  useEffect(() => {
+    const suscripcion = AppState.addEventListener('change', (estadoApp) => {
+      if (estadoApp === 'active') void consultar();
+    });
+    return () => suscripcion.remove();
+  }, [consultar]);
 
   return {
     estado: interpretarRespuesta(respuesta),
