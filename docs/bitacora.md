@@ -44,3 +44,1908 @@ Material de estudio para la defensa oral. Cada módulo tiene tres partes: **Qué
 - *¿Por qué las rutas están en `src/app` y no en `app`?* — Expo Router busca primero `app/` y, si no existe, `src/app/`. La plantilla del SDK 57 ya usa `src/app`, y así todo el código fuente queda bajo `src`.
 - *¿Qué pasa si pongo un componente dentro de `src/app`?* — Expo Router lo toma como una ruta. Por eso los componentes van en `src/components`.
 - *¿Para qué sirve `_layout.tsx`?* — Define el navegador que envuelve a las pantallas de esa carpeta. Acá es un `Stack`; en M10 se agregan las tabs.
+
+---
+
+## M03 · Escribí el README inicial y creé la rama develop
+
+**Qué hice**
+
+- Reemplacé el README de la plantilla por uno propio: de qué trata la app, el stack, cómo correrla, la estructura de carpetas y el flujo de Git.
+- Creé la rama `develop` a partir de `main`. Desde este commit todo el trabajo va en `develop`.
+
+**Por qué**
+
+- El README es lo primero que ve quien abre el repo (incluido el docente). Tiene que explicar qué es la app y cómo levantarla sin leer el código.
+- Separar `develop` de `main` es una versión simple de Git Flow: `main` queda siempre estable y solo recibe la versión entregable (merge final con el tag `v1.0.0`). Si algo se rompe en el desarrollo, `main` no se entera.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no trabajás directo en `main`?* — Porque `main` representa lo que se entrega. Trabajando en `develop` puedo commitear módulo por módulo, aunque el trabajo esté a medias, sin ensuciar la versión estable.
+- *¿Cómo llega el código a `main`?* — Con un `git merge --no-ff develop` al final (M78). El `--no-ff` fuerza un commit de merge, así en el historial se ve claramente cuándo entró la versión 1.0.0.
+- *¿Por qué los commits tienen ese formato?* — Es Conventional Commits: `tipo(ámbito): mensaje`. El tipo (`feat`, `fix`, `refactor`…) dice qué clase de cambio es, y en M07 commitlint lo valida automáticamente.
+
+---
+
+## M04 · Respondí la Parte A sobre qué es un permiso
+
+**Qué hice**
+
+- Creé `RESPUESTAS.md` y escribí la Parte A: qué es un permiso, para qué existe, la diferencia entre declararlo y pedirlo, los tipos de permisos en Android e iOS, sus estados y quién decide.
+- Cité las fuentes oficiales (Android Developers, Apple Developer y docs.expo.dev).
+
+**Por qué**
+
+- Antes de escribir código de permisos necesito tener claro el modelo: si confundo "declarar" (en la build) con "pedir" (en ejecución), después no entiendo por qué un pedido falla.
+- Adelanté la tabla de los cuatro estados (`cargando`, `concedido`, `preguntable`, `bloqueado`) porque es la base del hook `usePermiso` que voy a construir más adelante.
+
+**Qué podría preguntar el docente**
+
+- *¿Cuál es la diferencia entre declarar y pedir un permiso?* — Declarar es avisarle al sistema, en la build, que la app puede llegar a usar un recurso (`AndroidManifest.xml` o `Info.plist`). Pedir es mostrar el diálogo en ejecución. Sin declarar, no se puede pedir.
+- *¿Desde qué versión Android pide permisos en ejecución?* — Desde Android 6.0 (API 23). Antes se aceptaban todos al instalar.
+- *¿Qué significa `canAskAgain: false`?* — Que el sistema ya no va a mostrar el diálogo (por ejemplo, la persona denegó dos veces en Android o una vez en iOS). La única salida es mandarla a Ajustes.
+- *¿Qué es un permiso parcial?* — Uno concedido pero con menos alcance: ubicación aproximada en vez de precisa, o acceso solo a algunas fotos.
+
+---
+
+## M04 (corrección) · Reescribí la Parte A con el enunciado oficial
+
+**Qué hice**
+
+- Guardé el enunciado completo de las Partes A–F en `docs/consignas.md`.
+- Reescribí la Parte A de `RESPUESTAS.md` siguiendo la numeración oficial: A1 (conceptos, sandbox, cuatro razones, analogía del portero), A2 (tabla declarar/solicitar), A3 (verdadero o falso) y A4 (diagramas de estados y tabla de Expo).
+
+**Por qué**
+
+- En M04 respondí la Parte A sin tener el enunciado literal. Cuando lo recibí, lo corregí en un commit nuevo en lugar de modificar el de M04, porque la consigna pide no reescribir el historial.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué hay un commit que no está en la lista de módulos?* — Porque corregí la Parte A después de recibir el enunciado. Preferí un commit honesto a reescribir el historial con `--amend` o `rebase`.
+- *¿Cuál es la diferencia central entre Android e iOS en los estados?* — iOS muestra el diálogo una sola vez; Android da dos oportunidades y recién el segundo "no" bloquea.
+
+---
+
+## M05 · Activé TypeScript estricto, ESLint y Prettier
+
+**Qué hice**
+
+- `tsconfig.json`: además de `strict`, activé `noUncheckedIndexedAccess`, `noImplicitReturns`, `noFallthroughCasesInSwitch` y `forceConsistentCasingInFileNames`.
+- ESLint con la configuración plana (`eslint.config.js`) de `eslint-config-expo`, más `eslint-plugin-prettier/recommended` para que un error de formato sea un error de lint.
+- Prettier con `.prettierrc` (comillas simples, 100 columnas, coma final, fin de línea LF). Excluí los `.md` porque Prettier rellena las tablas con espacios y quedan ilegibles en texto plano.
+- `.gitattributes` y `.editorconfig` para forzar LF y no tener diferencias falsas entre Windows y el CI de Linux.
+- Scripts nuevos: `typecheck`, `format` y `format:check`.
+
+**Por qué**
+
+- `strict` obliga a manejar `null` y `undefined`. Esto es clave en esta app: el permiso de cámara vale `null` en el primer render, y con `strict` TypeScript no me deja leer `permiso.granted` sin chequearlo antes.
+- `noUncheckedIndexedAccess` hace que `lista[0]` sea `T | undefined`. Lo voy a necesitar al buscar un reporte por id: si no existe, el tipo me obliga a mostrar el mensaje de "no encontrado".
+- ESLint encuentra errores (por ejemplo, reglas de hooks) y Prettier se encarga solo del formato, así no discuto estilo en las revisiones.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué diferencia hay entre ESLint y Prettier?* — ESLint analiza el código y detecta errores o malas prácticas (por ejemplo, llamar un hook dentro de un `if`). Prettier solo reescribe el formato. Los conecté para que `npx expo lint` falle si el formato no está bien.
+- *¿Qué agrega `strict`?* — Entre otras cosas, `strictNullChecks` (null y undefined son tipos aparte) y `noImplicitAny` (prohíbe los `any` implícitos).
+- *¿Por qué LF y no CRLF?* — El CI corre en Linux. Si en Windows los archivos tienen CRLF, Prettier marca todos los archivos como mal formateados.
+
+---
+
+## M06 · Configuré Jest con jest-expo y escribí el primer test
+
+**Qué hice**
+
+- Instalé `jest`, `jest-expo`, `@types/jest` y `@testing-library/react-native` 13 (con `npx expo install`, para que las versiones coincidan con el SDK 57).
+- Configuré Jest en `package.json` con el preset `jest-expo` y el `transformIgnorePatterns` que recomienda la guía de Expo. Ignoré `src/app` como carpeta de tests.
+- Scripts: `npm test` (una corrida, para el CI y los hooks), `test:watch` y `test:coverage`.
+- Primer test en `src/__tests__/inicio.test.tsx`: renderiza la pantalla de inicio y verifica que aparece "Mantenimiento IPF".
+
+**Por qué**
+
+- `jest-expo` ya simula (mockea) la parte nativa de los módulos de Expo. Sin eso, importar `expo-camera` en un test fallaría porque en Node no hay cámara.
+- En el SDK 57, `expo-router/testing-library` funciona solo con Testing Library **13** (la 14 es para el SDK 58). La versión 13 necesita `react-test-renderer` como dependencia par: la fijé en `19.2.3`, igual que React, porque npm intentaba traer la 19.3.1 y chocaba.
+- Los tests no van dentro de `src/app` porque Expo Router trataría cada archivo como una ruta.
+- TypeScript 6 ya no carga automáticamente todos los `@types`, así que agregué `"types": ["jest"]` en `tsconfig.json` (como indica la guía de Expo).
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es un preset de Jest?* — Una configuración base. `jest-expo` define cómo transformar el código (Babel), qué archivos son tests y los mocks de los módulos nativos.
+- *¿Para qué sirve `transformIgnorePatterns`?* — Jest no transforma `node_modules` por defecto, pero React Native y Expo publican código sin compilar. Ese patrón le dice que sí transforme esos paquetes.
+- *¿Por qué `getByText` y no buscar por estilo o por id interno?* — Testing Library propone probar lo que ve la persona usuaria. Si cambio la implementación pero el texto sigue, el test sigue pasando.
+
+---
+
+## M07 · Agregué husky y commitlint para validar cada commit
+
+**Qué hice**
+
+- Instalé `husky`, `lint-staged`, `@commitlint/cli` y `@commitlint/config-conventional` (con `npm`, porque no son módulos de Expo).
+- `npx husky init` agregó el script `prepare` y la carpeta `.husky`.
+- Hook `pre-commit`: corre `lint-staged` (ESLint y Prettier solo sobre los archivos en stage), `npm run typecheck` y `npm test`.
+- Hook `commit-msg`: corre `commitlint` sobre el mensaje.
+- `commitlint.config.js`: extiende Conventional Commits, limita los tipos a los diez de la consigna y exige el tipo en minúscula.
+- Probé los 84 mensajes de la lista de módulos contra commitlint y pasan todos.
+
+**Por qué**
+
+- La consigna pide que tipos, lint y tests pasen antes de cada commit. Con el hook no depende de que me acuerde: si algo falla, el commit no se hace.
+- `lint-staged` revisa solo lo que voy a commitear, así el hook es rápido. Los tipos y los tests sí corren sobre todo el proyecto, porque un cambio en un archivo puede romper otro.
+- Subí el largo máximo del encabezado a 120 caracteres porque algunos mensajes de la consigna (por ejemplo, el de M21) superan los 100 que trae por defecto.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es un hook de Git?* — Un script que Git ejecuta en un momento del ciclo (antes de commitear, al escribir el mensaje, antes de pushear). Husky los versiona dentro del repo para que todo el equipo tenga los mismos.
+- *¿Qué rechaza commitlint?* — Por ejemplo `Feat: Algo`: el tipo en mayúscula, un tipo que no está en la lista o un asunto que empieza con mayúscula.
+- *¿Se puede saltear el hook?* — Sí, con `--no-verify`, pero no lo uso. Además el CI (M08) repite las mismas verificaciones en GitHub, así que no sirve de nada saltearlo.
+
+---
+
+## M08 · Configuré lint, tipos y tests en cada push
+
+**Qué hice**
+
+- Creé `.github/workflows/ci.yml`. Corre en cada push y pull request a `main` y `develop`, sobre Ubuntu con Node 22.
+- Pasos: `npm ci`, generar `expo-env.d.ts`, `npx expo lint`, `npm run format:check`, `npm run typecheck`, `npm test -- --ci` y `npx expo-doctor`.
+- Corrí `npx expo-doctor` en mi máquina antes de subirlo: 21/21 verificaciones OK.
+
+**Por qué**
+
+- Los hooks de Husky corren en mi computadora y se pueden saltear. El CI es la verificación que no depende de mí: corre en una máquina limpia, igual para todos.
+- `npm ci` (y no `npm install`) instala exactamente lo que dice `package-lock.json` y falla si no coincide con `package.json`. Así el CI prueba las mismas versiones que yo.
+- `expo-env.d.ts` está en `.gitignore` (lo genera Expo al arrancar), así que en el CI lo creo a mano para que TypeScript conozca los tipos de Expo.
+- `expo-doctor` revisa que las versiones de los paquetes sean compatibles con el SDK 57 y que la configuración sea válida. Es lo que más rápido detecta un paquete instalado con `npm` en vez de `npx expo install`.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué diferencia hay entre el hook de pre-commit y el CI?* — El hook es local y rápido (avisa antes de commitear). El CI es remoto y obligatorio: si falla, se ve en GitHub con una cruz roja en el commit.
+- *¿Qué hace `--ci` en Jest?* — Desactiva el modo interactivo y hace que los snapshots nuevos fallen en lugar de escribirse solos.
+- *¿Por qué Node 22?* — Es una versión LTS compatible con el SDK 57. En mi máquina uso Node 24, que también es compatible.
+
+---
+
+## M09 · Agregué la plantilla de pull request y cerré la fase de calidad
+
+**Qué hice**
+
+- Creé `.github/pull_request_template.md`. GitHub la carga sola cada vez que alguien abre un pull request.
+- La plantilla pide: qué cambia, por qué, qué permisos toca, cómo se probó en cada plataforma y un checklist con las reglas de la app (no bloquear, pantalla previa, bitácora).
+- Verifiqué que el CI de M08 corrió en GitHub y terminó en verde.
+
+**Por qué**
+
+- En una app de permisos, lo más peligroso de un cambio es tocar `app.json` sin darse cuenta: eso exige una build nueva y no se puede arreglar con una actualización OTA. La plantilla obliga a marcarlo.
+- El checklist repite las reglas no negociables de la consigna (la app nunca se bloquea, pantalla previa con "Continuar"), así quien revisa sabe qué mirar.
+
+**Resumen de la fase de calidad (M05–M09)**
+
+| Capa | Herramienta | Cuándo corre |
+| --- | --- | --- |
+| Tipos | TypeScript `strict` | Editor, pre-commit y CI |
+| Errores y formato | ESLint + Prettier | Editor, pre-commit (`lint-staged`) y CI |
+| Comportamiento | Jest + Testing Library | Pre-commit y CI |
+| Mensajes de commit | commitlint | Hook `commit-msg` |
+| Compatibilidad con el SDK | `expo-doctor` | CI |
+
+**Qué podría preguntar el docente**
+
+- *¿Para qué una plantilla de PR si trabajás solo?* — Me obliga a revisar mi propio cambio antes de mergearlo, y deja documentado cómo lo probé en cada plataforma.
+- *¿Qué cambios de permisos no se pueden publicar por OTA?* — Todo lo que cambia el binario nativo: agregar o quitar un plugin, cambiar un texto de propósito del `Info.plist` o tocar `blockedPermissions`. Una actualización OTA solo cambia el JavaScript y los assets.
+
+---
+
+## M10 · Armé las tabs Reportes, Avisos y Permisos
+
+**Qué hice**
+
+- Creé el grupo `src/app/(tabs)` con su `_layout.tsx` y tres pantallas: `index.tsx` (Reportes), `avisos.tsx` y `permisos.tsx`.
+- Moví la pantalla de inicio a `(tabs)/index.tsx`, así `/` abre la tab Reportes.
+- El layout raíz (`src/app/_layout.tsx`) es un `Stack` que contiene las tabs sin encabezado propio. Las pantallas de reporte, ajustes y la pantalla previa van a abrirse **encima** de las tabs.
+- Íconos con `@expo/vector-icons` (Ionicons), instalado con `npx expo install`.
+- Verifiqué con `npx expo export --platform android` que Metro arma el bundle sin errores.
+
+**Por qué**
+
+- Los paréntesis de `(tabs)` hacen un **grupo**: organiza archivos sin agregar un segmento a la URL. Por eso la tab Avisos es `/avisos` y no `/tabs/avisos`, como pide la tabla de rutas.
+- Stack afuera y tabs adentro: así una pantalla como `/reporte/nuevo` tapa la barra de tabs y tiene botón "atrás".
+- En el SDK 57, importar `Tabs` desde `expo-router` está **deprecado**: la documentación de tipos indica `import { Tabs } from 'expo-router/js-tabs'`. Lo verifiqué en los tipos del paquete instalado antes de usarlo.
+- El ícono de la tab recibe `color` como `ColorValue` (no `string`). TypeScript estricto lo marcó y ajusté el tipo.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es un grupo de rutas?* — Una carpeta entre paréntesis. Sirve para compartir un layout (acá, la barra de tabs) sin que el nombre aparezca en la URL.
+- *¿Por qué ninguna tab pide permisos?* — Porque abrir una pantalla no es el momento de pedir: el permiso se pide cuando la persona toca la función que lo necesita (escanear, sacar foto, activar avisos).
+- *¿Qué diferencia hay entre `expo-router/js-tabs` y las tabs nativas de la plantilla?* — `js-tabs` dibuja la barra con React Navigation (JavaScript) y se ve igual en las dos plataformas. Las nativas (`unstable-native-tabs`) usan los componentes del sistema y todavía son inestables.
+
+---
+
+## M11 · Creé las rutas de reporte y ajustes-app vacías
+
+**Qué hice**
+
+- Creé las pantallas vacías (solo título y una línea de texto): `reporte/nuevo`, `reporte/escanear`, `reporte/foto`, `reporte/ubicacion`, `reporte/[id]`, `ajustes-app` y `herramientas/qr`.
+- Las registré en el `Stack` raíz con su título.
+- En la tab Reportes agregué dos `Link`: "Nuevo reporte" y "Ajustes de la app".
+- `reporte/[id].tsx` lee el parámetro con `useLocalSearchParams<{ id: string }>()`.
+- Ajustes de herramientas que aparecieron al hacer esto:
+  - **Tipos de rutas:** `typedRoutes` genera `.expo/types/router.d.ts` con las URLs válidas, pero solo se actualiza con el servidor de desarrollo. Agregué el script `tipos:rutas` (`expo customize tsconfig.json`, que los regenera sin levantar Metro) y lo encadené en `typecheck`. El CI usa el mismo script.
+  - **Jest:** `Link` importa el paquete `standard-navigation`, que viene como módulo ESM sin compilar. Lo agregué a `transformIgnorePatterns`.
+
+**Por qué**
+
+- Primero armo el "mapa" de la app con pantallas vacías y después las lleno. Así puedo probar la navegación completa (M13) antes de escribir la lógica.
+- `[id]` entre corchetes es un **segmento dinámico**: `/reporte/abc` y `/reporte/123` abren el mismo archivo con distinto `id`.
+- Con `typedRoutes`, `<Link href="/reporte/nuevoo">` es un error de TypeScript. Me di cuenta porque los tipos viejos no conocían las rutas nuevas y `tsc` falló: por eso los regenero antes de chequear tipos.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué diferencia hay entre `reporte/nuevo.tsx` y `reporte/[id].tsx` si las dos están en la misma carpeta?* — `nuevo` es una ruta estática y tiene prioridad. `/reporte/nuevo` abre el formulario; cualquier otro valor (`/reporte/7`) cae en `[id]`.
+- *¿Qué son las typed routes?* — Expo Router genera tipos con todas las URLs de `src/app`. Si escribo mal una ruta en un `Link` o en `router.push`, TypeScript lo marca antes de ejecutar.
+- *¿Ya se pide algún permiso?* — No. Las pantallas de escanear, foto y ubicación existen pero no tocan ningún módulo nativo todavía.
+
+---
+
+## M12 · Agregué la pantalla previa como modal y la página 404
+
+**Qué hice**
+
+- Creé `src/app/permisos/[recurso].tsx`, la futura pantalla previa al diálogo del sistema. Por ahora solo muestra qué recurso se va a pedir (`/permisos/camara`, `/permisos/ubicacion`…).
+- La registré en el `Stack` raíz con `presentation: 'modal'` y título "Antes de continuar".
+- Creé `src/app/+not-found.tsx`: cualquier URL que no exista muestra "Esta pantalla no existe" y un enlace para volver a la lista de reportes.
+
+**Por qué**
+
+- La pantalla previa es un **modal** porque interrumpe una tarea (estoy escaneando, sacando una foto) y después vuelvo a ella. En iOS el modal sube desde abajo y se ve como algo "de paso", no como una sección más de la app.
+- `[recurso]` es dinámico: una sola pantalla sirve para cámara, ubicación y notificaciones. El texto cambia según el recurso (M49).
+- La página 404 es importante porque la app recibe enlaces desde afuera: al tocar una notificación se abre `/reporte/<id>` (M62). Si la URL está mal, la persona tiene que ver un mensaje y una salida, no una pantalla rota.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué el archivo se llama `+not-found`?* — Los archivos con `+` son especiales en Expo Router. `+not-found` es la pantalla que se muestra cuando ninguna ruta coincide con la URL.
+- *¿`/permisos` y `/permisos/camara` no chocan?* — No. `/permisos` es la tab (`(tabs)/permisos.tsx`, el grupo no suma a la URL) y `/permisos/camara` es el modal (`permisos/[recurso].tsx`). Son URLs distintas.
+- *¿Por qué la pantalla previa no tiene botón "Cerrar"?* — Por la pauta 5.1.1(iv) de Apple: antes del diálogo del sistema no se puede ofrecer una salida que evite la pregunta. Va a tener un único botón "Continuar" (M49).
+
+---
+
+## M13 · Verifiqué que cada URL de G1 abre su pantalla
+
+**Qué hice**
+
+- Escribí `src/__tests__/rutas.test.tsx` con `renderRouter` de `expo-router/testing-library`, que monta el router real usando la carpeta `src/app`.
+- Para cada URL de la tabla de rutas (G1) verifico que el router queda en esa URL (`getPathname()`) y que **no** aparece la página 404.
+- Tests extra: `/reporte/42` cae en el segmento `[id]`, `/permisos/camara` cae en `[recurso]` y una URL inexistente muestra la 404.
+- Agregué `jest.setup.ts` con un mock de los íconos de Ionicons.
+
+**Por qué**
+
+- Probar la navegación a mano en el celular en cada cambio es lento. Con este test, si alguien mueve o renombra un archivo de `src/app` y rompe una URL, el CI lo detecta.
+- Al principio comparaba también el texto de cada pantalla, pero eso es frágil: cuando llene las pantallas cambian los textos y el test fallaría sin que la navegación esté rota. Lo que importa acá es **URL → pantalla**, no el contenido.
+- Primero usé `expect(screen).toHavePathname(...)` como en la documentación, pero el hook de pre-commit lo frenó: en el SDK 57 ese matcher no está tipado para TypeScript. Uso los métodos del resultado de `renderRouter` (`getPathname`, `getSegments`), que sí tienen tipos.
+- Los íconos cargan su fuente en forma asíncrona y llenaban la salida de advertencias `act(...)`. En un test de rutas el ícono no importa, así que lo reemplacé por un componente vacío.
+- En el SDK 57 `renderRouter` es **sincrónico**. En el SDK 58 pasa a ser asíncrono (`await renderRouter(...)`), según la guía de migración.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no probaste con `render(<NuevoReporte />)` directamente?* — Porque eso prueba el componente, no la ruta. `renderRouter` usa el mismo mapeo archivo → URL que la app real, que es lo que quiero verificar.
+- *¿Qué es `getSegments()`?* — Los segmentos de archivo que coincidieron con la URL. Para `/reporte/42` es `['reporte', '[id]']`: demuestra que la URL cayó en la ruta dinámica y no en otra.
+- *¿Qué es un mock?* — Un reemplazo falso de un módulo para el test. `jest.mock` hace que cualquier `import` de ese módulo reciba la versión falsa.
+
+---
+
+## M14 · Creé el tema y los componentes base
+
+**Qué hice**
+
+- `src/lib/tema.ts`: tokens de diseño (colores, espacios, radios y tipografía). Es un archivo sin React, por eso va en `lib`.
+- Componentes base en `src/components`:
+  - `Pantalla`: contenedor con fondo, márgenes y scroll (o sin scroll, para la cámara o listas).
+  - `Texto`: variantes `titulo`, `subtitulo`, `cuerpo` y `secundario`. Los títulos se anuncian como encabezado (`accessibilityRole="header"`).
+  - `Boton`: variantes `primario`, `secundario` y `peligro`, con estados deshabilitado y cargando. Alto mínimo de 48 px, rol `button` y etiqueta accesible.
+  - `Campo`: etiqueta + `TextInput` + mensaje de error. Lo uso en el formulario de M17.
+  - `Tarjeta` y `Enlace`.
+- Pasé todas las pantallas provisorias a estos componentes y apliqué el color primario a encabezados y tabs.
+- Tests de `Boton` (responde al toque, no responde deshabilitado ni cargando) y de `Campo`. Borré el test de inicio de M06 porque la pantalla ya la cubre el test de rutas.
+
+**Por qué**
+
+- Antes cada pantalla repetía el mismo `StyleSheet`. Con los componentes, cambiar el color primario o el margen se hace en un solo lugar.
+- Los tokens van a facilitar el modo oscuro (M74): alcanza con tener un segundo juego de colores.
+- La accesibilidad empieza acá: si `Boton` ya tiene rol, etiqueta y estado, todas las pantallas lo heredan. En la pantalla previa el botón "Continuar" va a ser un `Boton` primario.
+- En los tests busco por rol y nombre (`getByRole('button', { name: 'Continuar' })`), igual que un lector de pantalla. Si el botón no fuera accesible, el test no lo encontraría.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `Pressable` y no `TouchableOpacity`?* — `Pressable` es el componente actual de React Native para toques: da el estado `pressed` para el estilo y es más configurable. `TouchableOpacity` sigue existiendo pero se considera legado.
+- *¿Por qué 48 px de alto mínimo?* — Es el área táctil mínima recomendada por Material Design (48 dp). Apple recomienda 44 pt. Con 48 se cumplen las dos.
+- *¿Qué hace `accessibilityState={{ disabled, busy }}`?* — Le avisa al lector de pantalla (TalkBack o VoiceOver) que el botón está deshabilitado o procesando.
+
+---
+
+## M15 · Definí los tipos de reporte, categoría y estado
+
+**Qué hice**
+
+- `src/lib/reportes/tipos.ts` con:
+  - `CATEGORIAS` (electricidad, agua, mobiliario, equipos) y el tipo `Categoria`.
+  - `ESTADOS` (pendiente, en proceso, resuelto) y el tipo `Estado`.
+  - El tipo `Reporte`: id, título, descripción, aula, categoría, estado y fecha de creación (ISO 8601).
+  - Etiquetas para mostrar en pantalla (`ETIQUETA_CATEGORIA`, `ETIQUETA_ESTADO`) y la función `esCategoria`.
+- Tests: las cuatro categorías, que todo tenga etiqueta y que `esCategoria` rechace valores inválidos.
+
+**Por qué**
+
+- Defino las categorías como un arreglo `as const` y saco el tipo de ahí (`(typeof CATEGORIAS)[number]`). Así hay **una sola fuente de verdad**: el arreglo sirve para dibujar los botones del formulario y el tipo para que TypeScript controle. Si agrego una categoría, TypeScript me obliga a ponerle etiqueta (`Record<Categoria, string>`).
+- La fecha se guarda como texto ISO y no como `Date` porque después la voy a guardar en AsyncStorage (M64), que solo guarda texto.
+- Todavía no agrego foto, ubicación ni sector: esos campos aparecen cuando llegan sus módulos. Así el modelo crece con la app.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué hace `as const`?* — Hace que TypeScript tome el arreglo como de solo lectura y con los valores literales (`'agua'`), no como `string[]`. Sin eso no podría derivar el tipo `Categoria`.
+- *¿Qué es `valor is Categoria`?* — Un *type guard*: si la función devuelve `true`, TypeScript sabe que a partir de ahí `valor` es una `Categoria`.
+- *¿Por qué `en_proceso` con guion bajo?* — Es el valor interno (estable, sin espacios ni tildes). Lo que ve la persona sale de `ETIQUETA_ESTADO`: "En proceso".
+
+---
+
+## M16 · Mostré la lista de reportes con datos de prueba
+
+**Qué hice**
+
+- `src/lib/reportes/datosDePrueba.ts`: tres reportes de ejemplo, uno por estado.
+- La tab Reportes guarda la lista en un **`useState`** y la muestra con `FlatList`.
+- Componentes nuevos: `TarjetaReporte` (título, aula, categoría y estado; al tocarla abre `/reporte/<id>`) y `EtiquetaEstado` (pendiente en naranja, en proceso en azul, resuelto en verde).
+- Botón "Nuevo reporte" que navega a `/reporte/nuevo`.
+- Tests: se ven los reportes con su estado, tocar uno abre su detalle y el botón abre el formulario.
+
+**Por qué**
+
+- Arranco con datos falsos para construir y probar la interfaz sin depender del formulario ni del almacenamiento.
+- Uso `useState` **a propósito**, como pide la consigna para esta versión. Ya sé que tiene un problema: el estado vive dentro de esta pantalla, así que cuando el formulario cree un reporte, la lista no se va a enterar. Ese problema aparece en M17 y lo resuelvo en M21 con un contexto.
+- `FlatList` y no `ScrollView` con `map`: `FlatList` solo dibuja lo que se ve en pantalla. Con muchos reportes, la diferencia de rendimiento es grande.
+- El estado no se comunica **solo con color**: la etiqueta tiene texto y el lector de pantalla lee "Estado: Pendiente". Así lo entiende alguien que no distingue colores.
+
+**Qué podría preguntar el docente**
+
+- *¿Para qué sirve `keyExtractor`?* — Le da a React una clave estable por fila (el id del reporte). Con eso, al agregar o quitar un reporte, React sabe qué fila cambió y no redibuja todas.
+- *¿Por qué el `useState` no tiene `setReportes`?* — Porque en esta versión la lista no cambia: solo muestra los datos de prueba. Lo agrego cuando haga falta.
+- *¿Esta pantalla pide algún permiso?* — No, y no debe pedirlo: es la pantalla de inicio. Pedir permisos al abrir la app es una mala práctica (Parte F1).
+
+---
+
+## M17 · Armé el formulario de nuevo reporte
+
+**Qué hice**
+
+- `/reporte/nuevo` tiene los cuatro campos de la consigna: título, descripción, aula y categoría.
+- Cada campo es un `useState`. La categoría se elige con `SelectorCategoria`: cuatro opciones con rol `radio` (el lector de pantalla las anuncia como "botón de opción, marcado").
+- "Guardar reporte" muestra un `Alert` y vuelve atrás.
+- La pantalla **no pide ningún permiso al abrirse**, como exige la consigna. Agregué una línea que lo deja claro: "Ningún dato del celular es obligatorio para crear el reporte".
+- Tests: aparecen los cuatro campos y la categoría elegida queda marcada.
+
+**Por qué**
+
+- Esta es la versión simple. Tiene dos problemas que dejo a la vista a propósito:
+  1. **No valida nada**: se puede guardar un reporte vacío. Lo resuelvo en M18 con zod.
+  2. **El reporte no llega a la lista**: la lista guarda sus datos en su propio `useState` (M16), y el formulario no tiene forma de llegar a ese estado. Lo resuelvo en M21 con un contexto.
+- La categoría es un grupo de opciones y no un menú desplegable: con cuatro opciones se ven todas de un vistazo y se elige con un toque.
+- `maxLength` en título y descripción evita textos enormes antes de llegar a la validación.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué el formulario no pide la cámara o la ubicación al abrirse?* — Porque la persona todavía no eligió usar esas funciones. Pedir antes de tiempo entrena el "No permitir" automático. El escáner, la foto y la ubicación son opcionales y se piden cuando se tocan.
+- *¿Qué es un componente controlado?* — Un `TextInput` cuyo valor viene del estado (`value={titulo}`) y que avisa cada cambio (`onChangeText={setTitulo}`). La fuente de verdad es el estado de React, no el input.
+- *¿Por qué `autoCapitalize="characters"` en el aula?* — Los códigos de aula van en mayúsculas ("B12"). Así el teclado ya sale en mayúsculas.
+
+---
+
+## M18 · Validé el formulario con zod
+
+**Qué hice**
+
+- Instalé `zod` (versión 4) con `npx expo install`.
+- `src/lib/reportes/esquema.ts` define `esquemaReporte`:
+  - **título:** de 3 a 60 letras;
+  - **descripción:** de 10 a 500 letras;
+  - **aula:** obligatoria, hasta 12 caracteres, se pasa a mayúsculas y solo admite letras, números y guiones (`B12`, `LAB-2`);
+  - **categoría:** una de las cuatro de `CATEGORIAS`.
+- La función `validarReporte` usa `safeParse` y devuelve `{ ok: true, datos }` o `{ ok: false, errores }` con **un mensaje por campo**.
+- El formulario muestra cada error debajo de su campo (en rojo y con el borde rojo) y no guarda hasta que todo esté bien.
+
+**Por qué**
+
+- La validación vive en `lib` y no en la pantalla: es lógica pura, se puede testear sin renderizar nada (M19) y la reutilizo si el reporte llega por otro camino (por ejemplo, el aula leída del QR en M26).
+- El esquema también **limpia** los datos: saca espacios (`trim`) y pasa el aula a mayúsculas. Lo que se guarda es `resultado.datos`, no lo que se tipeó.
+- El tipo `DatosReporte` sale del esquema con `z.infer`: hay una sola definición para la validación y para TypeScript.
+- Los mensajes dicen **cómo corregir** ("Usá letras, números y guiones, por ejemplo B12"), no solo "inválido".
+- En zod 4 el mensaje se pasa con `{ error: '...' }` (en zod 3 era `{ message: '...' }`). Lo verifiqué en la versión instalada.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué diferencia hay entre `parse` y `safeParse`?* — `parse` lanza una excepción si los datos no sirven. `safeParse` devuelve un objeto con `success`, así el error se maneja con un `if` y no con `try/catch`.
+- *¿Por qué `entrada: unknown`?* — Porque la validación es justamente lo que convierte datos desconocidos en datos con tipo. Si recibiera `DatosReporte`, estaría asumiendo lo que quiero comprobar.
+- *¿Por qué el mensaje del aula menciona el QR?* — Porque el aula se puede cargar escaneando el QR o, si se deniega la cámara, escribiéndola a mano. El mensaje recuerda las dos opciones.
+
+---
+
+## M19 · Cubrí los casos inválidos del formulario
+
+**Qué hice**
+
+- `src/__tests__/esquema.test.ts` prueba `validarReporte` sin renderizar nada:
+  - un reporte válido se acepta y se **limpia** (espacios afuera, aula en mayúsculas);
+  - el formulario vacío da un error en cada uno de los cuatro campos;
+  - título corto, de solo espacios o de más de 60 letras;
+  - descripción de menos de 10 o más de 500 letras;
+  - aulas inválidas (`B 12`, `B12!`, `-B12`, `B12-`, `AULA/3`), vacía (el mensaje menciona el QR) o demasiado larga;
+  - categoría `null`, vacía, inexistente (`gas`) o con mayúscula (`Agua`);
+  - entradas que ni siquiera son objetos (`undefined`, un texto).
+- En `formulario.test.tsx` agregué dos tests de pantalla:
+  - guardar vacío muestra los mensajes;
+  - con datos válidos, el reporte se guarda (se llama a `Alert.alert`) y la app vuelve a la lista.
+
+**Por qué**
+
+- La mayoría de los casos se prueban sobre la función pura porque es rápido y directo. En la pantalla pruebo lo que la función no puede saber: que los errores se **muestren** y que la navegación funcione.
+- Con `it.each` escribo un caso por fila de una tabla: si agrego un formato de aula inválido nuevo, es una línea.
+- El test de pantalla con datos válidos me mostró un detalle: `router.back()` necesita el router montado. Por eso ese test usa `renderRouter`, entra al formulario con el botón real "Nuevo reporte" y verifica que al guardar se vuelve a `/`.
+- `jest.spyOn(Alert, 'alert')` reemplaza el cartel nativo, que en Jest no existe, y me deja comprobar con qué texto se llamó.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué casos borde probaste?* — Textos con solo espacios (gracias a `trim` no pasan), aulas con espacios o símbolos, la categoría con mayúscula y entradas que no son objetos.
+- *¿Por qué `'Agua'` es inválida si existe la categoría agua?* — Porque el valor interno es `agua`. La interfaz manda siempre el valor interno, así que un `Agua` indicaría un error en otra parte del código.
+- *¿Qué es un spy?* — Un envoltorio sobre una función real que registra cómo se la llamó. Con `mockImplementation` además reemplazo lo que hace.
+
+---
+
+## M20 · Validé el id del detalle y mostré un mensaje si no existe
+
+**Qué hice**
+
+- `src/lib/reportes/buscar.ts` con `buscarReporte(reportes, idCrudo)`, que devuelve uno de tres resultados:
+  - `invalido`: el id no es un texto o tiene caracteres raros (solo acepto letras, números y guiones, hasta 40);
+  - `no_encontrado`: el id es válido pero no hay ningún reporte con ese número;
+  - `encontrado`: el reporte.
+- `/reporte/[id]` muestra un mensaje distinto para cada caso. Los dos casos de error tienen un enlace "Volver a mis reportes".
+- Si el reporte existe, muestra título, estado, aula, categoría, fecha (con formato argentino) y descripción.
+- Tests de la función (incluido un id repetido como arreglo, uno vacío y uno con `<script>`) y de la pantalla para los tres casos.
+
+**Por qué**
+
+- El id llega por la URL, y la URL la puede escribir cualquiera o venir de una notificación vieja (M62). No puedo confiar en ella: `useLocalSearchParams` puede devolver `undefined`, un texto cualquiera o un arreglo si el parámetro se repite.
+- Separé "inválido" de "no existe" porque significan cosas distintas: uno es un enlace mal armado y el otro un reporte que ya no está. El mensaje ayuda a entender qué pasó.
+- El resultado es una **unión discriminada** (`tipo`). TypeScript me obliga a manejar los tres casos y, dentro de cada `if`, sabe qué campos existen (`reporte` solo existe si `tipo === 'encontrado'`).
+- La pantalla todavía busca en los datos de prueba. Un reporte nuevo del formulario no aparecería acá: es el mismo problema de M17, que resuelvo en el próximo módulo.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no usar la página 404 para un reporte que no existe?* — Porque la ruta sí existe (`/reporte/[id]`); lo que no existe es el dato. La 404 es para URLs que no corresponden a ninguna pantalla.
+- *¿Qué es una unión discriminada?* — Un tipo que es "uno de varios", con un campo común (`tipo`) que dice cuál es. Al chequear ese campo, TypeScript reduce el tipo automáticamente.
+- *¿Por qué `Intl.DateTimeFormat('es-AR')`?* — Para mostrar la fecha como se lee en Argentina (día/mes/año) sin armar el texto a mano. Hermes, el motor de JavaScript de React Native, soporta `Intl`.
+
+---
+
+## M21 (evolución) · Moví los reportes a un contexto porque la lista no veía los nuevos
+
+**El problema**
+
+En M16 la lista guardaba los reportes en su propio `useState`. En M17 y M18 el formulario validaba y mostraba "Reporte creado", pero el reporte **no aparecía en la lista ni en el detalle**. No era un error de la lista ni del formulario: el estado de React es **local al componente** que lo crea. El formulario es otra pantalla y no tenía ninguna forma de llegar al `useState` de la lista. Para colmo, el detalle buscaba en los datos de prueba.
+
+**Qué hice**
+
+- `src/hooks/useReportes.tsx`:
+  - `ProveedorReportes` guarda la lista en un único `useState` y expone `reportes` y `agregar(datos)`;
+  - `useReportes()` la lee desde cualquier pantalla. Si se usa fuera del proveedor, tira un error claro en vez de devolver `undefined`.
+- `src/lib/reportes/crear.ts`: `crearReporte` (id, estado `pendiente`, fecha ISO) y `generarId`. Son funciones puras, sin React.
+- El proveedor envuelve el `Stack` en `src/app/_layout.tsx`, así todas las pantallas comparten los mismos datos.
+- La lista, el detalle y el formulario ahora usan `useReportes()`.
+- Tests: `crearReporte`, ids distintos, error fuera del proveedor, `agregar` pone el nuevo primero y el **flujo completo**: crear → aparece en la lista → el detalle se abre.
+
+**Por qué este diseño lo resuelve**
+
+- El estado sube al ancestro común de todas las pantallas (el layout raíz). Es la idea de "levantar el estado", pero con contexto: así no paso la lista por props a través del router, que no lo permite.
+- `useMemo` y `useCallback` mantienen el mismo objeto `valor` mientras la lista no cambie, para que las pantallas no se redibujen de más.
+- La lógica de armar un reporte quedó en `lib`, separada de React: el contexto solo decide **dónde vive** el estado.
+- Todavía no persiste: si cierro la app se pierden los reportes nuevos. Eso es M64 (AsyncStorage detrás de un repositorio). Como las pantallas solo conocen `useReportes()`, ese cambio no las va a tocar.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no Redux o Zustand?* — Para una lista y una función alcanza con Context de React, sin dependencias nuevas. Si el estado creciera mucho o cambiara muy seguido, evaluaría una librería.
+- *¿Qué pasa si una pantalla usa `useReportes` fuera del proveedor?* — Tira el error "useReportes tiene que usarse dentro de &lt;ProveedorReportes&gt;". Así el problema aparece enseguida y no como un `undefined` misterioso.
+- *¿Por qué `setReportes((actuales) => [nuevo, ...actuales])` y no `[nuevo, ...reportes]`?* — La forma con función usa siempre el estado más reciente, aunque se agreguen dos reportes seguidos antes de redibujar.
+
+---
+
+## M22 · Configuré el plugin de expo-camera sin micrófono
+
+**Qué hice**
+
+- Instalé `expo-camera` con `npx expo install` (quedó en `~57.0.6`).
+- Agregué el plugin en `app.json`:
+
+```json
+["expo-camera", {
+  "cameraPermission": "Usamos tu cámara para leer el código QR del aula y sacar la foto del desperfecto que reportás.",
+  "microphonePermission": false,
+  "recordAudioAndroid": false,
+  "barcodeScannerEnabled": true
+}]
+```
+
+- Verifiqué el resultado sin compilar, con `npx expo config --type introspect`:
+  - **iOS:** solo `NSCameraUsageDescription` con mi texto. **No** está `NSMicrophoneUsageDescription`.
+  - **Android:** `CAMERA` sí, `RECORD_AUDIO` no.
+
+**Por qué**
+
+- El texto sigue el molde de la consigna, "Usamos tu [dato] para [beneficio concreto]", y nombra los **dos** usos reales de la cámara: el QR del aula y la foto del desperfecto (M44 reutiliza este permiso).
+- `microphonePermission: false`: leí el código del plugin y, con `false`, borra la clave del `Info.plist` (si no paso nada, pone un texto genérico en inglés). Si la app no graba audio, no tiene por qué declarar el micrófono: Apple revisa que cada clave tenga un uso real.
+- `recordAudioAndroid: false`: por defecto `expo-camera` agrega `RECORD_AUDIO` porque el mismo módulo graba video con sonido. Esta app solo lee QR, así que no lo necesita (mínimo privilegio, Parte F3).
+- `barcodeScannerEnabled: true`: deja activo el lector de códigos que usa el escáner (M26).
+- El introspect también mostró permisos que **yo no pedí** (`SYSTEM_ALERT_WINDOW`, `READ/WRITE_EXTERNAL_STORAGE`, `VIBRATE`): los agrega Expo por defecto. Los bloqueo y justifico en M45.
+
+**Qué podría preguntar el docente**
+
+- *¿Este cambio se puede publicar por OTA?* — No. Cambia el `Info.plist` y el `AndroidManifest.xml`, que son parte del binario. Necesita una build nueva.
+- *¿Por qué en Expo Go no se ve mi texto?* — Porque Expo Go es otra app, con su propio `Info.plist` y sus propios textos. Mi texto aparece recién en una development build (M68).
+- *¿Cómo verificaste el manifiesto sin compilar?* — Con `npx expo config --type introspect`, que corre los plugins y muestra cómo quedarían el `Info.plist` y el `AndroidManifest.xml`.
+
+---
+
+## M23 · Mostré la cámara en /reporte/escanear
+
+**Qué hice**
+
+- Versión **ingenua** del escáner, a propósito:
+
+```tsx
+const [permiso, pedirPermiso] = useCameraPermissions();
+if (permiso?.granted) return <CameraView style={{ flex: 1 }} facing="back" />;
+return (/* explicación + botón "Permitir" que llama a pedirPermiso */);
+```
+
+- Tests con `expo-camera` simulado: con el permiso concedido se ve la cámara; si no, el botón "Permitir" llama a `pedirPermiso`; con `null` no se rompe.
+- Un mock global de `expo-camera` en `jest.setup.ts` (en Node no hay cámara), con el permiso en `null` por defecto.
+
+**Por qué**
+
+- La consigna pide arrancar por la versión simple para ver sus problemas. Esta versión es casi la del ejercicio E1, y tiene varios:
+  1. **Primer render:** `useCameraPermissions` devuelve `null` mientras consulta. El código de E1 hace `permiso.status` y se rompe. Yo tuve que escribir `permiso?.granted` porque TypeScript estricto no me dejaba leer una propiedad de algo que puede ser `null`. Igual queda un problema: durante ese instante muestra la explicación y el botón "Permitir", aunque el permiso ya esté concedido (un parpadeo). Lo arreglo en M24.
+  2. **No distingue "preguntable" de "bloqueado":** si la persona ya dijo que no y `canAskAgain` es `false`, tocar "Permitir" no hace nada (el sistema no muestra el diálogo). Lo arreglo en M25.
+  3. **El botón dice "Permitir":** la pantalla previa tiene que decir "Continuar" (Parte F2). Lo arreglo en M25 y en M49.
+  4. **No lee el QR** ni evita lecturas repetidas (M26) y **no hay salida si se deniega**: la persona queda trabada (M28).
+
+**Qué podría preguntar el docente**
+
+- *¿Qué devuelve `useCameraPermissions`?* — Un arreglo: `[permiso, pedir, consultar]`. `permiso` es `null` en el primer render y después un `PermissionResponse`. `pedir()` puede mostrar el diálogo; `consultar()` solo lee el estado.
+- *¿Por qué esta versión "funciona la primera vez"?* — Porque en una instalación nueva el permiso está "sin decidir": al tocar "Permitir" aparece el diálogo y, si se acepta, se ve la cámara. Los problemas aparecen en los otros caminos: el primer render, un "no", o el bloqueo.
+- *¿Por qué un mock global?* — Para que cualquier test que monte el router (como el de rutas) no intente usar la cámara real, y para controlar el estado del permiso desde cada test.
+
+---
+
+## M24 · Manejé el primer render donde el permiso todavía es null
+
+**Qué hice**
+
+- Si `permiso` es `null`, la pantalla muestra el componente nuevo `Cargando` ("Consultando el permiso de la cámara…") en lugar de la explicación con el botón.
+- Después de ese `if`, TypeScript ya sabe que `permiso` no es `null`, así que saqué el `?.` de `permiso.granted`.
+- Test nuevo: con `null` se ve el mensaje de carga y **no** aparece el botón "Permitir".
+
+**Por qué**
+
+- `useCameraPermissions` consulta al sistema de forma asíncrona. En el primer render todavía no tiene respuesta y devuelve `null`. "Todavía no sé" no es lo mismo que "no tengo permiso".
+- En M23, ese instante se trataba como "no concedido": aparecían la explicación y el botón aunque la persona ya hubiera dado el permiso, y medio segundo después aparecía la cámara (un parpadeo). Peor: si tocaba el botón justo en ese momento, se pedía un permiso que ya estaba concedido.
+- El mensaje de carga tiene `accessibilityLiveRegion="polite"` para que TalkBack lo anuncie sin interrumpir.
+- Este es el primero de los cuatro estados que pide la consigna: **cargando**.
+
+**Qué podría preguntar el docente**
+
+- *¿Cuánto dura el `null`?* — Muy poco, normalmente un instante. Pero existe siempre, y en un celular lento se nota.
+- *¿Por qué no guardar el permiso en un estado global para no consultar cada vez?* — Porque la persona lo puede cambiar en Ajustes en cualquier momento. La fuente de verdad es el sistema; la app tiene que volver a preguntarle (Parte E5c).
+- *¿Qué hacía el código de E1 en este caso?* — `permiso.status` con `permiso` en `null`: error "Cannot read properties of null" y la pantalla roja.
+
+---
+
+## M25 · Separé los cuatro estados del permiso de cámara
+
+**Qué hice**
+
+El escáner ahora distingue los cuatro estados que pide la consigna:
+
+| # | Estado | Condición | Qué muestra |
+| --- | --- | --- | --- |
+| 1 | Cargando | `permiso === null` | "Consultando el permiso de la cámara…" |
+| 2 | Concedido | `permiso.granted` | La cámara |
+| 3 | Preguntable | `!granted && canAskAgain` | Explicación del beneficio + aclaración de Ajustes + **"Continuar"** |
+| 4 | Bloqueado | `!granted && !canAskAgain` | Cómo habilitarlo + **"Abrir Ajustes"** (`Linking.openSettings()`) |
+
+- Tests de los cuatro estados. El 3 se prueba con "sin decidir" y con "denegado una vez" (los dos tienen `canAskAgain: true`).
+- En el estado bloqueado, el test verifica que **no** se llama a `pedirPermiso`.
+
+**Por qué**
+
+- `granted` solo responde "¿lo tengo?". Para saber qué hacer cuando no lo tengo hace falta `canAskAgain`: "¿el sistema todavía puede mostrar el diálogo?" (Parte D3: son los dos campos que deciden casi todo).
+- En la versión de M23, si el permiso estaba bloqueado, tocar "Permitir" llamaba a `request…()`, el sistema contestaba "no" sin mostrar nada y la persona sentía que el botón no andaba. Ahora el botón la lleva a Ajustes, que es el único lugar donde se puede cambiar.
+- El botón dice **"Continuar"** y no "Permitir": quien concede el permiso es el sistema, en su diálogo. Si mi botón dijera "Permitir", la persona creería que ya aceptó y el diálogo la confundiría.
+- La explicación sigue el molde "Usamos tu cámara para…" y aclara que se puede cambiar en Ajustes, sin botón de "Ahora no" (pauta 5.1.1(iv) de Apple).
+
+**Qué podría preguntar el docente**
+
+- *¿Cuándo pasa un permiso de "preguntable" a "bloqueado"?* — En iOS, después del primer "No permitir". En Android 11+, después del segundo. En los dos casos `canAskAgain` pasa a `false`.
+- *¿Qué hace `Linking.openSettings()`?* — Abre la pantalla de Ajustes de **esta app** en el sistema, donde están sus permisos.
+- *¿Qué pasa cuando la persona vuelve de Ajustes?* — En esta versión, nada: el hook no se entera de que el permiso cambió y la pantalla sigue diciendo "bloqueado". Lo arreglo en M47 con `AppState`.
+
+---
+
+## M26 · Leí el QR del aula y evité lecturas repetidas
+
+**Qué hice**
+
+- Definí el formato de los QR pegados en cada aula: el texto `IPF-AULA:<código>`, por ejemplo `IPF-AULA:B12`.
+- `src/lib/aulas/codigoQr.ts`:
+  - `leerCodigoAula(datos)` devuelve `{ tipo: 'aula', aula }` o `{ tipo: 'ajeno' }` (cualquier QR que no sea de un aula del IPF);
+  - `codigoQrDeAula(aula)` arma el texto inverso, para el generador de QR (M30).
+- En el escáner:
+  - `barcodeScannerSettings={{ barcodeTypes: ['qr'] }}`: solo busca QR, no códigos de barras de productos;
+  - `onBarcodeScanned` guarda la lectura y muestra "Aula B12" o "Ese QR no es de un aula", con un botón "Escanear otra vez";
+  - **una sola lectura**: un `useRef` corta en la primera, y además paso `onBarcodeScanned={undefined}` cuando ya hay lectura.
+- Tests con una cámara simulada que dispara lecturas: muestra el aula, procesa **una sola** lectura aunque lleguen tres seguidas, y avisa con un QR ajeno.
+
+**Por qué**
+
+- Mientras el QR está enfocado, la cámara llama a `onBarcodeScanned` **muchas veces por segundo**. Si solo usara `useState`, varias llamadas podrían llegar antes de que React vuelva a dibujar y procesaría la misma lectura varias veces (por ejemplo, navegar dos veces). El `ref` cambia en el momento, sin esperar al render.
+- Pasar `undefined` además le dice a la cámara que deje de analizar cuadros, lo que ahorra batería.
+- El prefijo `IPF-AULA:` evita que un QR cualquiera (un menú, una publicidad) se tome como aula. Y reutilizo `PATRON_AULA` del esquema de zod: un aula leída del QR cumple las mismas reglas que una escrita a mano.
+- Todavía el aula leída **no llega al formulario**: el escáner es otra pantalla y no tiene cómo escribir en él. Lo resuelvo en M29.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `useRef` y no `useState` para el "ya leído"?* — Cambiar un `ref` no redibuja y el valor nuevo está disponible al instante, incluso dentro de la misma ráfaga de eventos. `useState` recién se actualiza en el próximo render.
+- *¿Qué datos trae `onBarcodeScanned`?* — Un `BarcodeScanningResult` con `data` (el texto del QR), `type` (`'qr'`), los bordes y las esquinas del código.
+- *¿El escáner necesita permiso de galería o de internet?* — No. Solo la cámara: lee el QR en el momento, en el dispositivo.
+
+---
+
+## M27 · Probé el parser de códigos de aula
+
+**Qué hice**
+
+- `src/__tests__/codigoQr.test.ts`, con 21 casos:
+  - **QR válidos:** `IPF-AULA:B12`, `LAB-2`, `PB-BAÑO`, en minúsculas, con espacios alrededor y con espacios después de los dos puntos. Todos se leen como el aula en mayúsculas.
+  - **QR ajenos:** vacío, una URL, otro prefijo, el prefijo solo o con espacios, espacio en el medio del código, símbolos (`B12;DROP`), guion al final, código de más de 12 caracteres y el prefijo en el medio del texto.
+  - **Ida y vuelta:** el QR que arma `codigoQrDeAula` se lee como la misma aula. Esto asegura que el generador (M30) y el escáner hablen el mismo formato.
+
+**Por qué**
+
+- El parser recibe **datos de afuera**: cualquier QR que alguien ponga delante de la cámara. Es el punto donde más importa probar los casos raros.
+- Como es una función pura en `lib`, se prueba en milisegundos y sin simular la cámara. El test de pantalla de M26 solo verifica que la pantalla **use** el parser; los casos de borde están acá.
+- El test de ida y vuelta es el más valioso: si mañana cambio el prefijo en un solo lado, falla.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `B12;DROP` es un caso?* — Representa un QR malicioso o mal armado. El código del aula termina en un formulario y, más adelante, en el almacenamiento: no tiene que entrar nada fuera del formato.
+- *¿Qué diferencia hay entre estos tests y los del escáner?* — Estos son **unitarios** (una función, sin interfaz). Los del escáner son de **componente**: verifican la pantalla con la cámara simulada.
+- *¿Por qué aceptar minúsculas?* — Si alguien imprime el QR con un generador externo en minúsculas, igual tiene que funcionar. Normalizo a mayúsculas, como hace el esquema de zod.
+
+---
+
+## M28 · Permití cargar el aula a mano si se deniega la cámara
+
+**Qué hice**
+
+- Componente `IngresoAulaManual`: un campo "Código del aula" y un botón "Usar esta aula". Valida con `esquemaReporte.shape.aula`, **la misma regla** que el formulario y que el QR.
+- En el escáner, la carga manual aparece en dos casos:
+  - **Se acaba de denegar** (la persona tocó "Continuar" y en el diálogo eligió "No permitir"): la pantalla pasa directo a "Escribí el código del aula" y **no** vuelve a mostrar la explicación.
+  - **Bloqueado**: muestra "Abrir Ajustes" (ahora como botón secundario) y, debajo, la carga manual.
+- "Continuar" ahora espera la respuesta de `pedirPermiso()` para saber si la persona dijo que no.
+- El resultado (leído o escrito) se muestra igual: "Aula LAB-2". "Escanear otra vez" solo aparece si hay cámara.
+- Tests: después de un "no" se ofrece la carga manual sin "Continuar"; con la cámara bloqueada se puede escribir `lab-2` y queda `LAB-2`; un aula inválida muestra el error del esquema.
+
+**Por qué**
+
+- La regla 7 de la consigna: **ningún permiso denegado impide crear un reporte**. Antes de este módulo, sin cámara la persona quedaba trabada en el escáner.
+- Después de un "no" no vuelvo a mostrar la explicación con "Continuar": eso sería insistir (regla 8). Si la persona quiere usar la cámara, vuelve a tocar la función.
+- No puse la opción "escribir a mano" **en la explicación previa** al diálogo. La pauta 5.1.1(iv) de Apple no permite una salida que evite la pregunta en esa pantalla. Recién después de la respuesta del sistema ofrezco la alternativa.
+- Valido con `esquemaReporte.shape.aula`: un solo lugar define qué es un aula válida, la escriba o la escanee.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué devuelve `pedirPermiso()`?* — Una promesa con el `PermissionResponse` nuevo. Con eso sé si la persona aceptó o no sin esperar al próximo render del hook.
+- *¿Qué es `esquemaReporte.shape.aula`?* — El esquema de zod de un solo campo dentro del objeto. Me deja validar el aula sola con las mismas reglas.
+- *¿Y si la persona no sabe el código del aula?* — Está escrito en el QR pegado en la puerta, debajo del código (lo muestra el generador de M30).
+
+---
+
+## M29 (evolución) · Creé un borrador compartido para que el escáner complete el aula
+
+**El problema**
+
+Después de M26 y M28 el escáner leía el aula (o la recibía escrita), pero mostraba "Aula B12" y ahí terminaba: el dato **no llegaba al formulario**. Otra vez el estado local: el formulario guardaba título, descripción, aula y categoría en cuatro `useState` propios, y el escáner, al ser otra pantalla, no tenía forma de escribir en ellos. Pasar el aula como parámetro de la URL al volver tampoco servía: `router.back()` no lleva parámetros y, con `push`, quedaba un formulario nuevo encima del viejo, perdiendo lo escrito.
+
+**Qué hice**
+
+- `src/lib/reportes/borrador.ts`: el tipo `Borrador` (lo cargado, todavía sin validar) y `BORRADOR_VACIO`.
+- `src/hooks/useBorrador.tsx`: `ProveedorBorrador` con `borrador`, `actualizar(cambios)` y `limpiar()`. Va en el layout raíz, al lado de `ProveedorReportes`.
+- El formulario lee y escribe **todo** en el borrador (ya no tiene `useState` por campo, salvo los errores). Botón nuevo "Escanear QR del aula".
+- El escáner, con un aula válida (leída o escrita), hace `actualizar({ aula })` y vuelve con `router.back()`. Si se abrió directo por URL y no hay a dónde volver, abre `/reporte/nuevo`. Solo un QR ajeno se queda en pantalla con "Escanear otra vez".
+- Al guardar el reporte, el formulario llama a `limpiar()`.
+- `src/test-utils/Proveedores.tsx` envuelve una pantalla suelta con los dos proveedores en los tests.
+- Test de integración: escribo el título → "Escanear QR del aula" → leo `IPF-AULA:B12` → vuelvo al formulario con el aula `B12` **y el título intacto**.
+
+**Por qué este diseño lo resuelve**
+
+- El borrador vive arriba de las dos pantallas, así que las dos lo leen y lo modifican. Es el mismo patrón de M21, aplicado a otro dato.
+- Separé el borrador de los reportes: un reporte es algo ya validado y guardado; el borrador puede estar a medias o mal. Mezclarlos me obligaría a validar en todos lados.
+- Además, ahora el formulario **no pierde lo escrito** si la persona va al escáner, a la foto o a la ubicación (M43 y M40 usan el mismo borrador).
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no pasar el aula por parámetro con `router.push('/reporte/nuevo?aula=B12')`?* — Porque crearía otra pantalla de formulario encima de la anterior: la persona tendría dos formularios en el historial y perdería lo que ya había escrito.
+- *¿Qué pasa con el borrador si cierro la app?* — Por ahora se pierde. En M65 lo persisto con AsyncStorage.
+- *¿Por qué `actualizar` recibe un `Partial<Borrador>`?* — Para cambiar un solo campo (`{ aula: 'B12' }`) sin tener que pasar los demás.
+
+---
+
+## M30 · Agregué un generador de QR por aula para probar el escáner
+
+**Qué hice**
+
+- Instalé `react-native-svg` y `react-native-qrcode-svg` con `npx expo install`. `react-native-svg` viene incluido en Expo Go, así que no hace falta una build nueva.
+- `/herramientas/qr`:
+  - botones con las aulas frecuentes (`A1`, `B12`, `LAB-2`, `PB-BAÑO`…) y un campo para escribir cualquier otra;
+  - el aula se valida con `esquemaReporte.shape.aula`, la misma regla de siempre;
+  - muestra el QR (con `codigoQrDeAula`, que arma `IPF-AULA:<aula>`), el aula en grande y el texto exacto del código.
+- Enlace "Generador de QR de aulas" en la tab Reportes.
+- En los tests, el QR se reemplaza por un texto `qr:<contenido>` (mock en `jest.setup.tsx`, que renombré de `.ts` porque ahora tiene JSX).
+- Tests: aula inicial, cambio de aula, aula escrita a mano en minúsculas, aula inválida sin QR y **el QR generado lo entiende el escáner**.
+- Verifiqué `expo-doctor` (21/21) y el bundle de Android.
+
+**Por qué**
+
+- Para probar el escáner necesito QR reales con el formato `IPF-AULA:`. Con esta herramienta abro el generador en un celular (o en la compu con `npx expo start --web`) y escaneo con el otro.
+- Uso la misma función `codigoQrDeAula` que el parser de M27 conoce. El último test cierra el círculo: lo que genera el generador, lo lee el escáner.
+- El texto del aula va **debajo** del QR: es lo que la persona copia si no tiene cámara (carga manual de M28).
+- Esta pantalla no pide **ningún** permiso: generar y mostrar un QR no toca datos del celular.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `react-native-qrcode-svg` y no un servicio web que devuelva la imagen?* — Porque funciona sin internet y no manda datos a terceros. Además el SVG se ve nítido en cualquier tamaño.
+- *¿Hace falta una development build por `react-native-svg`?* — No: Expo Go ya incluye ese módulo nativo. Lo que no está en Expo Go sí obliga a una build.
+- *¿Cómo es accesible un QR?* — El contenedor tiene `accessibilityRole="image"` y la etiqueta "Código QR del aula B12". Además el código se muestra como texto.
+
+---
+
+## M31 · Respondí la Parte B y E1 comparando con mi primer escáner
+
+**Qué hice**
+
+- En `RESPUESTAS.md` escribí:
+  - **B1:** la clasificación de los diez permisos (instalación, tiempo de ejecución o especial) y cómo se obtiene cada uno.
+  - **B2:** grupos de permisos, el prefijo `android.permission.` y los permisos de firma.
+  - **B4:** el diálogo de Android, "Solo esta vez", los dos rechazos, la ubicación aproximada y qué pasa al revocar un permiso.
+  - **B5:** la tabla de versiones, `targetSdkVersion` y el requisito de Google Play.
+  - **E1:** los siete problemas del código de la consigna y la versión corregida con los cuatro estados.
+- B3 queda para M70, como indica la consigna, porque se responde con el manifiesto real de la build.
+
+**Por qué**
+
+- Respondo E1 comparando con **mi** escáner de M23 porque cometí casi los mismos errores y los fui corrigiendo uno por uno (M24, M25, M26, M28). Es la mejor forma de explicarlos en el oral: los viví en el código.
+- Los números de versión los verifiqué en fuentes oficiales y en el proyecto:
+  - **SDK 57:** apunta a API 36 (`targetSdk = 36`, `compileSdk = 36`, `minSdk = 24`), según `node_modules/react-native/gradle/libs.versions.toml` y `expo-modules-core`. El mínimo de iOS es 16.4 (podspecs de Expo).
+  - **Google Play:** desde el 31/08/2026 exige API 36 para apps nuevas y actualizaciones (página oficial de requisitos de nivel de API).
+  - **Android 17 (API 37):** suma el permiso `ACCESS_LOCAL_NETWORK` (página oficial "Local network permission").
+
+**Qué podría preguntar el docente**
+
+- *¿Qué diferencia hay entre un permiso especial y uno de tiempo de ejecución?* — El de tiempo de ejecución se concede en un diálogo dentro de la app. El especial no tiene diálogo: la app manda a la persona a una pantalla específica de Ajustes y ahí lo habilita.
+- *¿Por qué tu app no declara `SYSTEM_ALERT_WINDOW` si aparece en el manifiesto de Expo?* — Lo agrega Expo por defecto (para herramientas de desarrollo). La app no lo usa, así que lo bloqueo con `blockedPermissions` en M45.
+- *¿Tu app cumple el requisito de Google Play de agosto de 2026?* — Sí: Expo SDK 57 compila con `targetSdkVersion` 36.
+
+---
+
+## M32 · Configuré expo-location solo en primer plano
+
+**Qué hice**
+
+- Instalé `expo-location` con `npx expo install` (`~57.0.22`).
+- Plugin en `app.json`:
+
+```json
+["expo-location", {
+  "locationWhenInUsePermission": "Usamos tu ubicación para saber en qué sector del instituto está el desperfecto que reportás.",
+  "locationAlwaysAndWhenInUsePermission": false,
+  "locationAlwaysPermission": false,
+  "motionUsagePermission": false,
+  "isIosBackgroundLocationEnabled": false,
+  "isAndroidBackgroundLocationEnabled": false,
+  "isAndroidForegroundServiceEnabled": false
+}]
+```
+
+- Script nuevo `npm run permisos:nativos` (`scripts/permisos-nativos.js`): corre `expo config --type introspect` y lista las claves de propósito de iOS y los permisos de Android, sin compilar. Resultado:
+  - **iOS:** solo `NSLocationWhenInUseUsageDescription` (y la de cámara). `UIBackgroundModes` vacío.
+  - **Android:** `ACCESS_COARSE_LOCATION` y `ACCESS_FINE_LOCATION`. **No** están `ACCESS_BACKGROUND_LOCATION` ni `FOREGROUND_SERVICE_LOCATION`.
+
+**Por qué**
+
+- La app solo necesita saber dónde está la persona **en el momento** de reportar. Seguirla con la app cerrada no aporta nada y pedirlo sería exceso de privilegio (Parte F3). Además, Google Play exige una declaración especial y un video para `ACCESS_BACKGROUND_LOCATION`, y Apple revisa con lupa el "Siempre".
+- Leí el plugin antes de configurarlo: si no paso nada, pone textos genéricos en inglés para **las tres** claves de iOS (incluida "siempre") y para movimiento. Con `false` las borra. Así el `Info.plist` no declara usos que la app no tiene.
+- Pido FINE y COARSE juntos (los agrega el plugin): Android muestra un solo diálogo y la persona elige entre *Precisa* y *Aproximada*. La app tiene que funcionar con las dos (M38).
+- El script de introspect lo voy a reutilizar para verificar `blockedPermissions` (M45) y los textos de propósito (M69).
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no `locationAlwaysAndWhenInUsePermission`?* — Esa clave es para pedir "Siempre" en iOS. Sin ella, aunque el código lo intentara, iOS no podría pedirlo. Es una protección extra.
+- *¿Qué es un servicio en primer plano (foreground service)?* — En Android, la forma de seguir trabajando (por ejemplo, rastrear la ubicación) con una notificación fija mientras la app no está a la vista. Esta app no lo necesita.
+- *¿Por qué el texto habla del sector del instituto?* — Porque el molde pide un beneficio concreto: la ubicación sirve para saber dónde está el desperfecto, no "para mejorar la experiencia".
+
+---
+
+## M33 · Pedí la ubicación en /reporte/ubicacion
+
+**Qué hice**
+
+- `/reporte/ubicacion` usa `Location.useForegroundPermissions()` con **la misma estructura de cuatro estados que el escáner**, copiada a propósito:
+  1. **cargando:** "Consultando el permiso de ubicación…";
+  2. **concedido:** botón "Tomar mi ubicación" → `getCurrentPositionAsync({ accuracy: Balanced })` → muestra las coordenadas y "Usar esta ubicación", que las guarda en el borrador y vuelve al formulario;
+  3. **preguntable:** explicación con el molde + "Continuar". Si la persona dice que no, "Seguimos sin ubicación" y un botón para volver;
+  4. **bloqueado:** "Abrir Ajustes" y "Volver al reporte".
+- El modelo suma una `ubicacion` **opcional** (`Ubicacion = { latitud, longitud }`) en el tipo `Reporte`, en el borrador y en el esquema de zod (`nullish`, con latitud y longitud en rango).
+- En el formulario, botón "Agregar ubicación (opcional)", que pasa a "Ubicación agregada ✓" cuando ya hay una.
+- Si el GPS falla (apagado o sin señal), aviso con un mensaje y no rompo la pantalla: no es un problema de permiso.
+- Mock global de `expo-location` en `jest.setup.tsx` y tests de los cuatro estados, del GPS fallando y de la ubicación guardada en el borrador.
+
+**Por qué**
+
+- La consigna pide duplicar la lógica de la cámara **a propósito**, para sentir el problema antes de resolverlo. Y se siente: `escanear.tsx` y `ubicacion.tsx` repiten los mismos `if (!permiso)`, `if (permiso.granted)`, `if (permiso.canAskAgain)`, el mismo `denegadaAhora` y el mismo "Abrir Ajustes". Si mañana cambia la regla de cuándo un permiso está "bloqueado", tengo que acordarme de cambiarla en dos lugares (y pronto en tres, con la foto). Lo resuelvo en M34 y M36.
+- La ubicación es **opcional** en el esquema: la regla 7 dice que ningún permiso denegado puede impedir crear un reporte. Con el aula alcanza.
+- `Accuracy.Balanced` (unos 100 m) alcanza para ubicar el edificio y gasta menos batería que `High`.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué diferencia hay entre `useForegroundPermissions` y `getCurrentPositionAsync`?* — El primero maneja el **permiso** (consultar o pedir). El segundo lee la **posición**, y solo funciona si el permiso ya está concedido.
+- *¿Por qué atrapás el error de `getCurrentPositionAsync`?* — Porque puede fallar aunque haya permiso: GPS apagado, interior sin señal o tiempo agotado. La app avisa y deja reintentar.
+- *¿Qué pasa en iOS si la persona elige "Permitir una vez"?* — El permiso vale para esta sesión. Cuando la app se cierra, vuelve a "sin decidir" y la próxima vez aparece el diálogo de nuevo.
+
+---
+
+## M34 (evolución) · Extraje interpretarRespuesta porque duplicaba la lógica de cámara
+
+**El problema**
+
+Después de M33, `escanear.tsx` y `ubicacion.tsx` tenían la **misma** cadena de decisiones copiada:
+
+```tsx
+if (!permiso) …                 // cargando
+if (permiso.granted) …          // concedido
+if (permiso.canAskAgain) …      // preguntable
+…                               // bloqueado
+```
+
+La regla "¿en qué estado está este permiso?" es una sola, pero estaba escrita dos veces y la foto (M44) iba a sumar una tercera. Si mañana cambia la regla (por ejemplo, para tratar distinto un permiso parcial), tengo que encontrar y cambiar todas las copias, y es fácil que una quede distinta.
+
+**Qué hice**
+
+- `src/lib/permisos/interpretar.ts`:
+  - el tipo `EstadoPermiso = 'cargando' | 'concedido' | 'preguntable' | 'bloqueado'`;
+  - el tipo `RespuestaPermiso`, con lo mínimo que tienen **todas** las respuestas de Expo (`granted`, `canAskAgain`, `status`);
+  - la función pura `interpretarRespuesta(respuesta)`.
+- Las dos pantallas calculan `const estado = interpretarRespuesta(permiso)` y deciden con `estado === 'concedido'`, etc.
+- Tests básicos de los cuatro casos (la tabla completa de D3 va en M35).
+
+**Por qué este diseño lo resuelve**
+
+- La regla vive en **un solo lugar** y se prueba sin React ni Expo.
+- `RespuestaPermiso` es un tipo **estructural**: no importa de `expo-camera` ni de `expo-location`. Cualquier respuesta que tenga esos campos sirve, así que la misma función interpreta cámara, ubicación, notificaciones o lo que venga.
+- Las pantallas ahora hablan el idioma de la interfaz ("preguntable", "bloqueado") y no el del sistema (`canAskAgain: false`), que es más fácil de leer y de explicar.
+- **Lo que todavía se repite:** cada pantalla sigue llamando a su hook, guardando `denegadaAhora` y armando el "Abrir Ajustes". Eso lo unifico en M36 con el hook `usePermiso`.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué una función y no un componente?* — Porque decidir el estado es lógica, no interfaz. Como función pura se prueba con una tabla de entradas y salidas (M35).
+- *¿Qué es tipado estructural?* — En TypeScript, un objeto es compatible con un tipo si tiene sus campos, sin importar de dónde viene. Por eso `PermissionResponse` de la cámara y `LocationPermissionResponse` encajan en `RespuestaPermiso`.
+- *¿Por qué `granted` gana aunque `canAskAgain` sea `false`?* — Porque si ya está concedido no hace falta preguntar nada. `canAskAgain` solo importa cuando no está concedido.
+
+---
+
+## M35 · Cubrí cada PermissionResponse de la tabla D3
+
+**Qué hice**
+
+- `src/__tests__/interpretar.test.ts` prueba `interpretarRespuesta` con **las siete filas de la tabla D3** de la consigna, escritas como objetos (`descripcion`, `respuesta`, `esperado`), así cada test se titula igual que la fila:
+
+| Respuesta (D3) | Estado |
+| --- | --- |
+| `null` | cargando |
+| `{ status: 'granted', granted: true }` | concedido |
+| `{ status: 'undetermined', canAskAgain: true }` | preguntable |
+| `{ status: 'denied', canAskAgain: true }` | preguntable |
+| `{ status: 'denied', canAskAgain: false }` | bloqueado |
+| `{ status: 'granted', accessPrivileges: 'limited' }` | concedido (parcial) |
+| `{ status: 'granted', android: { accuracy: 'coarse' } }` | concedido (parcial) |
+
+- Casos de borde: `undefined`, concedido con `canAskAgain: false`, el primer "no" en iOS (ya queda bloqueado) y un "Solo esta vez" vencido en Android (vuelve a preguntable).
+
+**Por qué**
+
+- La tabla D3 es exactamente la especificación de esta función. Si la convierto en test, la respuesta de la Parte D3 y el código no pueden contradecirse.
+- La tabla abrevia las respuestas (por ejemplo, no pone `granted`). Las completé con lo que devuelve Expo de verdad, porque Expo **siempre** trae `granted`, `canAskAgain` y `status`.
+- Las dos últimas filas son **concedido** porque el permiso está dado, aunque sea con menos alcance. Lo de "parcial" no cambia el estado: es un **matiz** que agrego en M38 (fotos limitadas, ubicación aproximada).
+
+**Qué podría preguntar el docente**
+
+- *¿Cuáles son los dos campos que deciden casi todo?* — `granted` ("¿lo tengo?") y `canAskAgain` ("¿el sistema todavía puede mostrar el diálogo?"). `status` es casi redundante: `granted` ya dice si está concedido.
+- *¿Para qué sirve `status` entonces?* — Para distinguir "nunca se preguntó" (`undetermined`) de "se dijo que no" (`denied`). La interfaz los trata igual (los dos son preguntables), pero sirve para el panel de permisos (M54).
+- *¿Por qué `it.each` con objetos y no con arreglos?* — Porque con `$descripcion` y `$esperado` el título del test se lee como la fila de la tabla.
+
+---
+
+## M36 (evolución) · Unifiqué cámara y ubicación en el hook usePermiso
+
+**El problema**
+
+Con `interpretarRespuesta` (M34) la **regla** quedó en un lugar, pero cada pantalla todavía:
+
+- usaba un hook distinto (`useCameraPermissions` o `Location.useForegroundPermissions`), con firmas parecidas pero no iguales;
+- convertía la respuesta con `interpretarRespuesta` a mano;
+- llamaba a `Linking.openSettings()` por su cuenta;
+- y para saber si la persona dijo que no, leía `respuesta.granted` del objeto crudo de cada módulo.
+
+Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
+
+**Qué hice**
+
+- `src/hooks/usePermiso.ts` con `usePermiso(recurso)`, donde `recurso` es `'camara' | 'ubicacion'`. Devuelve:
+  - `estado`: `'cargando' | 'concedido' | 'preguntable' | 'bloqueado'`;
+  - `respuesta`: la respuesta cruda del sistema, para los detalles;
+  - `pedir()`: muestra el diálogo y **devuelve el estado nuevo**;
+  - `consultar()`: vuelve a leer sin mostrar nada;
+  - `abrirAjustes()`.
+- Por dentro tiene una tabla `FUNCIONES` con cómo consultar y pedir cada recurso: `Camera.getCameraPermissionsAsync` / `requestCameraPermissionsAsync` y `Location.getForegroundPermissionsAsync` / `requestForegroundPermissionsAsync`.
+- Al montar **solo consulta**, nunca pide. El efecto se cancela si la pantalla se desmonta antes de que llegue la respuesta.
+- `escanear.tsx` y `ubicacion.tsx` ahora usan `usePermiso('camara')` y `usePermiso('ubicacion')`. Ya no importan `Linking` ni `interpretarRespuesta`.
+- Los tests de pantalla simulan `usePermiso` con el helper `src/test-utils/permisoSimulado.ts`, en vez de simular cada módulo de Expo. Los mocks globales de `expo-camera` y `expo-location` dejan las consultas pendientes (estado "cargando").
+
+**Por qué este diseño lo resuelve**
+
+- Las pantallas hablan **un solo idioma**: piden un recurso por nombre y reciben uno de cuatro estados. No saben qué módulo de Expo hay detrás.
+- Sumar un recurso (notificaciones, micrófono) es agregar una entrada a `FUNCIONES`, no copiar lógica.
+- `pedir()` devuelve el **estado** ya interpretado, así la pantalla decide con `nuevo !== 'concedido'` y no con campos del sistema.
+- Uso las funciones imperativas (`get…`, `request…`) y no los hooks de cada módulo, porque los hooks de React no se pueden elegir con un `if` según el recurso. Con funciones, la tabla funciona igual para todos.
+- Los tests de pantalla quedaron más simples: prueban la pantalla en cada estado sin saber cómo se obtiene. Cómo se obtiene lo pruebo en M37.
+- Todavía faltan dos cosas de la consigna: el indicador `parcial` (M38) y actualizarse al volver de Ajustes con `AppState` (M47).
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no usar `useCameraPermissions` dentro de `usePermiso`?* — Porque tendría que llamar a `useCameraPermissions` o a `useForegroundPermissions` según el recurso, y las reglas de los hooks prohíben llamarlos de forma condicional. Las funciones `get…/request…` no tienen esa restricción.
+- *¿Para qué sirve la variable `vigente` en el efecto?* — Si la persona sale de la pantalla antes de que el sistema conteste, no actualizo el estado de un componente que ya no existe.
+- *¿Por qué al montar no se pide?* — Porque pedir muestra el diálogo del sistema, y eso solo tiene que pasar cuando la persona toca "Continuar" (pedir en contexto, Parte F1).
+
+---
+
+## M37 · Probé usePermiso con los módulos de Expo simulados
+
+**Qué hice**
+
+- `src/__tests__/usePermiso.test.ts` usa `renderHook` y los mocks de `expo-camera` y `expo-location` (las funciones `get…` y `request…` son `jest.fn()` que cada test hace devolver una respuesta distinta). Verifico que:
+  1. arranca en `cargando` y pasa a lo que dice el sistema;
+  2. al montar **solo consulta**: `request…` nunca se llama;
+  3. cada recurso usa su módulo (ubicación no toca la cámara);
+  4. `pedir()` muestra el diálogo, devuelve el estado nuevo y actualiza el hook;
+  5. el segundo "no" en Android pasa de `preguntable` a `bloqueado`;
+  6. `consultar()` relee sin pedir (sirve para volver de Ajustes, M47);
+  7. `abrirAjustes()` llama a `Linking.openSettings()`;
+  8. `respuesta` expone la respuesta cruda.
+
+**Por qué**
+
+- En M36 los tests de pantalla dejaron de usar los módulos de Expo: simulan `usePermiso` entero. Entonces **este** es el único lugar que prueba que el hook habla bien con Expo. Las dos capas juntas cubren todo: la pantalla en cada estado y el hook en cada respuesta.
+- El test 2 es el más importante para la consigna: garantiza que abrir una pantalla nunca dispara un diálogo del sistema. Pedir es siempre una acción de la persona.
+- `act(async () => …)` envuelve las llamadas que cambian el estado del hook, así React termina de actualizar antes de verificar.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es `renderHook`?* — Una función de Testing Library que monta un componente vacío que solo usa el hook, y te da `result.current` con lo que devuelve. Sirve para probar hooks sin armar una pantalla.
+- *¿Por qué `waitFor`?* — Porque la consulta inicial es asíncrona: el estado pasa de `cargando` a otro un instante después. `waitFor` reintenta la verificación hasta que se cumple o se vence el tiempo.
+- *¿Qué ganás con simular Expo y no correr en un celular?* — Puedo provocar cualquier respuesta (bloqueado, segundo "no") en milisegundos. En un celular tendría que reinstalar o resetear permisos para cada caso. Las pruebas en el dispositivo siguen siendo necesarias (M75), pero para otra cosa.
+
+---
+
+## M38 · Detecté la ubicación aproximada en Android e iOS
+
+**Qué hice**
+
+- `RespuestaPermiso` suma los matices **opcionales** de cada módulo: `accessPrivileges`, `android.accuracy` e `ios.accuracy`.
+- Función pura `esParcial(respuesta)`: es `true` si el permiso está **concedido** y además:
+  - `android.accuracy === 'coarse'` (Android 12+, la persona eligió "Aproximada");
+  - `ios.accuracy === 'reduced'` (iOS 14+, interruptor "Precisa" apagado);
+  - `accessPrivileges === 'limited'` (fotos limitadas, para cuando haga falta).
+- `usePermiso` devuelve el indicador **`parcial`**, como pide la consigna.
+- En `/reporte/ubicacion`, si `parcial` es `true`, aparece una tarjeta "Ubicación aproximada": alcanza para saber que la persona está en el instituto, pero no en qué sector.
+- Tests: tres casos parciales, seis que no lo son (incluido un **denegado** que dice `coarse`), el hook con Android e iOS y la pantalla con y sin aviso.
+
+**Por qué**
+
+- Android e iOS informan lo mismo con **nombres distintos**: `coarse` en uno y `reduced` en el otro. `esParcial` lo traduce a una sola idea, y la pantalla no tiene que saber en qué plataforma corre.
+- "Parcial" no es un quinto estado: el permiso **está concedido**. Por eso es un indicador aparte y no cambia `interpretarRespuesta` (M35 sigue igual).
+- `esParcial` exige `granted`. Una respuesta denegada puede traer `accuracy: 'coarse'` de una decisión anterior, y no quiero mostrar "aproximada" cuando en realidad no hay ubicación.
+- Con unos 3 km² de margen, la ubicación aproximada no sirve para el sector del edificio. En M39 dejo de mostrar las coordenadas en ese caso y en M40 permito elegir el sector a mano.
+
+**Qué podría preguntar el docente**
+
+- *¿Cómo elige la persona "aproximada" en cada plataforma?* — En Android 12+, el diálogo de ubicación tiene dos opciones: "Precisa" y "Aproximada". En iOS 14+, el diálogo tiene un interruptor "Precisa" que se puede apagar.
+- *¿Se puede pedir que pase a precisa?* — En Android, volviendo a pedir el permiso (el diálogo ofrece mejorar a precisa). En iOS existe una petición temporal de precisión completa, que necesita otra clave en el `Info.plist`. Esta app no la usa: si es aproximada, ofrece elegir el sector a mano.
+- *¿Por qué `parcial` también contempla las fotos si la app no pide galería?* — Porque el hook es genérico. Hoy no lo usa nadie, pero el panel de permisos (M54) va a mostrar ese matiz para explicar por qué la app no lo necesita.
+
+---
+
+## M39 · Oculté las coordenadas cuando la ubicación es aproximada
+
+**Qué hice**
+
+- `Ubicacion` suma el campo `aproximada: boolean` (también en el esquema de zod).
+- Al tomar la ubicación, la pantalla guarda `aproximada: parcial`, según lo que informó el permiso (M38).
+- Función pura `textoUbicacion(ubicacion)` en `src/lib/reportes/textoUbicacion.ts`: si es aproximada devuelve **"Ubicación aproximada"**; si es precisa, las coordenadas con 5 decimales.
+- La uso en `/reporte/ubicacion` y en el detalle del reporte, que ahora muestra la ubicación si existe.
+- Tests: la función con los dos casos; la pantalla con ubicación aproximada **no** muestra `-26.18489` y guarda `aproximada: true`; con ubicación precisa sí muestra las coordenadas.
+
+**Por qué**
+
+- La consigna lo pide explícitamente: si es aproximada, se muestra "Ubicación aproximada" y no las coordenadas.
+- Mostrar `-26.18489, -58.17313` cuando el error real es de kilómetros es **engañoso**: cinco decimales sugieren una precisión de un metro. Quien atiende el reporte podría ir a buscar el desperfecto a un lugar equivocado.
+- Además respeta la decisión de la persona: eligió no compartir su ubicación exacta, así que la app no la presenta como si lo fuera.
+- Guardo las coordenadas igual (marcadas como aproximadas) porque sirven para saber que el reporte se hizo **desde el instituto**. Lo que nunca hago es mostrarlas.
+- Mostrar la ubicación pasa siempre por `textoUbicacion`: así es imposible que una pantalla nueva se olvide de la regla.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no borrar directamente las coordenadas si es aproximada?* — Porque igual dicen algo útil (el barrio, el instituto). El problema es mostrarlas con una precisión que no tienen.
+- *¿Por qué 5 decimales?* — 5 decimales de latitud son alrededor de 1 metro, que es lo máximo que puede dar un GPS de celular. Más decimales serían ruido.
+- *¿Dónde se aplica la regla?* — En `textoUbicacion`, una función pura con su test. Las pantallas no deciden cómo mostrar la ubicación: le preguntan a esa función.
+
+---
+
+## M40 · Permití elegir el sector a mano si se deniega
+
+**Qué hice**
+
+- `src/lib/aulas/sectores.ts`: siete sectores del edificio (hall, baños, aulas A, aulas B, laboratorios, biblioteca, patio).
+- Componente `SelectorSector`: una lista de opciones con rol `radio`.
+- El modelo suma `sector` opcional en `Reporte`, en el borrador y en el esquema (`z.enum(SECTORES).nullish()`).
+- En `/reporte/ubicacion` la lista de sectores aparece en tres casos:
+  - **se acaba de denegar** ("Seguimos sin ubicación");
+  - **bloqueado** (debajo de "Abrir Ajustes");
+  - **ubicación aproximada**: en lugar de "Usar esta ubicación", se elige el sector. Si había tomado la ubicación, la guardo también (marcada como aproximada).
+- Elegir un sector lo guarda en el borrador y vuelve al formulario. El botón del formulario muestra "Sector: Biblioteca", "Ubicación agregada ✓" o "Agregar ubicación o sector (opcional)".
+- El detalle del reporte muestra el sector si lo hay.
+- Tests: elegir sector después de un "no", con la ubicación bloqueada y con ubicación aproximada; con ubicación precisa no aparece la lista; y un reporte sin ubicación ni sector se crea igual.
+
+**Por qué**
+
+- La consigna: si se deniega la ubicación, el reporte usa el sector elegido a mano. Es la misma idea que el aula escrita a mano cuando no hay cámara (M28): **toda función que usa un permiso tiene una alternativa sin permiso**.
+- Con la ubicación aproximada el GPS no alcanza para el sector (unos 3 km²), así que también ofrezco la lista. La persona aporta lo que el permiso no da.
+- El sector es más útil que unas coordenadas para quien arregla el desperfecto: "Primer piso · Laboratorios" se entiende sin mapa.
+- Y todo sigue siendo **opcional**: con el aula alcanza. Ningún "no" bloquea el reporte (regla 7).
+
+**Qué podría preguntar el docente**
+
+- *Si tenés la lista de sectores, ¿para qué pedir la ubicación?* — Porque tocar "Tomar mi ubicación" es más rápido que buscar en una lista y sirve para confirmar que el reporte se hizo desde el instituto. La lista es el plan B, no el plan A.
+- *¿Por qué los sectores son un `enum` en zod y no texto libre?* — Para que el valor guardado sea siempre uno conocido: se puede agrupar y filtrar reportes por sector. Con texto libre habría "biblioteca", "Biblio", "la biblioteca"…
+- *¿Qué pasa si la persona vuelve sin elegir nada?* — Nada: el borrador queda sin ubicación ni sector y el reporte se puede guardar igual.
+
+---
+
+## M41 · Respondí la Parte C y D4 simulando el ciclo en mi dispositivo
+
+**Qué hice**
+
+- En `RESPUESTAS.md` escribí:
+  - **C1:** la tabla de claves del `Info.plist`.
+  - **C3:** la evaluación de los cinco textos de propósito, con versiones mejoradas usando el molde.
+  - **C4:** el acceso parcial y gradual en iOS, y la consecuencia del mínimo iOS 16.4 del SDK 57.
+  - **D1 a D4:** módulos y funciones, consultar contra pedir, cómo leer cada respuesta y la simulación del ciclo completo.
+  - **E2:** el orden de los permisos de ubicación, la versión correcta, `obtenerUbicacion()` y el requisito de Google Play.
+- Para **D4** armé un **sistema operativo simulado** (`src/test-utils/sistemaSimulado.ts`) con las reglas de los diálogos:
+  - Android 11+: el segundo "no" bloquea;
+  - iOS: el primero ya bloquea;
+  - bloqueado: no hay diálogo.
+- `src/__tests__/cicloD4.test.ts` corre los seis pasos de la tabla con **mi hook real** `usePermiso('ubicacion')` sobre ese sistema y verifica `status`, `canAskAgain` y si apareció el diálogo en cada paso, en Android y en iOS.
+- C2 y C5 quedan para M70, como indica la consigna.
+
+**Por qué**
+
+- La consigna pide "simular el ciclo". Lo simulé de dos formas: la tabla de la respuesta y un test que la ejecuta. Si mañana cambio `usePermiso` y rompo, por ejemplo, el paso 4 (pedir estando bloqueado), el test falla.
+- El paso 6 de la simulación muestra el bug real que todavía tiene la app: después de habilitar el permiso en Ajustes, si nadie vuelve a consultar, la pantalla sigue diciendo "bloqueado". Lo resuelvo en M47.
+- Aclaré en la respuesta que la simulación verifica **mi lógica**, no el sistema operativo. Los pasos hay que repetirlos en un Android 14 real cuando tenga la development build (M68).
+- Antes de escribir verifiqué en la documentación de Expo dos datos: que `expo-audio` pide el micrófono con `requestRecordingPermissionsAsync()` (no tiene hook) y que `expo-permissions` se deprecó en el SDK 41 y se eliminó en el 42.
+
+**Qué podría preguntar el docente**
+
+- *¿En qué paso cambia iOS y por qué?* — En el 2: iOS muestra el diálogo una sola vez, así que el primer "No permitir" ya deja `canAskAgain: false`.
+- *¿Qué es un "test double" como tu sistema simulado?* — Un reemplazo controlado de algo externo (acá, el sistema operativo) que se comporta según reglas conocidas. Me deja reproducir en milisegundos un ciclo que en un celular lleva reinstalar la app.
+- *¿Por qué `get…` no cuenta como diálogo?* — Porque consultar nunca muestra nada. En el test, `dialogosMostrados` solo sube en `pedir()`, y únicamente cuando el sistema realmente pregunta.
+
+---
+
+## M42 · Configuré expo-image-picker sin permiso de galería
+
+**Qué hice**
+
+- Instalé `expo-image-picker` con `npx expo install` (`~57.0.20`).
+- Plugin en `app.json`:
+
+```json
+["expo-image-picker", {
+  "photosPermission": false,
+  "cameraPermission": "Usamos tu cámara para leer el código QR del aula y sacar la foto del desperfecto que reportás.",
+  "microphonePermission": false
+}]
+```
+
+- Verifiqué con `npm run permisos:nativos`:
+  - **iOS:** no aparece `NSPhotoLibraryUsageDescription` ni `NSMicrophoneUsageDescription`. La clave de cámara conserva **mi** texto.
+  - **Android:** `RECORD_AUDIO` aparece como **[bloqueado]** (`tools:node="remove"`). No hay `READ_MEDIA_IMAGES`.
+- Revisé los `AndroidManifest.xml` **de las librerías** en `node_modules`, porque esos permisos se suman al compilar y no aparecen en el introspect. `expo-image-picker` y `expo-file-system` declaran `READ/WRITE_EXTERNAL_STORAGE` con `maxSdkVersion="32"`. **Ninguna** declara `READ_MEDIA_IMAGES`.
+
+**Por qué**
+
+- La foto del desperfecto se elige con el **selector del sistema** (`launchImageLibraryAsync`, M43). Ese selector corre fuera de la app: la persona elige una foto y el sistema le entrega solo esa. No hace falta permiso de galería. Si no lo uso, no lo declaro (mínimo privilegio).
+- `photosPermission: false`: leí el plugin y, si no paso nada, agrega `NSPhotoLibraryUsageDescription` con un texto genérico en inglés. Con `false` la borra.
+- `cameraPermission`: le paso **el mismo texto** que en `expo-camera`. Los dos plugins escriben la misma clave del `Info.plist`; si dejara el texto vacío, el de este plugin podría pisar el mío con el genérico. Y **no** le paso `false`: el plugin interpreta `false` como "bloquear `CAMERA` en Android", y eso rompería el escáner.
+- `microphonePermission: false`: por defecto este plugin agrega `RECORD_AUDIO` (para grabar video). Con `false`, además de no agregarlo, lo **bloquea**, así ninguna otra librería lo puede sumar.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué dos plugins configuran la cámara?* — Porque los dos módulos la usan: `expo-camera` para el escáner y `expo-image-picker` para "Sacar foto" (`launchCameraAsync`). En el `Info.plist` es una sola clave, así que tienen que coincidir.
+- *¿Qué significa `maxSdkVersion="32"`?* — Que el permiso solo se declara hasta Android 12L (API 32). Desde Android 13 no tiene efecto, porque el almacenamiento usa otros permisos.
+- *¿Por qué revisaste el manifiesto de las librerías?* — Porque al compilar, Gradle **fusiona** el manifiesto de la app con el de cada librería. Un permiso puede aparecer en el APK final aunque no esté en `app.json`. Lo bloqueo y lo verifico en M45 y M67.
+
+---
+
+## M43 · Elegí la foto desde el selector del sistema sin pedir permiso
+
+**Qué hice**
+
+- `/reporte/foto` con el botón **"Elegir de la galería"**, que llama a `ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 })`.
+- **No** se llama a `requestMediaLibraryPermissionsAsync` ni a ningún otro pedido de permiso.
+- La foto elegida se ve en pantalla. "Usar esta foto" guarda la URI en el borrador (`fotoUri`) y vuelve al formulario; "Quitar la foto" la saca.
+- El modelo suma `fotoUri` opcional (tipo, borrador y esquema). El formulario tiene "Agregar foto (opcional)" / "Foto agregada ✓" y el detalle del reporte muestra la foto.
+- Mock global de `expo-image-picker` y tests:
+  - abre el selector **sin** llamar a ninguna función de permiso;
+  - pide solo imágenes;
+  - guarda la foto en el borrador;
+  - cancelar no cambia nada;
+  - se puede quitar la foto.
+
+**Por qué**
+
+- Requisito 3 de la consigna: la foto **sin** permiso de galería.
+- El selector del sistema (en Android, el *Photo Picker*; en iOS, el `PHPicker`) es una pantalla **del sistema**, no de la app. La persona elige y el sistema entrega **solo esa foto**. La app nunca ve el resto de la galería, así que no hay nada que autorizar. Es el "mejor permiso": el que no hace falta pedir (Parte E4).
+- Lo verifico con un test que dice explícitamente "no se llamó a `requestMediaLibraryPermissionsAsync`". Si alguien agrega un pedido de permiso "por las dudas", el test falla.
+- `quality: 0.7` reduce el peso de la foto sin que se note: importa porque después se guarda en el dispositivo (M64).
+- `mediaTypes: ['images']`: en el SDK 57 se pasa un arreglo de tipos. La opción vieja `MediaTypeOptions` está deprecada.
+- El resultado puede ser `{ canceled: true, assets: null }`: si la persona cierra el selector sin elegir, la app no hace nada y no muestra errores.
+
+**Qué podría preguntar el docente**
+
+- *Si no pedís permiso, ¿cómo accede la app a la foto?* — El sistema le da una URI temporal a **ese archivo**, elegido por la persona. Es acceso por elección, no por permiso.
+- *¿Cuándo sí haría falta el permiso de galería?* — Si la app mostrara la galería entera dentro de su propia interfaz (por ejemplo, un editor de fotos con su propia grilla). Para elegir una foto, nunca.
+- *¿Y en iOS con videos?* — La documentación de `expo-image-picker` aclara una excepción: para **videos** en iOS con ciertas opciones conviene pedir permiso antes. Esta app solo elige imágenes, así que no le aplica.
+
+---
+
+## M44 · Saqué la foto reutilizando el permiso de cámara
+
+**Qué hice**
+
+- `/reporte/foto` suma el botón **"Sacar foto"**, que usa `ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 })`.
+- El permiso lo maneja **`usePermiso('camara')`**, el mismo hook y el mismo recurso que el escáner:
+  - **concedido:** abre la cámara directo, sin explicar ni pedir;
+  - **preguntable:** primero muestra la explicación ("Usamos tu cámara para sacar la foto del desperfecto que reportás.") con "Continuar"; recién ahí pide;
+  - **si dice que no:** vuelve a la pantalla con el aviso "Sin cámara también podés agregar una foto: elegila de la galería", sin insistir;
+  - **bloqueado:** "Abrir Ajustes" y "Elegir de la galería".
+- "Elegir de la galería" sigue disponible siempre, sin permiso.
+- Tests: usa el recurso `'camara'`; concedido abre la cámara sin `pedir`; preguntable explica y pide solo con "Continuar"; un "no" ofrece la galería sin volver a pedir; bloqueado ofrece Ajustes y galería.
+
+**Por qué**
+
+- En Android y en iOS el permiso de cámara es **uno solo** para toda la app, sin importar qué módulo la use. Si la persona ya la autorizó para el escáner, sacar la foto no le vuelve a preguntar. Gracias a `usePermiso` (M36), reutilizarlo fue escribir `usePermiso('camara')`: la regla de los cuatro estados ya estaba resuelta.
+- Por eso el texto de propósito de M22 nombra **los dos usos** (el QR y la foto): el diálogo del sistema aparece una vez, y la persona tiene que saber para qué lo autoriza.
+- La foto tiene dos caminos y solo uno necesita permiso. Si la cámara se deniega, la galería sigue funcionando: la regla 7 se cumple sin hacer nada especial.
+- No muestro el diálogo al tocar "Sacar foto" si el permiso es preguntable: primero la explicación con el beneficio (regla 6). Es la misma pantalla previa que voy a unificar en M49–M51.
+
+**Qué podría preguntar el docente**
+
+- *¿`launchCameraAsync` y `CameraView` comparten el permiso?* — Sí. Los dos usan el permiso `CAMERA` en Android y `NSCameraUsageDescription` en iOS. El sistema no sabe qué módulo lo usa: el permiso es de la app.
+- *¿Por qué no usar `useCameraPermissions` de `expo-image-picker`?* — Porque `usePermiso('camara')` ya consulta el mismo permiso y me da los cuatro estados. Usar otro hook duplicaría la lógica que unifiqué en M36.
+- *¿Qué diferencia hay entre `launchCameraAsync` y `CameraView`?* — `launchCameraAsync` abre la app de cámara del sistema y devuelve la foto: es ideal para sacar una foto y listo. `CameraView` es una vista dentro de mi pantalla, que necesito para leer el QR en vivo.
+
+---
+
+## M45 · Bloqueé los permisos que la app no usa y lo verifiqué con un test
+
+**Qué hice**
+
+- `android.blockedPermissions` en `app.json` con nueve permisos: `SYSTEM_ALERT_WINDOW`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO`, `READ_MEDIA_VISUAL_USER_SELECTED`, `ACCESS_BACKGROUND_LOCATION` y `RECORD_AUDIO`.
+- En el README, una tabla que justifica **cada uno**: quién lo agregaría y por qué la app no lo necesita (lo pide la consigna).
+- `scripts/permisos-nativos.js` ahora exporta `leerPermisosNativos()`, así lo usan el comando y el test.
+- `src/__tests__/permisosNativos.test.ts`:
+  - **estático:** `app.json` bloquea exactamente esos nueve y no agrega permisos a mano;
+  - **con introspect** (corre los plugins de verdad):
+    - en Android solo quedan activos `INTERNET`, `VIBRATE`, `CAMERA`, `ACCESS_COARSE_LOCATION` y `ACCESS_FINE_LOCATION`;
+    - los nueve bloqueados aparecen con `tools:node="remove"`;
+    - en iOS solo hay dos textos de propósito (cámara y ubicación en uso);
+    - no hay modos de segundo plano.
+
+**Por qué**
+
+- **Mínimo privilegio:** cada permiso declarado es algo que la persona ve en la ficha de Play Store y que Google revisa. Si no lo uso, no lo declaro.
+- `blockedPermissions` no solo "no agrega": escribe `tools:node="remove"`. Eso le ordena a Gradle **sacar** el permiso aunque lo traiga una librería al fusionar los manifiestos. Es la única forma de garantizar que `READ_EXTERNAL_STORAGE` de `expo-file-system` no llegue al APK.
+- Bloqueo también permisos que **hoy** ninguna librería agrega (`READ_MEDIA_*`). Si mañana una actualización los suma, el bloqueo los saca igual y el test avisa.
+- El test con introspect convierte la auditoría de permisos en algo automático: si alguien agrega un plugin que suma un permiso, el CI falla y obliga a decidir a conciencia si lo bloquea o lo justifica.
+- Dejo `VIBRATE`: es de instalación y lo usan las notificaciones (M57).
+
+**Qué podría preguntar el docente**
+
+- *¿Funciona `blockedPermissions` en Expo Go?* — No. Expo Go es una app ya compilada con su propio manifiesto. `blockedPermissions` modifica el manifiesto de **mi** build, así que solo se ve en una development build o en producción (M67).
+- *¿Por qué no simplemente borrar el permiso del `AndroidManifest.xml`?* — Porque en Expo ese archivo se regenera desde `app.json` en cada `prebuild`. Y aunque lo borrara, el de la librería volvería a entrar al fusionar.
+- *¿Qué pasa en M73, cuando necesite el micrófono?* — Saco `RECORD_AUDIO` de la lista, configuro el plugin de audio y hago una build nueva. El test se actualiza en ese mismo módulo, a propósito.
+
+---
+
+## M46 · Respondí E4 y F3 sobre fotos y mínimo privilegio
+
+**Qué hice**
+
+- En `RESPUESTAS.md` escribí:
+  - **E4:** la tabla de herramientas y permisos para cada necesidad de fotos, por qué Google Play restringe `READ_MEDIA_IMAGES` y `READ_MEDIA_VIDEO`, desde cuándo y qué es "el mejor permiso".
+  - **F3:** la opción más chica que alcanza en los cuatro casos de mínimo privilegio.
+- Verifiqué las fechas de la política de Google Play en sus páginas oficiales: la declaración se pidió desde el 18/09/2024, el límite fue el 22/01/2025 y la prórroga llegaba al 28/05/2025.
+- Al cerrar M45, lint-staged frenó el commit porque ESLint no reconocía `__dirname` en `scripts/`. Agregué en `eslint.config.js` una sección para los scripts de Node con sus variables globales y `console` permitido. Lo dejo anotado acá porque ese ajuste viajó en el commit de M45.
+
+**Por qué**
+
+- Las dos respuestas se apoyan en decisiones que ya están en el código: el selector sin permiso (M43), la cámara compartida (M44), el micrófono apagado (M22) y los permisos bloqueados (M45). En el oral puedo mostrar el código mientras respondo.
+- En F3 b) aclaro que "mínimo privilegio" no significa "siempre lo más chico": significa **lo más chico que alcanza**. Registrar una carrera con la pantalla apagada necesita segundo plano; pedirlo escalonado y justificado es la parte de "mínimo".
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es el mejor permiso?* — El que no hay que pedir: usar una herramienta del sistema (selector de fotos, de contactos o de archivos) que resuelve la necesidad sin dar acceso amplio.
+- *¿Tu app tendría problemas con la política de fotos de Google Play?* — No: no declara `READ_MEDIA_IMAGES` ni `READ_MEDIA_VIDEO`, y además los bloquea. No hay formulario que completar.
+- *¿Por qué ubicación aproximada para el reciclaje y no para tu app?* — Porque el reciclaje es a escala de barrio y mi app necesita el **sector de un edificio**. Por eso mi app pide la precisa, pero funciona con la aproximada eligiendo el sector a mano (M40).
+
+---
+
+## M47 (evolución) · Actualicé el estado al volver de Ajustes con AppState
+
+**Qué hice**
+
+- En `usePermiso` agregué una suscripción a `AppState`: cuando la app vuelve a `'active'`, llama a `consultar()`.
+- La suscripción se limpia con `suscripcion.remove()` al desmontar.
+
+**Por qué**
+
+- **Problema real:** el paso 6 de D4. La persona ve "bloqueado", toca "Abrir Ajustes", habilita el permiso y vuelve. El sistema ya lo concedió, pero `respuesta` sigue siendo la vieja y la pantalla muestra "bloqueado".
+- Ajustes es **otra app**: no hay callback ni evento de permiso. Lo único que la app ve es que pasó a segundo plano y volvió. Ese es el momento justo para releer.
+- Uso `consultar()`, nunca `pedir()`: al volver no puede aparecer un diálogo que nadie pidió.
+- Funciona también al revés: si la persona **revoca** un permiso, al volver `consultar()` ve el cambio. Si el sistema reinició la app por la revocación, la consulta del montaje hace lo mismo.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no alcanza con `useEffect` al montar?* — Porque la pantalla nunca se desmontó: quedó debajo mientras la persona estaba en Ajustes. Al volver no hay montaje.
+- *¿Por qué `'active'` y no cualquier cambio?* — Porque los otros valores (`'background'`, `'inactive'`) indican que me estoy yendo. En ese momento no hay nada útil para hacer.
+- *¿Puede pasar que `AppState` dispare por el diálogo del sistema?* — Sí: en iOS el diálogo pasa la app por `'inactive'`. La consulta extra es inofensiva: no muestra nada y devuelve lo mismo.
+- *¿Por qué limpiar la suscripción?* — Si no la saco, cada montaje suma un oyente que sigue consultando para una pantalla que ya no existe.
+
+---
+
+## M48 · Simulé el regreso desde Ajustes
+
+**Qué hice**
+
+- En `src/__tests__/usePermiso.test.ts` agregué `simularAppState()`: reemplaza `AppState.addEventListener` por una versión en la que el test decide cuándo "vuelve" la app.
+- Cuatro casos: de bloqueado a concedido al volver, al volver no se pide nada, irse a segundo plano no consulta, y al desmontar se saca el oyente.
+- Corregí dos detalles de la entrada anterior de la bitácora: el separador con M46 y la frase sobre la revocación del permiso.
+
+**Por qué**
+
+- Sin este test, el bug del paso 6 de D4 podría volver sin que nadie lo note: un test normal monta el hook y termina, nunca "se va a Ajustes".
+- El test `al volver solo consulta` protege la regla más importante del módulo: el regreso nunca dispara un diálogo.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué simular `AppState` en vez de usar el real?* — En Jest no hay sistema operativo: la app nunca pasa a segundo plano. Simulo la entrada del hook, y lo que verifico (la reacción del hook) es código mío de verdad.
+- *¿Por qué `mockResolvedValueOnce` en la primera consulta?* — Para representar el cambio en el tiempo: primero el sistema dice "bloqueado", y después de Ajustes dice "concedido".
+- *¿Qué me garantiza este test en un celular real?* — La lógica de mi hook, no el comportamiento del sistema. Eso se prueba a mano en Expo Go.
+
+---
+
+## M49 · Creé la pantalla previa con un único botón Continuar
+
+**Qué hice**
+
+- `src/lib/permisos/previa.ts`: la lista de recursos, `esRecurso()` y los textos (título y beneficio en una frase) de cada uno. `Recurso` se mudó acá desde el hook.
+- `src/app/permisos/[recurso].tsx`: valida el recurso de la URL, muestra el beneficio, la aclaración de Ajustes y un único botón "Continuar". Ese botón llama a `pedir()` y cierra el modal.
+- Si el recurso no existe, muestra un mensaje en lugar de romperse.
+- `src/__tests__/pantallaPrevia.test.tsx` verifica cada punto.
+
+**Por qué**
+
+- El diálogo del sistema se puede mostrar pocas veces (en iOS, una sola). Conviene que la persona llegue sabiendo para qué sirve el permiso.
+- **Un único botón** por la pauta 5.1.1(iv) de Apple: la app no puede ofrecer "Ahora no" antes del diálogo. El "no" se da en el diálogo del sistema, que aparece igual después de "Continuar".
+- El componente `Previa` está separado porque `usePermiso` necesita un recurso válido y los hooks no se pueden llamar después de un `return` condicional.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no hay "Ahora no"?* — Porque Apple considera que eso filtra quién llega al diálogo. Si la persona no quiere, contesta "No permitir" en el diálogo y la app sigue funcionando.
+- *¿Cómo sale la persona de la pantalla sin aceptar?* — "Continuar" lleva al diálogo y ahí puede decir que no. Es la única salida: Apple no admite irse sin ver el diálogo (ver la corrección posterior a M62).
+- *¿Por qué los textos están en `src/lib`?* — Porque son datos sin React: los usa la pantalla y los verifica un test.
+- *¿Qué pasa con `/permisos/telepatia`?* — `esRecurso` lo rechaza y la pantalla muestra un mensaje. La URL es una entrada externa: no confío en ella.
+
+---
+
+## M50 · Mostré Abrir Ajustes en la pantalla previa si está bloqueado
+
+**Qué hice**
+
+- Agregué `comoHabilitar` a los textos de cada recurso.
+- Si `estado` es `bloqueado`, la pantalla previa explica cómo habilitarlo y su único botón pasa a ser "Abrir Ajustes".
+- Dos tests nuevos: el botón cambia y al tocarlo no se llama a `pedir()`.
+
+**Por qué**
+
+- Con el permiso bloqueado, `pedir()` contesta `denied` sin mostrar nada (paso 4 de D4). Un botón "Continuar" parecería roto.
+- El único camino que queda es Ajustes, y al volver M47 actualiza el estado solo.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no mostrar siempre "Abrir Ajustes"?* — Porque mientras el sistema pueda preguntar, el diálogo es un camino más corto. Ajustes es el último recurso.
+- *¿Y si la persona habilita el permiso y vuelve?* — `AppState` relee el estado, la pantalla pasa a "Continuar" y `pedir()` contesta `granted` sin mostrar diálogo. Se cierra sola al tocar el botón.
+
+---
+
+## M51 · Conecté cada función con su pantalla previa
+
+**Qué hice**
+
+- `src/hooks/usePantallaPrevia.ts`: cuando una pantalla recibe el foco con el permiso en `preguntable`, abre `/permisos/[recurso]`.
+- El escáner y la ubicación dejaron de tener su propia explicación. Debajo del modal queda la alternativa: escribir el aula o elegir el sector, con un botón para volver a intentar.
+- "Sacar foto" abre la pantalla previa y, al volver, retoma: abre la cámara si dijo que sí o sugiere la galería si dijo que no.
+- `src/lib/permisos/difusion.ts`: `usePermiso` ahora publica cada respuesta nueva a todas las instancias del mismo recurso.
+- `src/test-utils/routerSimulado.ts`: reemplazo de `expo-router` con `useFocusEffect` y `volverAlFoco()`.
+
+**Por qué**
+
+- Antes había tres explicaciones distintas, cada una escrita a mano en su pantalla. Ahora hay una sola y todas las funciones pasan por ella.
+- **Problema que apareció:** cada pantalla tiene su propia instancia de `usePermiso`. Si el modal consigue el permiso, la pantalla de abajo no se entera, porque sigue teniendo la respuesta vieja. La difusión lo resuelve: quien averigua algo se lo cuenta a las demás instancias del recurso.
+- Uso `useFocusEffect` y no `useEffect` porque el modal no desmonta la pantalla de abajo: al cerrarlo solo recupera el foco.
+- **Defecto que deja este módulo:** después de un "no", la pantalla recupera el foco, sigue en `preguntable` y la previa se abre otra vez. Lo corrijo en M52.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no un contexto para los permisos?* — Porque el sistema operativo ya guarda el permiso. Solo necesito avisar que algo cambió, no guardar una copia global. Con una lista de oyentes alcanza.
+- *¿El escáner sigue teniendo cuatro estados?* — Sí: cargando, cámara, explicación con "Continuar" (que ahora es la pantalla previa) y bloqueado con "Abrir Ajustes".
+- *¿Por qué `queriaSacarFoto` es un `useRef` y no estado?* — Porque es una nota interna entre dos momentos: no cambia nada de lo que se dibuja, así que no tiene que provocar un render.
+
+---
+
+## M52 · Dejé de mostrar la pantalla previa sola después de un no
+
+**Qué hice**
+
+- `usePantallaPrevia` recuerda con un `useRef` que ya se mostró en esta visita. Por su cuenta se abre una sola vez.
+- La función `abrir` que devuelve el hook sigue funcionando siempre: la usan los botones "Usar la cámara" y "Usar mi ubicación".
+- Tests con `volverAlFoco()`: después de un "no" no reaparece, reaparece al tocar la función y reaparece en una visita nueva.
+
+**Por qué**
+
+- Requisito 8: **no insistir**. El defecto de M51 era molesto: la persona decía "No permitir", el modal se cerraba y volvía a abrirse solo. Encima, con cada vuelta se acercaba al bloqueo definitivo.
+- Volver al formulario y tocar "Escanear QR" es una señal clara de que ahora sí quiere usar la función. Por eso una visita nueva vuelve a mostrar la previa.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `useRef` y no `useState`?* — Porque no cambia lo que se dibuja, y además tiene que leerse actualizado dentro del efecto sin volver a dispararlo.
+- *¿Por qué no se guarda en AsyncStorage?* — Porque "no insistir" no significa "no volver a preguntar nunca". Si la persona vuelve a tocar la función, quiere usarla.
+- *¿Qué pasa si vuelve con el botón Atrás de Android, sin tocar "Continuar"?* — Lo mismo que con un "no": la app queda en la alternativa, y no se pidió nada.
+
+---
+
+## M53 (evolución) · Creé el registro de permisos porque el panel no podía llamar hooks en un bucle
+
+**Qué hice**
+
+- `src/lib/permisos/registro.ts`: `REGISTRO` guarda, por cada recurso, `consultar` y `pedir` con el módulo de Expo que corresponde.
+- `consultarTodos()` consulta todos los recursos con `Promise.all`.
+- `usePermiso` dejó de conocer `expo-camera` y `expo-location`: ahora toma las funciones del registro.
+
+**Por qué**
+
+- **Problema real:** el panel tiene que mostrar todos los recursos. Lo natural era `RECURSOS.map((r) => usePermiso(r))`, pero las reglas de los hooks lo prohíben: React identifica cada hook por el orden en que se llama, y ese orden no puede depender de una lista.
+- Un componente por fila esquivaría la regla, pero cada fila repetiría la consulta y el oyente de `AppState`.
+- El registro separa **qué se le pregunta al sistema** (funciones comunes) de **cómo React lo muestra** (el hook). Las funciones se pueden llamar en un bucle.
+- Sumar un recurso ahora es agregar una entrada: M57 lo aprovecha con las notificaciones.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no se puede llamar un hook en un bucle?* — React guarda el estado de los hooks por posición. Si la lista cambia de largo entre renders, cada hook recibe el estado de otro.
+- *¿`src/lib` puede importar módulos de Expo?* — Sí: la regla es "sin React". El registro son servicios, y los módulos de Expo no son React.
+- *¿Por qué `Promise.all`?* — Porque las consultas son independientes. Se hacen a la vez y el panel se actualiza de una sola vez.
+
+---
+
+## M54 · Armé el panel con estado, plataforma y matiz de cada permiso
+
+**Qué hice**
+
+- `src/hooks/usePanelPermisos.ts`: consulta todo con `consultarTodos()` al recibir el foco y al volver de Ajustes, y escucha lo que publican las otras pantallas.
+- `src/lib/permisos/matiz.ts`: `ETIQUETA_PERMISO` y `textoMatiz()`, que muestra `accuracy` y `accessPrivileges`.
+- `src/app/(tabs)/permisos.tsx`: una tarjeta por recurso con su estado y su matiz, `Platform.OS`, y la galería como "no requerida (selector del sistema)".
+- El botón "Activar" o "Cómo habilitarlo" lleva a la pantalla previa. El panel nunca pide nada por su cuenta.
+
+**Por qué**
+
+- Requisito 9: el panel hace visible lo que normalmente es invisible, y sirve para demostrar el ciclo en la defensa.
+- Muestro `accuracy` tal cual lo devuelve el sistema (`coarse`, `reduced`) porque el panel es una herramienta técnica: el matiz es el dato, no un texto para el público general.
+- La galería no tiene botón: figura para dejar claro que **no hace falta** el permiso, porque la app usa el selector del sistema.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué se actualiza al entrar y al volver de Ajustes?* — Son casos distintos. Cambiar de pestaña da foco pero no cambia `AppState`. Ir a Ajustes y volver cambia `AppState`, pero la pestaña nunca perdió el foco.
+- *¿Por qué el panel no usa `usePermiso`?* — Porque no se puede llamar en un bucle (M53). Comparte con él las piezas de abajo: el registro y la difusión.
+- *¿Qué es `accessPrivileges`?* — El alcance del acceso a la galería: `all`, `limited` o `none`. Mi app no pide ese permiso, así que hoy no aparece. Queda para quien lo sume al registro.
+
+---
+
+## M55 · Registré cada consulta y pedido en un diario visible en el panel
+
+**Qué hice**
+
+- `src/lib/permisos/diario.ts`: una lista en memoria con hora, recurso, acción y resultado. Guarda las últimas 30 entradas.
+- El registro envuelve cada llamada con `conDiario()`: todo lo que pasa por él queda anotado.
+- `src/hooks/useDiario.ts` conecta el diario con React mediante `useSyncExternalStore`.
+- `src/components/DiarioPermisos.tsx` lo muestra al final del panel.
+
+**Por qué**
+
+- Permite **ver** las reglas en la defensa: que abrir el panel solo genera consultas, que `pedido` aparece únicamente después de "Continuar", y que al volver de Ajustes hay una consulta nueva.
+- Lo puse en el registro y no en cada pantalla porque el registro es el único paso obligado: ninguna llamada se puede saltear el diario.
+- `useSyncExternalStore` es la herramienta de React para leer datos que viven fuera de React. El diario tiene que recibir anotaciones desde `src/lib`, donde no hay hooks.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `leerDiario()` devuelve la misma lista si nada cambió?* — `useSyncExternalStore` compara referencias. Si devolviera una lista nueva cada vez, React creería que cambió y entraría en un bucle de renders.
+- *¿Por qué el límite de 30?* — Cada regreso a la app suma consultas. Sin límite, la lista crecería mientras la app esté abierta.
+- *¿Se guarda algo sensible?* — No: solo el recurso, la acción y el resultado, en memoria. No hay coordenadas ni fotos, y se borra al cerrar la app.
+
+---
+
+## M56 · Configuré expo-notifications
+
+**Qué hice**
+
+- Instalé `expo-notifications` con `npx expo install` y agregué su plugin a `app.json` con `color` y `enableBackgroundRemoteNotifications: false`.
+- Agregué el simulacro del módulo a `jest.setup.tsx`.
+- Verifiqué la API en la documentación del SDK 57: trigger con `SchedulableTriggerInputTypes.TIME_INTERVAL`, `channelId` dentro del trigger y `shouldShowBanner` / `shouldShowList` en lugar de `shouldShowAlert`, que está deprecado.
+
+**Por qué**
+
+- Un plugin por módulo (requisito 10). Las notificaciones de esta app son **locales**: no hay servidor ni token de push.
+- `enableBackgroundRemoteNotifications: false` deja explícito que iOS no necesita modos de segundo plano. El test de M45 sigue verificando que `UIBackgroundModes` está vacío.
+
+**Qué podría preguntar el docente**
+
+- *¿Funcionan en Expo Go?* — Las locales sí. Desde el SDK 53, Expo Go en Android no soporta push **remotas**, y mi app no las usa.
+- *¿Por qué el permiso de notificaciones no tiene texto de propósito en iOS?* — Porque iOS no pide una clave `NS...UsageDescription` para las notificaciones: muestra un diálogo fijo. Por eso importa más la pantalla previa.
+- *¿Y en Android?* — Desde Android 13 es un permiso peligroso, `POST_NOTIFICATIONS`. Lo aporta la librería al fusionar manifiestos; se audita en M67.
+
+---
+
+## M57 · Creé el canal reportes antes de pedir el permiso
+
+**Qué hice**
+
+- `src/lib/notificaciones/canal.ts`: `crearCanalReportes()` crea el canal `"reportes"` solo en Android.
+- Sumé `notificaciones` a `RECURSOS`, a los textos y al `REGISTRO`. Su `pedir` crea primero el canal y después llama a `requestPermissionsAsync()`.
+- Tests del orden `canal → pedido`, de iOS sin canal y de que `consultar` no crea nada.
+
+**Por qué**
+
+- Requisito 5, y una regla de Android: la documentación de Expo indica que en Android 13+ el diálogo **no aparece** hasta que exista al menos un canal.
+- El canal va dentro de `pedir` del registro para que el orden sea imposible de olvidar: nadie puede pedir sin pasar por ahí.
+- Acá se cobra M53: sumar un recurso fue agregar una entrada. El panel, la pantalla previa y el diario lo tomaron sin tocar su código.
+- Tuve que ampliar `RespuestaPermiso`, porque `android` e `ios` traen otros campos en este módulo (`importance`, `status`).
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es un canal?* — Una categoría de notificaciones que la persona controla por separado en Ajustes (sonido, importancia, apagarla). Existe desde Android 8.
+- *¿Por qué no crear el canal al abrir la app?* — También funcionaría, pero así queda claro el vínculo con el permiso, y una persona que nunca activa los avisos no tiene un canal de más.
+- *¿Se puede cambiar la importancia después?* — No desde el código: una vez creado, el canal es de la persona. Solo se pueden cambiar el nombre y la descripción.
+
+---
+
+## M58 · Pedí el permiso solo al activar el interruptor
+
+**Qué hice**
+
+- `src/hooks/usePreferencias.tsx`: contexto con `quiereAvisos`, lo que la persona eligió.
+- `src/app/ajustes-app.tsx`: interruptor "Avisarme cuando se resuelva mi reporte". Al activarlo sin permiso, abre la pantalla previa de notificaciones.
+- El interruptor se ve encendido solo si `quiereAvisos` y además el permiso está concedido.
+- Tests: abrir la pantalla no pide nada, activarlo lleva a la previa, y sin permiso queda apagado y explica dónde llegan los avisos.
+
+**Por qué**
+
+- Requisito 5. Pedir notificaciones apenas se abre la app es el ejemplo clásico de mal momento: la persona no sabe todavía para qué. Al tocar el interruptor, ya está pidiendo la función.
+- Son **dos datos distintos**: lo que la persona quiere (nuestro) y lo que el sistema permite (del sistema). Si solo guardara el valor del interruptor, podría quedar encendido con el permiso revocado.
+- El interruptor no pide directamente: pasa por la pantalla previa, como todos (requisito 6).
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué el interruptor no guarda directamente si hay permiso?* — Porque el permiso puede cambiar en Ajustes sin que la app se entere. Se consulta siempre; nunca se guarda una copia.
+- *¿Qué pasa si está bloqueado?* — La pantalla previa muestra "Abrir Ajustes". Mientras tanto, los avisos van a la bandeja.
+- *¿Por qué no hay texto de propósito?* — Porque iOS no lo usa para notificaciones; el beneficio se explica en la pantalla previa.
+
+---
+
+## M59 · Programé la notificación local de resolución a los 10 s
+
+**Qué hice**
+
+- `src/lib/notificaciones/programar.ts`:
+  - `programarAvisoResolucion()` usa `scheduleNotificationAsync` con trigger `TIME_INTERVAL`, `seconds: 10` y `channelId: 'reportes'`, y guarda `reporteId` en `data`.
+  - `configurarNotificaciones()` define `setNotificationHandler`.
+- `useReportes` ganó `resolver(id)`.
+- En `/reporte/[id]`, el botón "Simular resolución" marca el reporte como resuelto y programa la notificación si hay interruptor y permiso.
+
+**Por qué**
+
+- Los 10 segundos dan tiempo a salir de la app o bloquear el celular y ver que la notificación llega igual: la dispara el sistema, no mi código.
+- Sin `setNotificationHandler`, una notificación que llega con la app en primer plano no se muestra.
+- Uso `shouldShowBanner` y `shouldShowList` porque `shouldShowAlert` está deprecado en el SDK 57.
+- **Problema que deja este módulo:** sin permiso, el aviso se pierde. Y la decisión quedó dentro de la pantalla. Lo resuelvo en M60.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `reporteId` en `data`?* — Para saber qué reporte abrir cuando la persona toque la notificación (M62).
+- *¿Notificación local o push?* — Local: la programa el propio celular, sin servidor. Una push llega desde un servidor mediante FCM o APNs. Para este TP alcanza con la local, y además funciona en Expo Go.
+- *¿Qué pasa si cierro la app durante esos 10 segundos?* — Llega igual: el sistema ya tiene la notificación programada.
+
+---
+
+## M60 (evolución) · Creé un servicio de avisos con la bandeja como alternativa
+
+**Qué hice**
+
+- `src/lib/avisos/servicio.ts`: `avisarResolucion()` decide el camino. Con interruptor y permiso, programa la notificación. En cualquier otro caso, o si algo falla, deja el aviso en la bandeja.
+- `src/hooks/useAvisos.tsx`: contexto con la lista de avisos.
+- El detalle ya no decide nada: llama al servicio y muestra adónde fue el aviso.
+
+**Por qué**
+
+- **Problema real de M59:** sin permiso, el aviso se perdía. Eso rompe el requisito 7: un permiso denegado no puede dejar a la persona sin la función.
+- Además, la decisión estaba dentro de una pantalla. Si otra parte de la app resolviera reportes, tendría que copiarla.
+- El servicio consulta el permiso **en el momento de avisar**, y no usa el estado de una pantalla, porque pudo cambiar en Ajustes.
+- El `catch` hace que un error al programar no pierda el aviso: la bandeja es la red de seguridad.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué el servicio recibe `agregarABandeja` en vez de usar `useAvisos`?* — Porque `src/lib` no usa React. Recibe la función de afuera y eso además lo hace fácil de probar.
+- *¿Por qué si la persona no activó los avisos también va a la bandeja?* — Porque la bandeja no pide nada y no molesta: es información que espera adentro de la app.
+- *¿La bandeja reemplaza a las notificaciones?* — Es la alternativa: la persona se entera cuando abre la app, sin recibir nada afuera.
+
+---
+
+## M61 · Mostré la bandeja de avisos con contador de no leídos
+
+**Qué hice**
+
+- `useAvisos` ganó `noLeidos`, `marcarLeido` y `marcarTodosLeidos`.
+- `src/app/(tabs)/avisos.tsx`: lista de avisos con el contador. Tocar un aviso lo marca como leído y abre el reporte.
+- La pestaña Avisos muestra el contador con `tabBarBadge`.
+
+**Por qué**
+
+- La bandeja es lo que hace cumplir el requisito 7 con las notificaciones: quien dijo que no, se entera igual.
+- `noLeidos` se **calcula** de la lista en lugar de guardarse aparte. Así nunca puede quedar desincronizado.
+- El contador en la pestaña cumple el rol de la notificación: avisa que hay algo nuevo, pero dentro de la app.
+
+**Qué podría preguntar el docente**
+
+- *¿`tabBarBadge` necesita permiso?* — No: es un componente de mi app. Distinto del número en el ícono del sistema, que en iOS sí depende del permiso de notificaciones.
+- *¿Por qué `undefined` si no hay avisos?* — Porque `0` dibujaría un círculo con un cero.
+- *¿Por qué el `accessibilityLabel` dice "Sin leer"?* — Porque el borde azul solo se ve. Un lector de pantalla necesita el dato en texto.
+
+---
+
+## M62 · Abrí el reporte al tocar la notificación
+
+**Qué hice**
+
+- `src/hooks/useAbrirNotificacion.ts`: lee `useLastNotificationResponse()`, toma `reporteId` de `data` y navega a `/reporte/[id]`.
+- Lo llamo en el layout raíz.
+- Al terminar llamo a `clearLastNotificationResponseAsync()`.
+- Tests de `undefined` y `null`, de `data` sin `reporteId` y de una acción distinta de tocar.
+
+**Por qué**
+
+- Una notificación que abre la app en la pantalla de inicio obliga a buscar el reporte a mano.
+- `useLastNotificationResponse` cubre también el arranque en frío: si la notificación abrió la app desde cerrada, un oyente registrado después ya no la recibiría.
+- Valido que `reporteId` sea texto porque `data` viene de afuera del flujo normal. El detalle vuelve a validar el id, como con cualquier URL (M20).
+- Sin limpiar la respuesta, recargar la app volvería a abrir el mismo reporte, porque el sistema la recuerda.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué significa `DEFAULT_ACTION_IDENTIFIER`?* — Que la persona tocó la notificación en sí. Las notificaciones pueden tener botones, con otros identificadores.
+- *¿Por qué en el layout raíz?* — Porque tiene que funcionar en cualquier pantalla y existir antes de la navegación. El layout raíz nunca se desmonta.
+- *¿Qué pasa si el reporte ya no existe?* — El detalle muestra "No encontramos el reporte" (M20).
+
+---
+
+## M62 (corrección) · Quité las salidas de la pantalla previa antes del diálogo
+
+**Qué hice**
+
+- Mientras el permiso se puede preguntar, `/permisos/[recurso]` declara `gestureEnabled: false` y `headerBackVisible: false` con `<Stack.Screen>`.
+- Con el permiso bloqueado las opciones siguen siendo las normales.
+- Corregí dos entradas anteriores de esta bitácora (M49 y M52), que presentaban el gesto de cierre como algo aceptable.
+
+**Por qué**
+
+- Al buscar las fuentes de F2 leí las *Human Interface Guidelines* de Apple. Dicen que no hay que dar una forma de salir sin ver el diálogo, "like offering an option to close or cancel".
+- Mi modal no tenía "Ahora no", pero en iOS se podía cerrar deslizando hacia abajo. Era la misma salida, con otra forma.
+- En `bloqueado` no hay diálogo: si también sacara la salida, la persona quedaría atrapada entre "Abrir Ajustes" y nada.
+
+**Qué podría preguntar el docente**
+
+- *¿Y el botón Atrás de Android?* — Ese no se bloquea. La regla es de Apple, y cortar el botón físico de Android es hostil. Si la persona vuelve, la app sigue en la alternativa.
+- *¿Por qué `<Stack.Screen>` dentro de la pantalla y no en el layout?* — Porque las opciones dependen del estado del permiso, y el layout no lo conoce.
+- *¿No hay forma de irse sin contestar en iOS?* — Sí: tocar "Continuar" y responder "No permitir". Eso es lo que Apple quiere: que la decisión sea del diálogo del sistema.
+
+---
+
+## M63 · Respondí E3, E5 y la Parte F1 y F2 con mi código
+
+**Qué hice**
+
+- En `RESPUESTAS.md` escribí:
+  - **E3:** notificaciones mudas, con el canal antes de pedir, Android 12 o anterior y la autorización provisional.
+  - **E5:** los espacios de `useRevisarAlVolver` y sus tres preguntas.
+  - **F1:** la tabla de "cuándo pedir" con su alternativa.
+  - **F2:** los elementos de la pantalla previa.
+- Verifiqué en las fuentes oficiales de Apple, Android y Expo los datos que cito.
+
+**Por qué**
+
+- Cada respuesta se apoya en código que ya existe: M47 para E5, M57 y M58 para E3, y M49 a M52 para F2. En el oral puedo mostrarlo mientras respondo.
+- En F2 c) separé lo que dice cada documento. La consigna y el `Claude.md` le atribuyen a la pauta 5.1.1(iv) la regla sobre "Ahora no" y "Cerrar", pero ese texto **no nombra esos botones**. La regla explícita está en las *Human Interface Guidelines*. Mejor saberlo antes del oral.
+- Leer esa fuente completa destapó un defecto real: el modal se cerraba con un gesto. Lo corregí en el commit anterior.
+
+**Qué podría preguntar el docente**
+
+- *¿La pauta 5.1.1(iv) prohíbe "Ahora no"?* — No con esas palabras. Prohíbe manipular y pide alternativas. La regla explícita de un solo botón y sin opción de cerrar está en las *Human Interface Guidelines*.
+- *¿Por qué `quiereAvisos` se guarda y el permiso no?* — Porque `quiereAvisos` es una decisión dentro de mi app, y el permiso es del sistema y cambia sin avisar.
+- *¿Cuál es el buen momento para pedir notificaciones?* — Cuando la persona acaba de mostrar interés. En mi app, al activar el interruptor.
+
+---
+
+## M64 (evolución) · Guardé los reportes en AsyncStorage detrás de un repositorio
+
+**Qué hice**
+
+- Instalé `@react-native-async-storage/async-storage` con `npx expo install` (versión 2.2.0, incluida en Expo Go).
+- `src/lib/persistencia/almacen.ts`: `leerGuardado()` y `escribirGuardado()`, con validación por esquema.
+- `src/lib/reportes/repositorio.ts`: el tipo `RepositorioReportes` y su versión con AsyncStorage.
+- `ProveedorReportes` carga al montar, guarda en cada cambio y expone `cargando`.
+- El detalle muestra "Buscando el reporte…" mientras `cargando` sea verdadero.
+
+**Por qué**
+
+- **Problema real:** los reportes vivían en `useState`. Al cerrar la app se perdían, y también los avisos. Una app de reportes que olvida los reportes no sirve.
+- **Repositorio:** el contexto conoce la operación ("guardar", "cargar") y no el lugar. Si mañana hubiera un servidor, cambia una sola pieza. También permite un repositorio en memoria para los tests (M65).
+- **Valido al leer con zod** porque lo guardado es una entrada externa: pudo escribirlo una versión vieja de la app. Si no sirve, la app arranca igual.
+- **`/v1` en la clave:** si cambia el formato, puedo usar otra clave y migrar.
+- **Espero a `cargando === false` para guardar.** Si no, el primer render pisaría lo guardado con los datos iniciales.
+- **Problema que apareció con M62:** al abrir desde una notificación con la app cerrada, el detalle se dibuja antes de que lleguen los reportes. Sin `cargando`, diría "No encontramos el reporte" durante un instante.
+
+**Qué podría preguntar el docente**
+
+- *¿AsyncStorage es seguro?* — No está cifrado. Sirve para reportes y preferencias, pero no para contraseñas o tokens: para eso está `expo-secure-store`.
+- *¿Necesita un permiso?* — No: es almacenamiento privado de la app. Por eso no agregué ningún permiso.
+- *¿Y la foto?* — Guardo la URI, no la imagen. Queda en la caché de la app, así que el sistema podría borrarla. Para conservarla habría que copiarla a una carpeta permanente; hoy es un límite conocido.
+- *¿Por qué no guardar en cada `agregar`?* — Porque habría que acordarse en cada función que cambia la lista. Con un efecto sobre `reportes`, cualquier cambio se guarda.
+
+---
+
+## M65 · Probé el repositorio en memoria y persistí avisos y borrador
+
+**Qué hice**
+
+- `crearRepositorioEnMemoria()`: la misma interfaz que el repositorio real, guardando en una variable.
+- `src/hooks/usePersistido.ts`: recupera un valor y lo mantiene guardado. Lo usan los avisos, el borrador y las preferencias.
+- `src/lib/persistencia/esquemas.ts`: los esquemas de zod con los que se valida cada uno al leer.
+- `src/__tests__/persistencia.test.tsx`: un reporte sobrevive a desmontar y volver a montar, el estado resuelto se guarda, un JSON roto no rompe nada, y avisos, borrador e interruptor se recuperan.
+
+**Por qué**
+
+- El test del repositorio en memoria es la prueba de que el diseño de M64 sirve: el contexto funciona sin saber dónde se guarda.
+- "Desmontar y volver a montar" es lo más parecido a cerrar y abrir la app que se puede hacer en Jest.
+- `usePersistido` existe porque avisos, borrador y preferencias repetían lo mismo: leer al inicio, esperar y guardar en cada cambio.
+- **El borrador se guarda a medio escribir.** Si la persona va a Ajustes a habilitar un permiso y el sistema cierra la app, no pierde lo que escribió. Por eso su esquema no exige que esté completo.
+- **Sumé las preferencias:** si no, el interruptor de avisos se apagaría solo al reiniciar.
+- **Problema que apareció:** mi primera versión de `setQuiereAvisos` era una función nueva en cada cambio. Un efecto que dependía de ella se disparaba sin parar: la suite pasó de 30 segundos a casi 7 minutos. Con `useCallback` queda estable, y un test lo verifica.
+- Los reportes conservan su repositorio, con `cargando`, porque tienen una pantalla que depende de saber si ya llegaron.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué el permiso no está entre lo que se guarda?* — Porque es del sistema y puede cambiar mientras la app está cerrada. Guardarlo sería guardar algo que puede ser falso (E5).
+- *¿Qué asegura el repositorio en memoria?* — La lógica del contexto. No prueba que AsyncStorage funcione en el celular, y por eso hay que cerrar y abrir la app de verdad.
+- *¿Y el diario de permisos?* — No se guarda a propósito: es una herramienta de esta sesión.
+
+---
+
+## M65 (corrección) · Evité leer la respuesta de la notificación en web
+
+**Qué hice**
+
+- Creé `src/hooks/useAbrirNotificacion.web.ts`, una versión vacía del hook.
+- El layout raíz no cambió: sigue importando `@/hooks/useAbrirNotificacion`, y Metro elige el archivo según la plataforma.
+- Agregué un test de que la versión web no llama a `useLastNotificationResponse`.
+
+**Por qué**
+
+- **Problema real:** al abrir la app en el navegador, `useLastNotificationResponse` lanzaba `UnavailabilityError` dentro del layout raíz y se caía toda la app.
+- Los tests no lo vieron porque Jest corre como iOS.
+- No pude usar `if (Platform.OS !== 'web')` adentro del hook: las reglas de los hooks prohíben llamarlos según una condición. Un archivo por plataforma evita la condición.
+
+**Qué podría preguntar el docente**
+
+- *¿La app tiene que funcionar en web?* — La consigna pide Android, iOS y Expo Go. Web sirve para mirar pantallas, pero no para probar permisos: no tiene Ajustes del sistema, y "Abrir Ajustes" no funciona ahí.
+- *¿Cómo elige Metro el archivo?* — Al compilar para web prueba primero `.web.ts`; para Android e iOS usa `.ts`.
+- *¿Qué pasa con "Simular resolución" en web?* — Programar la notificación falla, el servicio atrapa el error y el aviso va a la bandeja (M60).
+
+---
+
+## Rediseño · Apliqué los colores del instituto
+
+**Qué hice**
+
+- `src/lib/tema.ts`: reemplacé el azul y blanco por verde oscuro `#1B3638`, verde brillante `#008F39` y marfil `#F2EDDE`.
+- Inicio: una portada verde oscuro con el resumen de reportes por estado (`ResumenReportes`) y el botón principal.
+- Header y pestañas en verde oscuro, barra de estado clara y franjas de color en las tarjetas.
+- Las tarjetas de reporte llevan el color de su estado.
+- La pantalla previa ganó un ícono por recurso.
+- `app.json`: splash, ícono adaptativo y color de notificación con la paleta.
+- `src/__tests__/tema.test.ts`: verifica el contraste de cada combinación.
+
+**Por qué**
+
+- La app ahora se identifica con el instituto y se ve menos genérica.
+- **El contraste decidió dónde va cada color.** El marfil sobre el verde brillante da 3,6:1. No alcanza para texto normal (4,5:1), pero sí para texto grande (3:1). Por eso el botón principal es el único lugar con texto sobre ese verde, con letra de 19 px en negrita. Lo seleccionado y los encabezados van en verde oscuro.
+- El cambio fue chico porque los colores ya vivían en `tema.ts` (M14): casi todas las pantallas cambiaron solas.
+- El QR sigue sobre blanco puro para leerse mejor.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es la relación de contraste?* — Compara la luminosidad de dos colores. WCAG pide 4,5:1 para texto normal y 3:1 para texto grande.
+- *¿Por qué no usar el verde brillante en todos lados?* — Porque es el acento: si todo resalta, nada resalta. Además, no sirve para texto chico.
+- *¿Cambió algún permiso?* — No. Es solo visual, y los cuatro estados y la pantalla previa funcionan igual.
+- *¿Y el modo oscuro?* — Sigue pendiente para M74.
+
+---
+
+## Rediseño (corrección) · Expliqué cómo cambiar el permiso en web
+
+**Qué hice**
+
+- `abrirAjustes` de `usePermiso` ahora revisa la plataforma. En web muestra un aviso con `alert` y no llama a `Linking.openSettings()`.
+- Agregué un test para web.
+
+**Por qué**
+
+- **Problema real:** al tocar "Abrir Ajustes" en el navegador aparecía `Linking.default.openSettings is not a function`, porque `react-native-web` no implementa esa función.
+- Lo resolví en el hook porque es el único lugar por el que pasan todas las pantallas con ese botón.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué acá un `if (Platform.OS === 'web')` y en `useAbrirNotificacion` un archivo `.web.ts`?* — Porque acá la condición está adentro de una función común. Allá había que evitar llamar a un hook, y eso no se puede hacer con una condición.
+- *¿Cambia algo en Android o iOS?* — No: siguen abriendo los Ajustes de la app.
+
+---
+
+## Web · Volví al inicio cuando no hay historial
+
+**Qué hice**
+
+- `src/lib/navegacion.ts`: `volver(destino)` reemplaza las cuatro copias que tenían las pantallas. También la usa el guardado del formulario.
+- `src/lib/avisar.ts`: `avisar()` usa `Alert` en el celular y el aviso del navegador en web.
+
+**Por qué**
+
+- **Problema real:** guardar un reporte mostraba `The action 'GO_BACK' was not handled by any navigator`. El formulario llamaba a `router.back()` sin comprobar nada. En web pasa al recargar la página: el historial queda vacío.
+- Las otras pantallas ya lo controlaban, con el mismo código copiado cuatro veces. Por eso el formulario quedó afuera: una copia menos para olvidarse.
+- En web, `Alert.alert` no muestra nada: el reporte se guardaba sin ninguna confirmación.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `replace` y no `push`?* — Para que "atrás" no vuelva a la pantalla que se acaba de cerrar.
+- *¿Se perdía el reporte con ese error?* — No: ya estaba guardado. Fallaba solo la navegación.
+
+---
+
+## Web · Guardé la ubicación y la foto apenas se obtienen
+
+**Qué hice**
+
+- La ubicación vive en el borrador: `tomarUbicacion` la escribe ahí directamente. Ya no hay estado local en la pantalla.
+- Saqué el botón "Usar esta ubicación". Quedó "Volver al reporte", y un texto que confirma que está guardada.
+- La foto hace lo mismo: se guarda al elegirla o sacarla.
+
+**Por qué**
+
+- **Problema real:** después de tomar la ubicación había que tocar otro botón. Si la persona volvía con la flecha, se perdía, y al abrir la pantalla otra vez aparecía vacía.
+- Tener una sola fuente de verdad evita el problema: al abrir la pantalla se lee el borrador, que además persiste (M65).
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no un botón de confirmación?* — Porque tomar la ubicación ya fue una decisión. Pedir otra es un paso de más que invita a perder el dato.
+- *¿Y si la ubicación está mal?* — "Tomar de nuevo" la reemplaza.
+
+---
+
+## Web · Saqué la foto con la cámara en vivo y mostré por qué falla la cámara
+
+**Qué hice**
+
+- `src/components/CamaraEnVivo.tsx`: `CameraView` con "Tomar foto" y "Cancelar", para web.
+- `/reporte/foto`: en web abre esa cámara. En Android e iOS sigue usando la cámara del sistema.
+- `src/components/ProblemaCamara.tsx`: si la cámara no arranca, muestra el motivo y "Reintentar". El escáner escucha `onMountError` y además ofrece escribir el aula.
+- `src/lib/fotos/reducir.web.ts`: en web achica la foto antes de guardarla.
+
+**Por qué**
+
+- **Problema real 1:** en una compu, `launchCameraAsync` abre el selector de archivos. Por eso "Sacar foto" parecía abrir la galería.
+- **Problema real 2:** con el permiso concedido, la cámara igual puede fallar: otra app la está usando o está desconectada. El código ignoraba `onMountError` y quedaba una pantalla negra, sin explicación.
+- Un permiso concedido **no garantiza** que el recurso funcione. Son dos fallas distintas, y solo una se resuelve en Ajustes.
+- En web, la foto es texto base64 guardado en `localStorage`, que tiene pocos MB. Sin achicarla, una foto grande llenaría el espacio y dejarían de guardarse los reportes sin ningún aviso.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no usar `CameraView` también en el celular?* — Porque la cámara del sistema ya resuelve enfoque, flash y previsualización. El cambio es solo para donde no existe esa cámara.
+- *¿Hace falta algo para usar la cámara en web?* — El navegador solo la habilita en HTTPS o en `localhost`.
+- *¿Por qué dos archivos `reducir`?* — Porque Metro elige por plataforma, y el celular no tiene `canvas` ni necesita achicar nada.
+
+---
+
+## Web · Preparé la app para presentarla desde la compu
+
+**Qué hice**
+
+- En el layout raíz, la app se muestra en una columna centrada de 520 px sobre fondo verde oscuro.
+- `src/lib/notificaciones/programar.web.ts`: en web, "Simular resolución" muestra una notificación real del navegador a los 10 s. Al tocarla, abre el reporte.
+
+**Por qué**
+
+- La defensa se hace compartiendo la pantalla de la compu. Estirada a todo el ancho, la app se veía rara: botones de más de un metro y tarjetas vacías.
+- `expo-notifications` no programa notificaciones en web. Sin este archivo, el aviso siempre iba a la bandeja y no se podía mostrar el requisito 5 en la presentación.
+- Web no reemplaza la prueba en el celular: los permisos del navegador se comportan distinto.
+
+**Qué podría preguntar el docente**
+
+- *¿La notificación web funciona con la pestaña cerrada?* — No: depende de `setTimeout`. Para eso haría falta un service worker. En Android e iOS la programa el sistema, y por eso sí llega.
+- *¿En qué se diferencian los permisos web?* — No hay Ajustes de la app: se cambian desde el ícono junto a la dirección. Tampoco existen `android.permission.*` ni textos de propósito.
+
+---
+
+## Web · Corregí las etiquetas cortadas de las pestañas
+
+**Qué hice**
+
+- En web, la barra de pestañas tiene 64 px de alto y un margen inferior.
+
+**Por qué**
+
+- Las etiquetas se cortaban abajo. Primero creí que era un efecto de las capturas, pero una ventana de tamaño exacto mostró lo mismo.
+- Solo aplica a web: en Android e iOS la altura depende de las zonas seguras del sistema, y fijarla podría romperla.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no fijar la altura en todas las plataformas?* — Porque los celulares con barra de gestos necesitan más espacio abajo, y React Navigation lo calcula solo.
+
+---
+

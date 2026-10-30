@@ -1,56 +1,59 @@
-# Welcome to your Expo app 👋
+# Mantenimiento IPF
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App para que alumnos y docentes del **Instituto Politécnico Formosa** reporten desperfectos del edificio (electricidad, agua, mobiliario, equipos) y reciban un aviso cuando se resuelven.
 
-## Get started
+Trabajo Práctico N° 3 del **Taller de React Native II**. El tema central son los **permisos móviles** en Android, iOS y Expo: pedir solo lo necesario, en el momento justo, explicando para qué, y que la app siga funcionando si la persona dice que no.
 
-1. Install dependencies
+## Stack
 
-   ```bash
-   npm install
-   ```
+- Expo **SDK 57** con TypeScript y Expo Router
+- Módulos de Expo: `expo-camera`, `expo-location`, `expo-image-picker`, `expo-notifications`
+- Calidad: TypeScript `strict`, ESLint + Prettier, Jest (`jest-expo` + Testing Library), Husky + commitlint, GitHub Actions
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Cómo correrlo
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Escaneá el QR con **Expo Go** (Android) o con la app de Cámara (iOS). Expo Go tiene que ser compatible con el SDK 57.
 
-### Other setup steps
+## Estructura
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```
+src/
+  app/          rutas (Expo Router)
+  components/   componentes de UI
+  hooks/        hooks de React
+  lib/          lógica pura y servicios, sin React
+docs/
+  bitacora.md   qué hice, por qué y preguntas de la defensa, módulo por módulo
+RESPUESTAS.md   respuestas a las Partes A–F del TP
+```
 
-## Learn more
+## Flujo de trabajo con Git
 
-To learn more about developing your project with Expo, look at the following resources:
+- Todo el desarrollo se hace en la rama **`develop`**.
+- **Un módulo = un commit**, con mensajes en formato Conventional Commits, en primera persona y en pasado: `feat(camara): mostré la cámara en /reporte/escanear`.
+- `main` solo recibe el merge final con el tag `v1.0.0`.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+> Este README se completa en el módulo M76 con el árbol final, los plugins, la tabla de permisos y las capturas.
 
-## Join the community
+## Permisos bloqueados en Android (`blockedPermissions`)
 
-Join our community of developers creating universal apps.
+`app.json` bloquea con `android.blockedPermissions` los permisos que la app **no usa**. Expo los agrega al manifiesto con `tools:node="remove"`, así ninguna librería los puede sumar al fusionar los manifiestos. Lo verifica el test `src/__tests__/permisosNativos.test.ts` con `expo config --type introspect`, y también se puede ver con `npm run permisos:nativos`.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+| Permiso bloqueado | Quién lo agregaría | Por qué no lo necesito |
+| --- | --- | --- |
+| `SYSTEM_ALERT_WINDOW` | Expo, por defecto | Sirve para dibujar sobre otras apps. La app nunca muestra ventanas flotantes. |
+| `READ_EXTERNAL_STORAGE` | `expo-image-picker` y `expo-file-system` (hasta API 32) | Las fotos se eligen con el selector del sistema, que no necesita permiso, y la app solo guarda archivos en su carpeta privada. |
+| `WRITE_EXTERNAL_STORAGE` | `expo-image-picker` y `expo-file-system` (hasta API 32) | La app no escribe en el almacenamiento compartido. La cámara del sistema guarda la foto en el caché de la app. |
+| `READ_MEDIA_IMAGES` | Ninguna hoy (lo bloqueo por las dudas) | La consigna pide no declararlo: la foto sale del selector del sistema. Además, Google Play lo restringe a apps cuya función principal es la galería. |
+| `READ_MEDIA_VIDEO` | Ninguna hoy | La app no trabaja con videos. |
+| `READ_MEDIA_AUDIO` | Ninguna hoy | La app no lee archivos de audio. |
+| `READ_MEDIA_VISUAL_USER_SELECTED` | Ninguna hoy | Es el acceso parcial a fotos de Android 14. Con el selector del sistema no hace falta. |
+| `ACCESS_BACKGROUND_LOCATION` | `expo-location` si se activa el segundo plano | La ubicación se usa solo con la app abierta, al reportar. Google Play exige una justificación especial para pedirlo. |
+| `RECORD_AUDIO` | `expo-camera` y `expo-image-picker` (para grabar video) | La app no graba audio ni video. Se habilita recién en M73 para la nota de voz. |
+
+Permisos que **sí** quedan: `INTERNET` (instalación), `VIBRATE` (instalación, para las notificaciones), `CAMERA` (escáner y foto) y `ACCESS_COARSE_LOCATION` / `ACCESS_FINE_LOCATION` (ubicación en primer plano).

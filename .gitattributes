@@ -1,0 +1,4 @@
+# Normalizo los finales de línea a LF para que Prettier y Git no se peleen en Windows.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
