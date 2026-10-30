@@ -95,6 +95,7 @@ const estilos = StyleSheet.create({
     color: colores.primarioTexto,
     fontWeight: '600',
   },
+  // Blanco puro a propósito: el QR se lee mejor con el máximo contraste.
   qr: {
     alignItems: 'center',
     padding: espacio.m,

@@ -20,8 +20,20 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colores.primario,
-        tabBarInactiveTintColor: colores.textoSecundario,
+        headerStyle: { backgroundColor: colores.primario },
+        headerTintColor: colores.primarioTexto,
+        headerShadowVisible: false,
+        tabBarStyle: {
+          backgroundColor: colores.primario,
+          borderTopColor: colores.acento,
+        },
+        tabBarActiveTintColor: colores.primarioTexto,
+        tabBarInactiveTintColor: colores.primarioTextoSuave,
+        tabBarBadgeStyle: {
+          backgroundColor: colores.primarioTexto,
+          color: colores.primario,
+          fontWeight: '700',
+        },
       }}>
       <Tabs.Screen name="index" options={{ title: 'Reportes', tabBarIcon: icono('construct') }} />
       <Tabs.Screen

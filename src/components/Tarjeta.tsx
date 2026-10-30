@@ -16,6 +16,8 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.superficie,
     borderColor: colores.borde,
     borderWidth: 1,
+    borderLeftWidth: 6,
+    borderLeftColor: colores.acento,
     borderRadius: radio.m,
     padding: espacio.m,
     gap: espacio.s,

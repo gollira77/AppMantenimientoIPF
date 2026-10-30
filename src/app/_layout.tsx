@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 
 import { useAbrirNotificacion } from '@/hooks/useAbrirNotificacion';
 import { ProveedorAvisos } from '@/hooks/useAvisos';
@@ -18,9 +19,12 @@ export default function RootLayout() {
       <ProveedorReportes>
         <ProveedorAvisos>
           <ProveedorBorrador>
+            <StatusBar style="light" />
             <Stack
               screenOptions={{
-                headerTintColor: colores.primario,
+                headerStyle: { backgroundColor: colores.primario },
+                headerTintColor: colores.primarioTexto,
+                headerShadowVisible: false,
                 contentStyle: { backgroundColor: colores.fondo },
               }}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

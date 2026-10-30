@@ -1,16 +1,25 @@
 // Tokens de diseño de la app. Sin React: cualquier capa los puede importar.
 
+// Los tres colores del instituto.
+const VERDE_OSCURO = '#1B3638';
+const VERDE_BRILLANTE = '#008F39';
+const MARFIL = '#F2EDDE';
+
 export const colores = {
-  primario: '#1565C0',
-  primarioTexto: '#FFFFFF',
-  fondo: '#F5F7FA',
-  superficie: '#FFFFFF',
-  borde: '#D5DBE3',
-  texto: '#1B1F24',
-  textoSecundario: '#5B6573',
-  exito: '#2E7D32',
-  advertencia: '#B26A00',
-  peligro: '#C62828',
+  primario: VERDE_OSCURO,
+  primarioTexto: MARFIL,
+  /** Solo con letra grande: el marfil sobre este verde no alcanza para texto chico. */
+  acento: VERDE_BRILLANTE,
+  fondo: MARFIL,
+  superficie: '#FBF8EF',
+  borde: VERDE_OSCURO,
+  texto: VERDE_OSCURO,
+  textoSecundario: '#46605B',
+  /** Texto secundario sobre verde oscuro. */
+  primarioTextoSuave: '#C3CFC4',
+  exito: '#00702D',
+  advertencia: '#8A5200',
+  peligro: '#B3261E',
 } as const;
 
 export const espacio = {
@@ -22,8 +31,9 @@ export const espacio = {
 } as const;
 
 export const radio = {
-  s: 6,
-  m: 12,
+  s: 8,
+  m: 14,
+  l: 20,
 } as const;
 
 export const tipografia = {
@@ -31,6 +41,9 @@ export const tipografia = {
   subtitulo: { fontSize: 17, fontWeight: '600' },
   cuerpo: { fontSize: 15, fontWeight: '400' },
   chico: { fontSize: 13, fontWeight: '400' },
+  numero: { fontSize: 26, fontWeight: '700' },
+  /** Cuenta como texto grande para el contraste: 19 px en negrita. */
+  boton: { fontSize: 19, fontWeight: '700' },
 } as const;
 
 export type Color = keyof typeof colores;

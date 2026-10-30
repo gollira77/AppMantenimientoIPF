@@ -49,10 +49,10 @@ export function Boton({
 
 const estilos = StyleSheet.create({
   base: {
-    minHeight: 48,
+    minHeight: 52,
     paddingHorizontal: espacio.m,
     paddingVertical: espacio.s,
-    borderRadius: radio.m,
+    borderRadius: radio.l,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'stretch',
@@ -70,22 +70,22 @@ const estilos = StyleSheet.create({
 
 const fondos = StyleSheet.create({
   primario: {
-    backgroundColor: colores.primario,
+    backgroundColor: colores.acento,
   },
   secundario: {
     backgroundColor: colores.superficie,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colores.primario,
   },
   peligro: {
     backgroundColor: colores.superficie,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colores.peligro,
   },
 });
 
 const textos = StyleSheet.create({
-  primario: { color: colores.primarioTexto },
+  primario: { color: colores.primarioTexto, ...tipografia.boton },
   secundario: { color: colores.primario },
   peligro: { color: colores.peligro },
 });

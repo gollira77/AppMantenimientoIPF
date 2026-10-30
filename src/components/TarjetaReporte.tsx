@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { EtiquetaEstado } from '@/components/EtiquetaEstado';
+import { COLOR_ESTADO, EtiquetaEstado } from '@/components/EtiquetaEstado';
 import { Texto } from '@/components/Texto';
 import { ETIQUETA_CATEGORIA, ETIQUETA_ESTADO, type Reporte } from '@/lib/reportes/tipos';
 import { colores, espacio, radio } from '@/lib/tema';
@@ -19,7 +19,11 @@ export function TarjetaReporte({ reporte, onPress }: Props) {
       accessibilityLabel={`${reporte.titulo}. Aula ${reporte.aula}. ${categoria}. ${ETIQUETA_ESTADO[reporte.estado]}`}
       accessibilityHint="Abre el detalle del reporte"
       onPress={onPress}
-      style={({ pressed }) => [estilos.tarjeta, pressed && estilos.presionada]}>
+      style={({ pressed }) => [
+        estilos.tarjeta,
+        { borderLeftColor: COLOR_ESTADO[reporte.estado] },
+        pressed && estilos.presionada,
+      ]}>
       <View style={estilos.encabezado}>
         <Texto variante="subtitulo" style={estilos.titulo}>
           {reporte.titulo}
@@ -38,6 +42,7 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.superficie,
     borderColor: colores.borde,
     borderWidth: 1,
+    borderLeftWidth: 6,
     borderRadius: radio.m,
     padding: espacio.m,
     gap: espacio.xs,

@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Enlace } from '@/components/Enlace';
+import { ResumenReportes } from '@/components/ResumenReportes';
 import { TarjetaReporte } from '@/components/TarjetaReporte';
 import { Texto } from '@/components/Texto';
 import { useReportes } from '@/hooks/useReportes';
-import { colores, espacio } from '@/lib/tema';
+import { colores, espacio, radio, tipografia } from '@/lib/tema';
 
 export default function Reportes() {
   const { reportes } = useReportes();
@@ -19,8 +20,14 @@ export default function Reportes() {
         contentContainerStyle={estilos.lista}
         ListHeaderComponent={
           <View style={estilos.encabezado}>
-            <Texto variante="titulo">Mis reportes</Texto>
-            <Boton titulo="Nuevo reporte" onPress={() => router.push('/reporte/nuevo')} />
+            <View style={estilos.portada}>
+              <Text style={estilos.instituto}>Instituto Politécnico Formosa</Text>
+              <Texto variante="titulo" style={estilos.tituloPortada}>
+                Mis reportes
+              </Texto>
+              <ResumenReportes reportes={reportes} />
+              <Boton titulo="Nuevo reporte" onPress={() => router.push('/reporte/nuevo')} />
+            </View>
             <Enlace href="/ajustes-app">Ajustes de la app</Enlace>
             <Enlace href="/herramientas/qr">Generador de QR de aulas</Enlace>
           </View>
@@ -46,5 +53,23 @@ const estilos = StyleSheet.create({
   encabezado: {
     gap: espacio.s,
     marginBottom: espacio.s,
+  },
+  portada: {
+    backgroundColor: colores.primario,
+    borderRadius: radio.l,
+    borderBottomWidth: 6,
+    borderBottomColor: colores.acento,
+    padding: espacio.l,
+    gap: espacio.m,
+  },
+  instituto: {
+    ...tipografia.chico,
+    color: colores.primarioTextoSuave,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  tituloPortada: {
+    fontSize: 28,
+    color: colores.primarioTexto,
   },
 });

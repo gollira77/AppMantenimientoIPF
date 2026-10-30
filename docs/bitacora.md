@@ -1801,3 +1801,31 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## Rediseño · Apliqué los colores del instituto
+
+**Qué hice**
+
+- `src/lib/tema.ts`: reemplacé el azul y blanco por verde oscuro `#1B3638`, verde brillante `#008F39` y marfil `#F2EDDE`.
+- Inicio: una portada verde oscuro con el resumen de reportes por estado (`ResumenReportes`) y el botón principal.
+- Header y pestañas en verde oscuro, barra de estado clara y franjas de color en las tarjetas.
+- Las tarjetas de reporte llevan el color de su estado.
+- La pantalla previa ganó un ícono por recurso.
+- `app.json`: splash, ícono adaptativo y color de notificación con la paleta.
+- `src/__tests__/tema.test.ts`: verifica el contraste de cada combinación.
+
+**Por qué**
+
+- La app ahora se identifica con el instituto y se ve menos genérica.
+- **El contraste decidió dónde va cada color.** El marfil sobre el verde brillante da 3,6:1. No alcanza para texto normal (4,5:1), pero sí para texto grande (3:1). Por eso el botón principal es el único lugar con texto sobre ese verde, con letra de 19 px en negrita. Lo seleccionado y los encabezados van en verde oscuro.
+- El cambio fue chico porque los colores ya vivían en `tema.ts` (M14): casi todas las pantallas cambiaron solas.
+- El QR sigue sobre blanco puro para leerse mejor.
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es la relación de contraste?* — Compara la luminosidad de dos colores. WCAG pide 4,5:1 para texto normal y 3:1 para texto grande.
+- *¿Por qué no usar el verde brillante en todos lados?* — Porque es el acento: si todo resalta, nada resalta. Además, no sirve para texto chico.
+- *¿Cambió algún permiso?* — No. Es solo visual, y los cuatro estados y la pantalla previa funcionan igual.
+- *¿Y el modo oscuro?* — Sigue pendiente para M74.
+
+---
+

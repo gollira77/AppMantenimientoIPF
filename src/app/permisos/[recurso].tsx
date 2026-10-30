@@ -1,4 +1,6 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
 
 import { Boton } from '@/components/Boton';
 import { Cargando } from '@/components/Cargando';
@@ -7,6 +9,21 @@ import { Pantalla } from '@/components/Pantalla';
 import { Texto } from '@/components/Texto';
 import { usePermiso } from '@/hooks/usePermiso';
 import { esRecurso, TEXTOS_PREVIA, type Recurso } from '@/lib/permisos/previa';
+import { colores, espacio } from '@/lib/tema';
+
+const ICONOS: Record<Recurso, keyof typeof Ionicons.glyphMap> = {
+  camara: 'camera',
+  ubicacion: 'location',
+  notificaciones: 'notifications',
+};
+
+function IconoRecurso({ recurso }: { recurso: Recurso }) {
+  return (
+    <View style={estilos.icono}>
+      <Ionicons name={ICONOS[recurso]} size={44} color={colores.primarioTexto} />
+    </View>
+  );
+}
 
 function cerrar() {
   if (router.canGoBack()) {
@@ -33,8 +50,9 @@ function Previa({ recurso }: { recurso: Recurso }) {
   if (estado === 'bloqueado') {
     return (
       <Pantalla centrada>
+        <IconoRecurso recurso={recurso} />
         <Texto variante="titulo">{titulo}</Texto>
-        <Texto>{comoHabilitar}</Texto>
+        <Texto style={estilos.centrado}>{comoHabilitar}</Texto>
         <Boton titulo="Abrir Ajustes" onPress={abrirAjustes} />
       </Pantalla>
     );
@@ -45,9 +63,12 @@ function Previa({ recurso }: { recurso: Recurso }) {
   return (
     <Pantalla centrada>
       <Stack.Screen options={{ gestureEnabled: false, headerBackVisible: false }} />
+      <IconoRecurso recurso={recurso} />
       <Texto variante="titulo">{titulo}</Texto>
-      <Texto>{beneficio}</Texto>
-      <Texto variante="secundario">Podés cambiar este permiso cuando quieras en Ajustes.</Texto>
+      <Texto style={estilos.centrado}>{beneficio}</Texto>
+      <Texto variante="secundario" style={estilos.centrado}>
+        Podés cambiar este permiso cuando quieras en Ajustes.
+      </Texto>
       <Boton titulo="Continuar" onPress={continuar} />
     </Pantalla>
   );
@@ -67,3 +88,20 @@ export default function PantallaPrevia() {
 
   return <Previa recurso={recurso} />;
 }
+
+const estilos = StyleSheet.create({
+  icono: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colores.primario,
+    borderWidth: 4,
+    borderColor: colores.acento,
+    marginBottom: espacio.s,
+  },
+  centrado: {
+    textAlign: 'center',
+  },
+});

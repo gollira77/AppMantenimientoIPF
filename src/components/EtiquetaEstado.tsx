@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { ETIQUETA_ESTADO, type Estado } from '@/lib/reportes/tipos';
 import { colores, espacio, radio, tipografia } from '@/lib/tema';
 
-const COLOR_ESTADO: Record<Estado, string> = {
+export const COLOR_ESTADO: Record<Estado, string> = {
   pendiente: colores.advertencia,
   en_proceso: colores.primario,
   resuelto: colores.exito,
@@ -17,9 +17,9 @@ export function EtiquetaEstado({ estado }: Props) {
   const color = COLOR_ESTADO[estado];
   return (
     <View
-      style={[estilos.etiqueta, { borderColor: color }]}
+      style={[estilos.etiqueta, { backgroundColor: color }]}
       accessibilityLabel={`Estado: ${ETIQUETA_ESTADO[estado]}`}>
-      <Text style={[estilos.texto, { color }]}>{ETIQUETA_ESTADO[estado]}</Text>
+      <Text style={estilos.texto}>{ETIQUETA_ESTADO[estado]}</Text>
     </View>
   );
 }
@@ -27,13 +27,13 @@ export function EtiquetaEstado({ estado }: Props) {
 const estilos = StyleSheet.create({
   etiqueta: {
     alignSelf: 'flex-start',
-    borderWidth: 1,
     borderRadius: radio.s,
     paddingHorizontal: espacio.s,
-    paddingVertical: 2,
+    paddingVertical: espacio.xs,
   },
   texto: {
     ...tipografia.chico,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: colores.primarioTexto,
   },
 });
