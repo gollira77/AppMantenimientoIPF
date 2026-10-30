@@ -9,8 +9,7 @@ import {
   type EstadoPermiso,
   type RespuestaPermiso,
 } from '@/lib/permisos/interpretar';
-
-export type Recurso = 'camara' | 'ubicacion';
+import type { Recurso } from '@/lib/permisos/previa';
 
 type Funciones = {
   consultar: () => Promise<RespuestaPermiso>;

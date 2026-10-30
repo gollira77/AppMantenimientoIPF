@@ -1357,3 +1357,27 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M49 · Creé la pantalla previa con un único botón Continuar
+
+**Qué hice**
+
+- `src/lib/permisos/previa.ts`: la lista de recursos, `esRecurso()` y los textos (título y beneficio en una frase) de cada uno. `Recurso` se mudó acá desde el hook.
+- `src/app/permisos/[recurso].tsx`: valida el recurso de la URL, muestra el beneficio, la aclaración de Ajustes y un único botón "Continuar". Ese botón llama a `pedir()` y cierra el modal.
+- Si el recurso no existe, muestra un mensaje en lugar de romperse.
+- `src/__tests__/pantallaPrevia.test.tsx` verifica cada punto.
+
+**Por qué**
+
+- El diálogo del sistema se puede mostrar pocas veces (en iOS, una sola). Conviene que la persona llegue sabiendo para qué sirve el permiso.
+- **Un único botón** por la pauta 5.1.1(iv) de Apple: la app no puede ofrecer "Ahora no" antes del diálogo. El "no" se da en el diálogo del sistema, que aparece igual después de "Continuar".
+- El componente `Previa` está separado porque `usePermiso` necesita un recurso válido y los hooks no se pueden llamar después de un `return` condicional.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no hay "Ahora no"?* — Porque Apple considera que eso filtra quién llega al diálogo. Si la persona no quiere, contesta "No permitir" en el diálogo y la app sigue funcionando.
+- *¿Cómo sale la persona de la pantalla sin aceptar?* — "Continuar" lleva al diálogo y ahí puede decir que no. Además, el gesto del sistema para cerrar el modal sigue disponible.
+- *¿Por qué los textos están en `src/lib`?* — Porque son datos sin React: los usa la pantalla y los verifica un test.
+- *¿Qué pasa con `/permisos/telepatia`?* — `esRecurso` lo rechaza y la pantalla muestra un mensaje. La URL es una entrada externa: no confío en ella.
+
+---
+
