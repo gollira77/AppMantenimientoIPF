@@ -1447,3 +1447,26 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M53 (evolución) · Creé el registro de permisos porque el panel no podía llamar hooks en un bucle
+
+**Qué hice**
+
+- `src/lib/permisos/registro.ts`: `REGISTRO` guarda, por cada recurso, `consultar` y `pedir` con el módulo de Expo que corresponde.
+- `consultarTodos()` consulta todos los recursos con `Promise.all`.
+- `usePermiso` dejó de conocer `expo-camera` y `expo-location`: ahora toma las funciones del registro.
+
+**Por qué**
+
+- **Problema real:** el panel tiene que mostrar todos los recursos. Lo natural era `RECURSOS.map((r) => usePermiso(r))`, pero las reglas de los hooks lo prohíben: React identifica cada hook por el orden en que se llama, y ese orden no puede depender de una lista.
+- Un componente por fila esquivaría la regla, pero cada fila repetiría la consulta y el oyente de `AppState`.
+- El registro separa **qué se le pregunta al sistema** (funciones comunes) de **cómo React lo muestra** (el hook). Las funciones se pueden llamar en un bucle.
+- Sumar un recurso ahora es agregar una entrada: M57 lo aprovecha con las notificaciones.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no se puede llamar un hook en un bucle?* — React guarda el estado de los hooks por posición. Si la lista cambia de largo entre renders, cada hook recibe el estado de otro.
+- *¿`src/lib` puede importar módulos de Expo?* — Sí: la regla es "sin React". El registro son servicios, y los módulos de Expo no son React.
+- *¿Por qué `Promise.all`?* — Porque las consultas son independientes. Se hacen a la vez y el panel se actualiza de una sola vez.
+
+---
+

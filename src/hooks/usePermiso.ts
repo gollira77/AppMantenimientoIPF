@@ -1,5 +1,3 @@
-import { Camera } from 'expo-camera';
-import * as Location from 'expo-location';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, Linking } from 'react-native';
 
@@ -11,23 +9,7 @@ import {
   type RespuestaPermiso,
 } from '@/lib/permisos/interpretar';
 import type { Recurso } from '@/lib/permisos/previa';
-
-type Funciones = {
-  consultar: () => Promise<RespuestaPermiso>;
-  pedir: () => Promise<RespuestaPermiso>;
-};
-
-// Cómo se consulta y se pide cada recurso con su módulo de Expo.
-const FUNCIONES: Record<Recurso, Funciones> = {
-  camara: {
-    consultar: () => Camera.getCameraPermissionsAsync(),
-    pedir: () => Camera.requestCameraPermissionsAsync(),
-  },
-  ubicacion: {
-    consultar: () => Location.getForegroundPermissionsAsync(),
-    pedir: () => Location.requestForegroundPermissionsAsync(),
-  },
-};
+import { REGISTRO } from '@/lib/permisos/registro';
 
 export type ResultadoPermiso = {
   estado: EstadoPermiso;
@@ -44,7 +26,7 @@ export type ResultadoPermiso = {
 
 export function usePermiso(recurso: Recurso): ResultadoPermiso {
   const [respuesta, setRespuesta] = useState<RespuestaPermiso | null>(null);
-  const funciones = FUNCIONES[recurso];
+  const funciones = REGISTRO[recurso];
 
   const consultar = useCallback(async () => {
     const nueva = await funciones.consultar();
