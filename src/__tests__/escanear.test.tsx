@@ -8,6 +8,7 @@ import { usePermiso } from '@/hooks/usePermiso';
 import { leerCodigoAula } from '@/lib/aulas/codigoQr';
 import { permisoSimulado } from '@/test-utils/permisoSimulado';
 import { Proveedores } from '@/test-utils/Proveedores';
+import { volverAlFoco } from '@/test-utils/routerSimulado';
 
 jest.mock('@/hooks/usePermiso');
 
@@ -104,6 +105,36 @@ describe('Escáner: los cuatro estados del permiso', () => {
 
     expect(permiso.abrirAjustes).toHaveBeenCalled();
     expect(permiso.pedir).not.toHaveBeenCalled();
+  });
+});
+
+describe('Escáner: no insistir después de un no (M52)', () => {
+  it('al volver del modal con un no, la pantalla previa no aparece sola', () => {
+    conPermiso('preguntable');
+    renderEscaner();
+    expect(router.push).toHaveBeenCalledTimes(1);
+
+    volverAlFoco();
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText('Código del aula')).toBeTruthy();
+  });
+
+  it('vuelve a aparecer si la persona toca otra vez la función', () => {
+    conPermiso('preguntable');
+    renderEscaner();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Usar la cámara' }));
+
+    expect(router.push).toHaveBeenCalledTimes(2);
+  });
+
+  it('en una visita nueva vuelve a aparecer: la persona tocó la función de nuevo', () => {
+    conPermiso('preguntable');
+    renderEscaner().unmount();
+    renderEscaner();
+
+    expect(router.push).toHaveBeenCalledTimes(2);
   });
 });
 

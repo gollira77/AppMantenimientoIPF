@@ -1426,3 +1426,24 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M52 · Dejé de mostrar la pantalla previa sola después de un no
+
+**Qué hice**
+
+- `usePantallaPrevia` recuerda con un `useRef` que ya se mostró en esta visita. Por su cuenta se abre una sola vez.
+- La función `abrir` que devuelve el hook sigue funcionando siempre: la usan los botones "Usar la cámara" y "Usar mi ubicación".
+- Tests con `volverAlFoco()`: después de un "no" no reaparece, reaparece al tocar la función y reaparece en una visita nueva.
+
+**Por qué**
+
+- Requisito 8: **no insistir**. El defecto de M51 era molesto: la persona decía "No permitir", el modal se cerraba y volvía a abrirse solo. Encima, con cada vuelta se acercaba al bloqueo definitivo.
+- Volver al formulario y tocar "Escanear QR" es una señal clara de que ahora sí quiere usar la función. Por eso una visita nueva vuelve a mostrar la previa.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `useRef` y no `useState`?* — Porque no cambia lo que se dibuja, y además tiene que leerse actualizado dentro del efecto sin volver a dispararlo.
+- *¿Por qué no se guarda en AsyncStorage?* — Porque "no insistir" no significa "no volver a preguntar nunca". Si la persona vuelve a tocar la función, quiere usarla.
+- *¿Qué pasa si cierra el modal con el gesto, sin tocar "Continuar"?* — Lo mismo que con un "no": la app queda en la alternativa, y no se pidió nada.
+
+---
+

@@ -8,6 +8,7 @@ import { useBorrador } from '@/hooks/useBorrador';
 import { usePermiso } from '@/hooks/usePermiso';
 import { permisoSimulado } from '@/test-utils/permisoSimulado';
 import { Proveedores } from '@/test-utils/Proveedores';
+import { volverAlFoco } from '@/test-utils/routerSimulado';
 
 jest.mock('@/hooks/usePermiso');
 
@@ -100,6 +101,26 @@ describe('Ubicación: los cuatro estados', () => {
     expect(permiso.abrirAjustes).toHaveBeenCalled();
     expect(router.back).toHaveBeenCalled();
     expect(permiso.pedir).not.toHaveBeenCalled();
+  });
+});
+
+describe('Ubicación: no insistir después de un no (M52)', () => {
+  it('al volver del modal con un no, la pantalla previa no aparece sola', () => {
+    conPermiso('preguntable');
+    renderUbicacion();
+
+    volverAlFoco();
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+  });
+
+  it('vuelve a aparecer si la persona toca Usar mi ubicación', () => {
+    conPermiso('preguntable');
+    renderUbicacion();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Usar mi ubicación' }));
+
+    expect(router.push).toHaveBeenCalledTimes(2);
   });
 });
 
