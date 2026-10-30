@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router/js-tabs';
-import type { ColorValue } from 'react-native';
+import { Platform, type ColorValue } from 'react-native';
 
 import { useAvisos } from '@/hooks/useAvisos';
 import { colores } from '@/lib/tema';
@@ -26,6 +26,8 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colores.primario,
           borderTopColor: colores.acento,
+          // En web la altura por defecto corta las etiquetas.
+          ...(Platform.OS === 'web' ? { height: 64, paddingBottom: 8 } : null),
         },
         tabBarActiveTintColor: colores.primarioTexto,
         tabBarInactiveTintColor: colores.primarioTextoSuave,

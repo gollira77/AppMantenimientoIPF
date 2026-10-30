@@ -1932,3 +1932,20 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## Web · Corregí las etiquetas cortadas de las pestañas
+
+**Qué hice**
+
+- En web, la barra de pestañas tiene 64 px de alto y un margen inferior.
+
+**Por qué**
+
+- Las etiquetas se cortaban abajo. Primero creí que era un efecto de las capturas, pero una ventana de tamaño exacto mostró lo mismo.
+- Solo aplica a web: en Android e iOS la altura depende de las zonas seguras del sistema, y fijarla podría romperla.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué no fijar la altura en todas las plataformas?* — Porque los celulares con barra de gestos necesitan más espacio abajo, y React Navigation lo calcula solo.
+
+---
+
