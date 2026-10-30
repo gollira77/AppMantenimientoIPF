@@ -1537,3 +1537,26 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M57 · Creé el canal reportes antes de pedir el permiso
+
+**Qué hice**
+
+- `src/lib/notificaciones/canal.ts`: `crearCanalReportes()` crea el canal `"reportes"` solo en Android.
+- Sumé `notificaciones` a `RECURSOS`, a los textos y al `REGISTRO`. Su `pedir` crea primero el canal y después llama a `requestPermissionsAsync()`.
+- Tests del orden `canal → pedido`, de iOS sin canal y de que `consultar` no crea nada.
+
+**Por qué**
+
+- Requisito 5, y una regla de Android: la documentación de Expo indica que en Android 13+ el diálogo **no aparece** hasta que exista al menos un canal.
+- El canal va dentro de `pedir` del registro para que el orden sea imposible de olvidar: nadie puede pedir sin pasar por ahí.
+- Acá se cobra M53: sumar un recurso fue agregar una entrada. El panel, la pantalla previa y el diario lo tomaron sin tocar su código.
+- Tuve que ampliar `RespuestaPermiso`, porque `android` e `ios` traen otros campos en este módulo (`importance`, `status`).
+
+**Qué podría preguntar el docente**
+
+- *¿Qué es un canal?* — Una categoría de notificaciones que la persona controla por separado en Ajustes (sonido, importancia, apagarla). Existe desde Android 8.
+- *¿Por qué no crear el canal al abrir la app?* — También funcionaría, pero así queda claro el vínculo con el permiso, y una persona que nunca activa los avisos no tiene un canal de más.
+- *¿Se puede cambiar la importancia después?* — No desde el código: una vez creado, el canal es de la persona. Solo se pueden cambiar el nombre y la descripción.
+
+---
+

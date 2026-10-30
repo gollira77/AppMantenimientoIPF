@@ -1,6 +1,6 @@
 // Los textos de la pantalla previa. Sin React: los usa la pantalla y los verifican los tests.
 
-export const RECURSOS = ['camara', 'ubicacion'] as const;
+export const RECURSOS = ['camara', 'ubicacion', 'notificaciones'] as const;
 export type Recurso = (typeof RECURSOS)[number];
 
 export function esRecurso(valor: string): valor is Recurso {
@@ -26,5 +26,11 @@ export const TEXTOS_PREVIA: Record<Recurso, TextoPrevia> = {
     beneficio: 'Usamos tu ubicación para saber en qué sector del instituto está el desperfecto.',
     comoHabilitar:
       'La ubicación está desactivada. Habilitala para esta app en Ajustes y volvé acá.',
+  },
+  notificaciones: {
+    titulo: 'Recibir notificaciones',
+    beneficio: 'Usamos las notificaciones para avisarte cuando se resuelva tu reporte.',
+    comoHabilitar:
+      'Las notificaciones están desactivadas. Habilitalas para esta app en Ajustes y volvé acá.',
   },
 };

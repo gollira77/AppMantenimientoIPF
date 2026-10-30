@@ -1,6 +1,8 @@
 import { Camera } from 'expo-camera';
 import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
 
+import { crearCanalReportes } from '@/lib/notificaciones/canal';
 import { registrarEnDiario, type Accion } from '@/lib/permisos/diario';
 import { interpretarRespuesta, type RespuestaPermiso } from '@/lib/permisos/interpretar';
 import { RECURSOS, type Recurso } from '@/lib/permisos/previa';
@@ -35,6 +37,16 @@ export const REGISTRO: Record<Recurso, EntradaRegistro> = {
       conDiario('ubicacion', 'consulta', () => Location.getForegroundPermissionsAsync()),
     pedir: () =>
       conDiario('ubicacion', 'pedido', () => Location.requestForegroundPermissionsAsync()),
+  },
+  notificaciones: {
+    consultar: () =>
+      conDiario('notificaciones', 'consulta', () => Notifications.getPermissionsAsync()),
+    pedir: () =>
+      conDiario('notificaciones', 'pedido', async () => {
+        // El canal va primero: sin canal, Android 13+ no muestra el diálogo.
+        await crearCanalReportes();
+        return Notifications.requestPermissionsAsync();
+      }),
   },
 };
 

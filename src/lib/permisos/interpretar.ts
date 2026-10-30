@@ -10,10 +10,10 @@ export type RespuestaPermiso = {
   status: string;
   /** expo-image-picker / expo-media-library: 'all' | 'limited' | 'none'. */
   accessPrivileges?: string;
-  /** expo-location en Android: 'fine' | 'coarse' | 'none'. */
-  android?: { accuracy?: string };
-  /** expo-location en iOS: 'full' | 'reduced'. */
-  ios?: { accuracy?: string };
+  /** expo-location en Android: 'fine' | 'coarse' | 'none'. expo-notifications: importance. */
+  android?: { accuracy?: string; importance?: number };
+  /** expo-location en iOS: 'full' | 'reduced'. expo-notifications: status. */
+  ios?: { accuracy?: string; status?: number };
 };
 
 /**

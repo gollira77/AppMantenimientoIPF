@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Camera } from 'expo-camera';
 import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { act } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
@@ -25,6 +26,7 @@ beforeEach(() => {
   vaciarDiario();
   consultarCamara.mockResolvedValue(concedido as never);
   consultarUbicacion.mockResolvedValue(sinDecidir as never);
+  jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue(bloqueado as never);
 });
 
 describe('Panel de permisos', () => {
@@ -80,8 +82,8 @@ describe('Panel de permisos', () => {
     consultarCamara.mockResolvedValue(bloqueado as never);
     render(<Permisos />);
 
-    await waitFor(() => expect(screen.getByText('Bloqueado')).toBeTruthy());
-    fireEvent.press(screen.getByRole('button', { name: 'Cómo habilitarlo' }));
+    await waitFor(() => expect(screen.getAllByText('Bloqueado')).toHaveLength(2));
+    fireEvent.press(screen.getAllByRole('button', { name: 'Cómo habilitarlo' })[0]!);
 
     expect(router.push).toHaveBeenCalledWith('/permisos/camara');
   });
@@ -94,7 +96,7 @@ describe('Panel de permisos', () => {
     });
     consultarCamara.mockResolvedValue(bloqueado as never);
     render(<Permisos />);
-    await waitFor(() => expect(screen.getByText('Bloqueado')).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByText('Bloqueado')).toHaveLength(2));
 
     consultarCamara.mockResolvedValue(concedido as never);
     await act(async () => {
