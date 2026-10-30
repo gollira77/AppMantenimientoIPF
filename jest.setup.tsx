@@ -47,6 +47,15 @@ jest.mock('expo-image-picker', () => ({
   getMediaLibraryPermissionsAsync: jest.fn(),
 }));
 
+// Por defecto, la lectura queda pendiente: se ven los datos iniciales y no hay updates fuera de act().
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
+  default: {
+    getItem: jest.fn(pendiente),
+    setItem: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
 // Las notificaciones las maneja el sistema operativo: en Node solo verifico cómo se las pido.
 jest.mock('expo-notifications', () => ({
   getPermissionsAsync: jest.fn(pendiente),

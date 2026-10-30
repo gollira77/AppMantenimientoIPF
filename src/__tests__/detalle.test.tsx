@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { renderRouter, screen } from 'expo-router/testing-library';
 
 import { buscarReporte } from '@/lib/reportes/buscar';
@@ -34,11 +35,19 @@ describe('Pantalla de detalle', () => {
     expect(screen.getByText('Electricidad')).toBeTruthy();
   });
 
-  it('avisa si el reporte no existe', () => {
+  it('avisa si el reporte no existe', async () => {
+    jest.mocked(AsyncStorage.getItem).mockResolvedValueOnce(null);
     renderRouter('./src/app', { initialUrl: '/reporte/999' });
 
-    expect(screen.getByText('No encontramos el reporte')).toBeTruthy();
+    expect(await screen.findByText('No encontramos el reporte')).toBeTruthy();
     expect(screen.getByText('Volver a mis reportes')).toBeTruthy();
+  });
+
+  it('mientras cargan los reportes guardados, no dice que no existe', () => {
+    renderRouter('./src/app', { initialUrl: '/reporte/999' });
+
+    expect(screen.getByText('Buscando el reporte…')).toBeTruthy();
+    expect(screen.queryByText('No encontramos el reporte')).toBeNull();
   });
 
   it('avisa si el id no es válido', () => {

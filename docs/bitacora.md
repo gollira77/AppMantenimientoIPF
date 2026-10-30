@@ -1724,3 +1724,31 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M64 (evolución) · Guardé los reportes en AsyncStorage detrás de un repositorio
+
+**Qué hice**
+
+- Instalé `@react-native-async-storage/async-storage` con `npx expo install` (versión 2.2.0, incluida en Expo Go).
+- `src/lib/persistencia/almacen.ts`: `leerGuardado()` y `escribirGuardado()`, con validación por esquema.
+- `src/lib/reportes/repositorio.ts`: el tipo `RepositorioReportes` y su versión con AsyncStorage.
+- `ProveedorReportes` carga al montar, guarda en cada cambio y expone `cargando`.
+- El detalle muestra "Buscando el reporte…" mientras `cargando` sea verdadero.
+
+**Por qué**
+
+- **Problema real:** los reportes vivían en `useState`. Al cerrar la app se perdían, y también los avisos. Una app de reportes que olvida los reportes no sirve.
+- **Repositorio:** el contexto conoce la operación ("guardar", "cargar") y no el lugar. Si mañana hubiera un servidor, cambia una sola pieza. También permite un repositorio en memoria para los tests (M65).
+- **Valido al leer con zod** porque lo guardado es una entrada externa: pudo escribirlo una versión vieja de la app. Si no sirve, la app arranca igual.
+- **`/v1` en la clave:** si cambia el formato, puedo usar otra clave y migrar.
+- **Espero a `cargando === false` para guardar.** Si no, el primer render pisaría lo guardado con los datos iniciales.
+- **Problema que apareció con M62:** al abrir desde una notificación con la app cerrada, el detalle se dibuja antes de que lleguen los reportes. Sin `cargando`, diría "No encontramos el reporte" durante un instante.
+
+**Qué podría preguntar el docente**
+
+- *¿AsyncStorage es seguro?* — No está cifrado. Sirve para reportes y preferencias, pero no para contraseñas o tokens: para eso está `expo-secure-store`.
+- *¿Necesita un permiso?* — No: es almacenamiento privado de la app. Por eso no agregué ningún permiso.
+- *¿Y la foto?* — Guardo la URI, no la imagen. Queda en la caché de la app, así que el sistema podría borrarla. Para conservarla habría que copiarla a una carpeta permanente; hoy es un límite conocido.
+- *¿Por qué no guardar en cada `agregar`?* — Porque habría que acordarse en cada función que cambia la lista. Con un efecto sobre `reportes`, cualquier cambio se guarda.
+
+---
+

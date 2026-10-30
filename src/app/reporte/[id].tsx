@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 
 import { Boton } from '@/components/Boton';
+import { Cargando } from '@/components/Cargando';
 import { Enlace } from '@/components/Enlace';
 import { EtiquetaEstado } from '@/components/EtiquetaEstado';
 import { Pantalla } from '@/components/Pantalla';
@@ -25,7 +26,7 @@ const formatoFecha = new Intl.DateTimeFormat('es-AR', {
 
 export default function DetalleReporte() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { reportes, resolver } = useReportes();
+  const { reportes, cargando, resolver } = useReportes();
   const { agregar: agregarABandeja } = useAvisos();
   const { quiereAvisos } = usePreferencias();
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -42,6 +43,9 @@ export default function DetalleReporte() {
   }
 
   if (busqueda.tipo === 'no_encontrado') {
+    // Al abrir desde una notificación, los reportes guardados pueden no haber llegado todavía.
+    if (cargando) return <Cargando mensaje="Buscando el reporte…" />;
+
     return (
       <Pantalla centrada>
         <Texto variante="titulo">No encontramos el reporte</Texto>
