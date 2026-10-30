@@ -1560,3 +1560,26 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M58 · Pedí el permiso solo al activar el interruptor
+
+**Qué hice**
+
+- `src/hooks/usePreferencias.tsx`: contexto con `quiereAvisos`, lo que la persona eligió.
+- `src/app/ajustes-app.tsx`: interruptor "Avisarme cuando se resuelva mi reporte". Al activarlo sin permiso, abre la pantalla previa de notificaciones.
+- El interruptor se ve encendido solo si `quiereAvisos` y además el permiso está concedido.
+- Tests: abrir la pantalla no pide nada, activarlo lleva a la previa, y sin permiso queda apagado y explica dónde llegan los avisos.
+
+**Por qué**
+
+- Requisito 5. Pedir notificaciones apenas se abre la app es el ejemplo clásico de mal momento: la persona no sabe todavía para qué. Al tocar el interruptor, ya está pidiendo la función.
+- Son **dos datos distintos**: lo que la persona quiere (nuestro) y lo que el sistema permite (del sistema). Si solo guardara el valor del interruptor, podría quedar encendido con el permiso revocado.
+- El interruptor no pide directamente: pasa por la pantalla previa, como todos (requisito 6).
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué el interruptor no guarda directamente si hay permiso?* — Porque el permiso puede cambiar en Ajustes sin que la app se entere. Se consulta siempre; nunca se guarda una copia.
+- *¿Qué pasa si está bloqueado?* — La pantalla previa muestra "Abrir Ajustes". Mientras tanto, los avisos van a la bandeja.
+- *¿Por qué no hay texto de propósito?* — Porque iOS no lo usa para notificaciones; el beneficio se explica en la pantalla previa.
+
+---
+
