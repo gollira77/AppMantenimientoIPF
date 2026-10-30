@@ -501,6 +501,31 @@ export async function obtenerUbicacion(): Promise<UbicacionObtenida | null> {
 - Google Play Console Help, *Requesting access to location in the background*: https://support.google.com/googleplay/android-developer/answer/9799150
 - Expo, *Location (SDK 57)*: https://docs.expo.dev/versions/v57.0.0/sdk/location/
 
+### E3. Notificaciones mudas
+
+**a) La causa más probable: no hay ningún canal.** La documentación de Expo lo dice así: en Android 13 o superior, el diálogo "will not appear until at least one notification channel is created". Antes de pedir hay que llamar a `setNotificationChannelAsync()`. En esta app ese orden no se puede olvidar, porque está dentro de `REGISTRO.notificaciones.pedir` (`src/lib/permisos/registro.ts`): primero `crearCanalReportes()`, después `requestPermissionsAsync()`.
+
+**b) En Android 12 o anterior** no existe el permiso `POST_NOTIFICATIONS`: llegó en Android 13 (API 33). En esos dispositivos las notificaciones funcionan sin diálogo, y la persona las apaga desde Ajustes.
+
+Hay un caso intermedio: una app que apunta a API 32 o menos y corre en Android 13. Ahí el sistema muestra el diálogo por su cuenta al crear el primer canal, normalmente al iniciar, y la app pierde el control del momento. La mía apunta a API 36, así que no le pasa.
+
+**c) La opción de iOS es la autorización provisional.** Se pide con `requestPermissionsAsync({ ios: { allowProvisional: true } })`. Las notificaciones llegan en silencio al Centro de Notificaciones, sin diálogo, y la persona decide ahí si las conserva. Se detecta con:
+
+```ts
+const permiso = await Notifications.getPermissionsAsync();
+const provisional = permiso.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
+```
+
+**d) Conviene pedirlo cuando la persona ve el beneficio.**
+
+- **Buen momento:** en esta app, al activar el interruptor "Avisarme cuando se resuelva mi reporte" (M58). Google recomienda justamente disparar el pedido desde una acción, como tocar una campanita o confirmar un pedido.
+- **Mal momento:** al abrir la app por primera vez, antes de que haya un reporte del que avisar.
+
+**Fuentes (E3):**
+
+- Android Developers, *Notification runtime permission*: https://developer.android.com/develop/ui/views/notifications/notification-permission
+- Expo, *Notifications (SDK 57)*: https://docs.expo.dev/versions/v57.0.0/sdk/notifications/
+
 ### E4. Fotos sin pedir permiso
 
 | Necesidad | Herramienta | Permiso |
@@ -525,9 +550,76 @@ En esta app, `/reporte/foto` es exactamente la primera y la segunda fila: "Elegi
 - Android Developers, *Photo picker*: https://developer.android.com/training/data-storage/shared/photopicker
 - Expo, *ImagePicker (SDK 57)*: https://docs.expo.dev/versions/v57.0.0/sdk/imagepicker/
 
+### E5. Volver de Ajustes
+
+```ts
+// src/hooks/useRevisarAlVolver.ts
+import { useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
+
+export function useRevisarAlVolver(revisar: () => void) {
+  const anterior = useRef(AppState.currentState);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nuevo) => {
+      const estabaAfuera = anterior.current !== 'active';
+      if (estabaAfuera && nuevo === 'active') revisar();
+      anterior.current = nuevo;
+    });
+    return () => sub.remove();
+  }, [revisar]);
+}
+```
+
+En mi app, `usePermiso` hace lo mismo (M47), un poco más simple: consulta cada vez que llega `'active'`, porque consultar no tiene efectos y una consulta de más no cuesta nada.
+
+**a) Los hooks de Expo no se enteran solos** porque consultan el permiso al montarse y el sistema no avisa cuando cambia. Ajustes es otra app, y al volver la pantalla no se monta de nuevo: nunca se desmontó.
+
+**b) Le pasaría `getPermission`,** el tercer elemento de `const [permission, requestPermission, getPermission] = useCameraPermissions()`. Relee el permiso sin mostrar ningún diálogo. Nunca `requestPermission`: volver de Ajustes no puede disparar un diálogo. En mi hook, el equivalente es `consultar()`.
+
+**c) No conviene guardarlo "para siempre"** porque el dueño del dato es el sistema, y puede cambiar sin avisar: la persona lo revoca en Ajustes, Android lo reinicia en apps sin uso, o vence un "Solo esta vez". Una copia guardada termina mintiendo. Por eso `usePermiso` guarda la última respuesta solo en memoria y consulta de nuevo al montar y al volver. La diferencia se ve en `/ajustes-app` (M58): `quiereAvisos` sí se guarda, porque es una decisión de la persona dentro de mi app, y el permiso se lee del sistema.
+
 ---
 
 ## Parte F · Buenas prácticas y tiendas
+
+### F1. Pedir en contexto
+
+| App y permiso | ¿Cuándo pedirlo? | Alternativa si lo deniegan |
+| --- | --- | --- |
+| Delivery · ubicación | Al tocar "Usar mi ubicación actual" al elegir la dirección de entrega | Escribir la dirección a mano |
+| Billetera virtual · cámara | Al tocar "Escanear QR" para pagar | Pagar con alias o CVU, o cargar el código a mano |
+| Red social · contactos | Al tocar "Encontrar amigos" | Buscar por nombre de usuario o compartir un enlace de invitación |
+| Mensajería · micrófono | Al mantener apretado el botón de nota de voz por primera vez | Escribir el mensaje |
+| Turnos médicos · notificaciones | Después de reservar un turno: "¿Te avisamos un día antes?" | Ver el turno dentro de la app o recibir un mail |
+| Editor de fotos · galería completa | Al abrir la galería dentro del editor | Elegir fotos sueltas con el selector del sistema |
+
+**¿Por qué pedir cuatro permisos al abrir la app "entrena el No permitir automático"?** Porque la persona todavía no vio nada que justifique el pedido: no sabe para qué es ni qué gana. Después de varios diálogos seguidos, deja de leer y contesta "No permitir" para sacárselos de encima. Y ese "no" sale caro: en iOS el diálogo no vuelve, y en Android el segundo rechazo lo bloquea. Se gasta una oportunidad única en el peor momento posible.
+
+Mi app hace lo contrario: `/reporte/nuevo` no pide nada al abrirse, y cada permiso aparece cuando la persona toca la función que lo necesita.
+
+### F2. La pantalla previa
+
+**a) Tres elementos:** el beneficio concreto en una frase, un único botón que lleva al diálogo, y la aclaración de que se puede cambiar en Ajustes. Están en `src/app/permisos/[recurso].tsx`.
+
+**b) Debe decir "Continuar"** porque el botón no concede nada: solo abre el diálogo, donde la persona decide. Las *Human Interface Guidelines* de Apple explican que un término como "Allow" es una forma de manipulación: si el botón se parece en significado y peso visual al de permitir del diálogo, la persona puede terminar eligiendo ese sin querer. Recomiendan "Continue" o "Next".
+
+**c) Lo que dice cada documento de Apple** (conviene separarlos):
+
+- **La pauta 5.1.1(iv)** dice que las apps "must respect the user's permission settings and not attempt to manipulate, trick, or force people to consent to unnecessary data access", y pide ofrecer alternativas a quien no da su consentimiento. **No nombra** los botones "Ahora no" ni "Cerrar".
+- **Las Human Interface Guidelines** son las que lo dicen explícitamente: "Include only one button and make it clear that it opens the system alert", y no dar una forma de salir sin ver el diálogo, "like offering an option to close or cancel".
+
+La lógica es que un botón de salida desvía a la persona antes de que decida. Puede decir que no en el diálogo, y la app tiene que seguir funcionando.
+
+Mi app lo cumple con un solo botón y, mientras el permiso se puede preguntar, sin gesto de cierre ni botón atrás en iOS. Corregí esto después de M62, cuando leí estas fuentes.
+
+**d) Si el permiso ya está bloqueado,** el sistema no va a mostrar ningún diálogo, así que "Continuar" no haría nada. La pantalla explica cómo habilitarlo y su único botón pasa a ser **"Abrir Ajustes"**. Como no hay diálogo, tampoco aplica la regla de no salir: dejo la salida normal para que nadie quede atrapado. Al volver, `AppState` actualiza el estado solo.
+
+**Fuentes (F1 y F2):**
+
+- Apple, *App Review Guidelines*, 5.1.1 *Data Collection and Storage*: https://developer.apple.com/app-store/review/guidelines/#data-collection-and-storage
+- Apple, *Human Interface Guidelines: Privacy*: https://developer.apple.com/design/human-interface-guidelines/privacy
+- Android Developers, *Request runtime permissions*: https://developer.android.com/training/permissions/requesting
 
 ### F3. Mínimo privilegio
 

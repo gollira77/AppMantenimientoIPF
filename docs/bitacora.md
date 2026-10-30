@@ -1699,3 +1699,28 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M63 · Respondí E3, E5 y la Parte F1 y F2 con mi código
+
+**Qué hice**
+
+- En `RESPUESTAS.md` escribí:
+  - **E3:** notificaciones mudas, con el canal antes de pedir, Android 12 o anterior y la autorización provisional.
+  - **E5:** los espacios de `useRevisarAlVolver` y sus tres preguntas.
+  - **F1:** la tabla de "cuándo pedir" con su alternativa.
+  - **F2:** los elementos de la pantalla previa.
+- Verifiqué en las fuentes oficiales de Apple, Android y Expo los datos que cito.
+
+**Por qué**
+
+- Cada respuesta se apoya en código que ya existe: M47 para E5, M57 y M58 para E3, y M49 a M52 para F2. En el oral puedo mostrarlo mientras respondo.
+- En F2 c) separé lo que dice cada documento. La consigna y el `Claude.md` le atribuyen a la pauta 5.1.1(iv) la regla sobre "Ahora no" y "Cerrar", pero ese texto **no nombra esos botones**. La regla explícita está en las *Human Interface Guidelines*. Mejor saberlo antes del oral.
+- Leer esa fuente completa destapó un defecto real: el modal se cerraba con un gesto. Lo corregí en el commit anterior.
+
+**Qué podría preguntar el docente**
+
+- *¿La pauta 5.1.1(iv) prohíbe "Ahora no"?* — No con esas palabras. Prohíbe manipular y pide alternativas. La regla explícita de un solo botón y sin opción de cerrar está en las *Human Interface Guidelines*.
+- *¿Por qué `quiereAvisos` se guarda y el permiso no?* — Porque `quiereAvisos` es una decisión dentro de mi app, y el permiso es del sistema y cambia sin avisar.
+- *¿Cuál es el buen momento para pedir notificaciones?* — Cuando la persona acaba de mostrar interés. En mi app, al activar el interruptor.
+
+---
+
