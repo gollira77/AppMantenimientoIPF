@@ -4,7 +4,10 @@ import type { Aviso } from '@/lib/avisos/servicio';
 
 type ValorAvisos = {
   avisos: Aviso[];
+  noLeidos: number;
   agregar: (aviso: Aviso) => void;
+  marcarLeido: (id: string) => void;
+  marcarTodosLeidos: () => void;
 };
 
 const ContextoAvisos = createContext<ValorAvisos | null>(null);
@@ -16,7 +19,26 @@ export function ProveedorAvisos({ children }: { children: ReactNode }) {
     setAvisos((actuales) => [aviso, ...actuales]);
   }, []);
 
-  const valor = useMemo(() => ({ avisos, agregar }), [avisos, agregar]);
+  const marcarLeido = useCallback((id: string) => {
+    setAvisos((actuales) =>
+      actuales.map((aviso) => (aviso.id === id ? { ...aviso, leido: true } : aviso)),
+    );
+  }, []);
+
+  const marcarTodosLeidos = useCallback(() => {
+    setAvisos((actuales) => actuales.map((aviso) => ({ ...aviso, leido: true })));
+  }, []);
+
+  const valor = useMemo(
+    () => ({
+      avisos,
+      noLeidos: avisos.filter((aviso) => !aviso.leido).length,
+      agregar,
+      marcarLeido,
+      marcarTodosLeidos,
+    }),
+    [avisos, agregar, marcarLeido, marcarTodosLeidos],
+  );
 
   return <ContextoAvisos.Provider value={valor}>{children}</ContextoAvisos.Provider>;
 }

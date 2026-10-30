@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router/js-tabs';
 import type { ColorValue } from 'react-native';
 
+import { useAvisos } from '@/hooks/useAvisos';
 import { colores } from '@/lib/tema';
 
 type NombreIcono = keyof typeof Ionicons.glyphMap;
@@ -14,6 +15,8 @@ function icono(nombre: NombreIcono) {
 }
 
 export default function TabsLayout() {
+  const { noLeidos } = useAvisos();
+
   return (
     <Tabs
       screenOptions={{
@@ -23,7 +26,11 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: 'Reportes', tabBarIcon: icono('construct') }} />
       <Tabs.Screen
         name="avisos"
-        options={{ title: 'Avisos', tabBarIcon: icono('notifications') }}
+        options={{
+          title: 'Avisos',
+          tabBarIcon: icono('notifications'),
+          tabBarBadge: noLeidos > 0 ? noLeidos : undefined,
+        }}
       />
       <Tabs.Screen
         name="permisos"

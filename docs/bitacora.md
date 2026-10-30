@@ -1631,3 +1631,25 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M61 · Mostré la bandeja de avisos con contador de no leídos
+
+**Qué hice**
+
+- `useAvisos` ganó `noLeidos`, `marcarLeido` y `marcarTodosLeidos`.
+- `src/app/(tabs)/avisos.tsx`: lista de avisos con el contador. Tocar un aviso lo marca como leído y abre el reporte.
+- La pestaña Avisos muestra el contador con `tabBarBadge`.
+
+**Por qué**
+
+- La bandeja es lo que hace cumplir el requisito 7 con las notificaciones: quien dijo que no, se entera igual.
+- `noLeidos` se **calcula** de la lista en lugar de guardarse aparte. Así nunca puede quedar desincronizado.
+- El contador en la pestaña cumple el rol de la notificación: avisa que hay algo nuevo, pero dentro de la app.
+
+**Qué podría preguntar el docente**
+
+- *¿`tabBarBadge` necesita permiso?* — No: es un componente de mi app. Distinto del número en el ícono del sistema, que en iOS sí depende del permiso de notificaciones.
+- *¿Por qué `undefined` si no hay avisos?* — Porque `0` dibujaría un círculo con un cero.
+- *¿Por qué el `accessibilityLabel` dice "Sin leer"?* — Porque el borde azul solo se ve. Un lector de pantalla necesita el dato en texto.
+
+---
+
