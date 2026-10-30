@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Platform } from 'react-native';
 
 import { Boton } from '@/components/Boton';
+import { DiarioPermisos } from '@/components/DiarioPermisos';
 import { Pantalla } from '@/components/Pantalla';
 import { Tarjeta } from '@/components/Tarjeta';
 import { Texto } from '@/components/Texto';
@@ -43,6 +44,8 @@ export default function Permisos() {
         <Texto variante="subtitulo">Galería de fotos</Texto>
         <Texto>no requerida (selector del sistema)</Texto>
       </Tarjeta>
+
+      <DiarioPermisos />
     </Pantalla>
   );
 }

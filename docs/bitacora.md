@@ -1493,3 +1493,26 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M55 · Registré cada consulta y pedido en un diario visible en el panel
+
+**Qué hice**
+
+- `src/lib/permisos/diario.ts`: una lista en memoria con hora, recurso, acción y resultado. Guarda las últimas 30 entradas.
+- El registro envuelve cada llamada con `conDiario()`: todo lo que pasa por él queda anotado.
+- `src/hooks/useDiario.ts` conecta el diario con React mediante `useSyncExternalStore`.
+- `src/components/DiarioPermisos.tsx` lo muestra al final del panel.
+
+**Por qué**
+
+- Permite **ver** las reglas en la defensa: que abrir el panel solo genera consultas, que `pedido` aparece únicamente después de "Continuar", y que al volver de Ajustes hay una consulta nueva.
+- Lo puse en el registro y no en cada pantalla porque el registro es el único paso obligado: ninguna llamada se puede saltear el diario.
+- `useSyncExternalStore` es la herramienta de React para leer datos que viven fuera de React. El diario tiene que recibir anotaciones desde `src/lib`, donde no hay hooks.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué `leerDiario()` devuelve la misma lista si nada cambió?* — `useSyncExternalStore` compara referencias. Si devolviera una lista nueva cada vez, React creería que cambió y entraría en un bucle de renders.
+- *¿Por qué el límite de 30?* — Cada regreso a la app suma consultas. Sin límite, la lista crecería mientras la app esté abierta.
+- *¿Se guarda algo sensible?* — No: solo el recurso, la acción y el resultado, en memoria. No hay coordenadas ni fotos, y se borra al cerrar la app.
+
+---
+

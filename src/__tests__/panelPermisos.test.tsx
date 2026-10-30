@@ -6,6 +6,7 @@ import { act } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import Permisos from '@/app/(tabs)/permisos';
+import { vaciarDiario } from '@/lib/permisos/diario';
 
 jest.mock(
   'expo-router',
@@ -21,6 +22,7 @@ const consultarUbicacion = jest.mocked(Location.getForegroundPermissionsAsync);
 
 beforeEach(() => {
   jest.clearAllMocks();
+  vaciarDiario();
   consultarCamara.mockResolvedValue(concedido as never);
   consultarUbicacion.mockResolvedValue(sinDecidir as never);
 });
@@ -34,9 +36,10 @@ describe('Panel de permisos', () => {
     expect(screen.getByText('Plataforma: ios')).toBeTruthy();
   });
 
-  it('la galería figura como no requerida', () => {
+  it('la galería figura como no requerida', async () => {
     render(<Permisos />);
 
+    await waitFor(() => expect(screen.getByText('Concedido')).toBeTruthy());
     expect(screen.getByText('no requerida (selector del sistema)')).toBeTruthy();
   });
 
@@ -64,6 +67,13 @@ describe('Panel de permisos', () => {
     fireEvent.press(await screen.findByRole('button', { name: 'Activar' }));
 
     expect(router.push).toHaveBeenCalledWith('/permisos/ubicacion');
+  });
+
+  it('muestra el diario con lo que se consultó', async () => {
+    render(<Permisos />);
+
+    await waitFor(() => expect(screen.getByText(/consulta · camara → Concedido/)).toBeTruthy());
+    expect(screen.getByText(/consulta · ubicacion → Sin decidir/)).toBeTruthy();
   });
 
   it('si está bloqueado, ofrece ver cómo habilitarlo', async () => {
