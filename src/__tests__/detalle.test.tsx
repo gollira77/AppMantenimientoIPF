@@ -27,6 +27,11 @@ describe('buscarReporte', () => {
 });
 
 describe('Pantalla de detalle', () => {
+  afterEach(() => {
+    // Vuelvo al valor por defecto de jest.setup: la lectura queda pendiente.
+    jest.mocked(AsyncStorage.getItem).mockImplementation(() => new Promise(() => {}));
+  });
+
   it('muestra el reporte', () => {
     renderRouter('./src/app', { initialUrl: '/reporte/1' });
 
@@ -36,7 +41,8 @@ describe('Pantalla de detalle', () => {
   });
 
   it('avisa si el reporte no existe', async () => {
-    jest.mocked(AsyncStorage.getItem).mockResolvedValueOnce(null);
+    // Lo leen todos los proveedores, no solo el de reportes: por eso no alcanza con "Once".
+    jest.mocked(AsyncStorage.getItem).mockResolvedValue(null);
     renderRouter('./src/app', { initialUrl: '/reporte/999' });
 
     expect(await screen.findByText('No encontramos el reporte')).toBeTruthy();

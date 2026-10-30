@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
+import { usePersistido } from '@/hooks/usePersistido';
 import type { Aviso } from '@/lib/avisos/servicio';
+import { esquemaAvisos } from '@/lib/persistencia/esquemas';
 
 type ValorAvisos = {
   avisos: Aviso[];
@@ -14,6 +16,7 @@ const ContextoAvisos = createContext<ValorAvisos | null>(null);
 
 export function ProveedorAvisos({ children }: { children: ReactNode }) {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
+  usePersistido('mantenimiento-ipf/avisos/v1', esquemaAvisos, avisos, setAvisos);
 
   const agregar = useCallback((aviso: Aviso) => {
     setAvisos((actuales) => [aviso, ...actuales]);

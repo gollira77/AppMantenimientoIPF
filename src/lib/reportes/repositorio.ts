@@ -21,6 +21,17 @@ const esquemaGuardado = z.array(
   }),
 );
 
+/** Guarda en una variable. Sirve para los tests: es rápido y no necesita el dispositivo. */
+export function crearRepositorioEnMemoria(iniciales: Reporte[] | null = null): RepositorioReportes {
+  let guardados = iniciales;
+  return {
+    cargar: async () => guardados,
+    guardar: async (reportes) => {
+      guardados = reportes;
+    },
+  };
+}
+
 export const repositorioAsyncStorage: RepositorioReportes = {
   cargar: () => leerGuardado(CLAVE, esquemaGuardado),
   guardar: (reportes) => escribirGuardado(CLAVE, reportes),

@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
+import { usePersistido } from '@/hooks/usePersistido';
+import { esquemaBorrador } from '@/lib/persistencia/esquemas';
 import { BORRADOR_VACIO, type Borrador } from '@/lib/reportes/borrador';
 
 type ValorBorrador = {
@@ -16,6 +18,7 @@ type Props = {
 
 export function ProveedorBorrador({ children }: Props) {
   const [borrador, setBorrador] = useState<Borrador>(BORRADOR_VACIO);
+  usePersistido('mantenimiento-ipf/borrador/v1', esquemaBorrador, borrador, setBorrador);
 
   const actualizar = useCallback((cambios: Partial<Borrador>) => {
     setBorrador((actual) => ({ ...actual, ...cambios }));

@@ -1752,3 +1752,30 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M65 · Probé el repositorio en memoria y persistí avisos y borrador
+
+**Qué hice**
+
+- `crearRepositorioEnMemoria()`: la misma interfaz que el repositorio real, guardando en una variable.
+- `src/hooks/usePersistido.ts`: recupera un valor y lo mantiene guardado. Lo usan los avisos, el borrador y las preferencias.
+- `src/lib/persistencia/esquemas.ts`: los esquemas de zod con los que se valida cada uno al leer.
+- `src/__tests__/persistencia.test.tsx`: un reporte sobrevive a desmontar y volver a montar, el estado resuelto se guarda, un JSON roto no rompe nada, y avisos, borrador e interruptor se recuperan.
+
+**Por qué**
+
+- El test del repositorio en memoria es la prueba de que el diseño de M64 sirve: el contexto funciona sin saber dónde se guarda.
+- "Desmontar y volver a montar" es lo más parecido a cerrar y abrir la app que se puede hacer en Jest.
+- `usePersistido` existe porque avisos, borrador y preferencias repetían lo mismo: leer al inicio, esperar y guardar en cada cambio.
+- **El borrador se guarda a medio escribir.** Si la persona va a Ajustes a habilitar un permiso y el sistema cierra la app, no pierde lo que escribió. Por eso su esquema no exige que esté completo.
+- **Sumé las preferencias:** si no, el interruptor de avisos se apagaría solo al reiniciar.
+- **Problema que apareció:** mi primera versión de `setQuiereAvisos` era una función nueva en cada cambio. Un efecto que dependía de ella se disparaba sin parar: la suite pasó de 30 segundos a casi 7 minutos. Con `useCallback` queda estable, y un test lo verifica.
+- Los reportes conservan su repositorio, con `cargando`, porque tienen una pantalla que depende de saber si ya llegaron.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué el permiso no está entre lo que se guarda?* — Porque es del sistema y puede cambiar mientras la app está cerrada. Guardarlo sería guardar algo que puede ser falso (E5).
+- *¿Qué asegura el repositorio en memoria?* — La lógica del contexto. No prueba que AsyncStorage funcione en el celular, y por eso hay que cerrar y abrir la app de verdad.
+- *¿Y el diario de permisos?* — No se guarda a propósito: es una herramienta de esta sesión.
+
+---
+
