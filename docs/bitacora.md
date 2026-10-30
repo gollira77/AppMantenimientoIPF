@@ -1310,6 +1310,9 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *¿Qué es el mejor permiso?* — El que no hay que pedir: usar una herramienta del sistema (selector de fotos, de contactos o de archivos) que resuelve la necesidad sin dar acceso amplio.
 - *¿Tu app tendría problemas con la política de fotos de Google Play?* — No: no declara `READ_MEDIA_IMAGES` ni `READ_MEDIA_VIDEO`, y además los bloquea. No hay formulario que completar.
 - *¿Por qué ubicación aproximada para el reciclaje y no para tu app?* — Porque el reciclaje es a escala de barrio y mi app necesita el **sector de un edificio**. Por eso mi app pide la precisa, pero funciona con la aproximada eligiendo el sector a mano (M40).
+
+---
+
 ## M47 (evolución) · Actualicé el estado al volver de Ajustes con AppState
 
 **Qué hice**
@@ -1322,7 +1325,7 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - **Problema real:** el paso 6 de D4. La persona ve "bloqueado", toca "Abrir Ajustes", habilita el permiso y vuelve. El sistema ya lo concedió, pero `respuesta` sigue siendo la vieja y la pantalla muestra "bloqueado".
 - Ajustes es **otra app**: no hay callback ni evento de permiso. Lo único que la app ve es que pasó a segundo plano y volvió. Ese es el momento justo para releer.
 - Uso `consultar()`, nunca `pedir()`: al volver no puede aparecer un diálogo que nadie pidió.
-- Funciona también al revés: si la persona **revoca** el permiso, en Android el sistema reinicia el proceso; y en iOS, al volver, `consultar()` ve el cambio.
+- Funciona también al revés: si la persona **revoca** un permiso, al volver `consultar()` ve el cambio. Si el sistema reinició la app por la revocación, la consulta del montaje hace lo mismo.
 
 **Qué podría preguntar el docente**
 
@@ -1330,6 +1333,27 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *¿Por qué `'active'` y no cualquier cambio?* — Porque los otros valores (`'background'`, `'inactive'`) indican que me estoy yendo. En ese momento no hay nada útil para hacer.
 - *¿Puede pasar que `AppState` dispare por el diálogo del sistema?* — Sí: en iOS el diálogo pasa la app por `'inactive'`. La consulta extra es inofensiva: no muestra nada y devuelve lo mismo.
 - *¿Por qué limpiar la suscripción?* — Si no la saco, cada montaje suma un oyente que sigue consultando para una pantalla que ya no existe.
+
+---
+
+## M48 · Simulé el regreso desde Ajustes
+
+**Qué hice**
+
+- En `src/__tests__/usePermiso.test.ts` agregué `simularAppState()`: reemplaza `AppState.addEventListener` por una versión en la que el test decide cuándo "vuelve" la app.
+- Cuatro casos: de bloqueado a concedido al volver, al volver no se pide nada, irse a segundo plano no consulta, y al desmontar se saca el oyente.
+- Corregí dos detalles de la entrada anterior de la bitácora: el separador con M46 y la frase sobre la revocación del permiso.
+
+**Por qué**
+
+- Sin este test, el bug del paso 6 de D4 podría volver sin que nadie lo note: un test normal monta el hook y termina, nunca "se va a Ajustes".
+- El test `al volver solo consulta` protege la regla más importante del módulo: el regreso nunca dispara un diálogo.
+
+**Qué podría preguntar el docente**
+
+- *¿Por qué simular `AppState` en vez de usar el real?* — En Jest no hay sistema operativo: la app nunca pasa a segundo plano. Simulo la entrada del hook, y lo que verifico (la reacción del hook) es código mío de verdad.
+- *¿Por qué `mockResolvedValueOnce` en la primera consulta?* — Para representar el cambio en el tiempo: primero el sistema dice "bloqueado", y después de Ajustes dice "concedido".
+- *¿Qué me garantiza este test en un celular real?* — La lógica de mi hook, no el comportamiento del sistema. Eso se prueba a mano en Expo Go.
 
 ---
 

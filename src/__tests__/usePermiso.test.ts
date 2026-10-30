@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { Camera } from 'expo-camera';
 import * as Location from 'expo-location';
-import { Linking } from 'react-native';
+import { AppState, Linking, type AppStateStatus } from 'react-native';
 
 import { usePermiso } from '@/hooks/usePermiso';
 
@@ -106,6 +106,74 @@ describe('usePermiso', () => {
     const { result } = renderHook(() => usePermiso('camara'));
 
     await waitFor(() => expect(result.current.respuesta).toEqual(bloqueado));
+  });
+});
+
+describe('usePermiso: regreso desde Ajustes', () => {
+  // Reemplazo AppState para decidir yo cuándo "vuelve" la app.
+  function simularAppState() {
+    const oyentes = new Set<(estado: AppStateStatus) => void>();
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((_tipo, oyente) => {
+      oyentes.add(oyente);
+      return { remove: () => oyentes.delete(oyente) };
+    });
+    return {
+      oyentes,
+      cambiarA: async (estado: AppStateStatus) => {
+        await act(async () => {
+          oyentes.forEach((oyente) => oyente(estado));
+        });
+      },
+    };
+  }
+
+  it('pasa de bloqueado a concedido al volver al primer plano', async () => {
+    const app = simularAppState();
+    consultarUbicacion.mockResolvedValueOnce(bloqueado as never);
+    const { result } = renderHook(() => usePermiso('ubicacion'));
+    await waitFor(() => expect(result.current.estado).toBe('bloqueado'));
+
+    // Mientras la app está en segundo plano, la persona lo habilita en Ajustes.
+    await app.cambiarA('background');
+    consultarUbicacion.mockResolvedValue(concedido as never);
+    await app.cambiarA('active');
+
+    expect(result.current.estado).toBe('concedido');
+  });
+
+  it('al volver solo consulta: no muestra ningún diálogo', async () => {
+    const app = simularAppState();
+    consultarCamara.mockResolvedValue(sinDecidir as never);
+    const { result } = renderHook(() => usePermiso('camara'));
+    await waitFor(() => expect(result.current.estado).toBe('preguntable'));
+
+    await app.cambiarA('active');
+
+    expect(pedirCamara).not.toHaveBeenCalled();
+  });
+
+  it('irse a segundo plano no consulta', async () => {
+    const app = simularAppState();
+    consultarCamara.mockResolvedValue(bloqueado as never);
+    const { result } = renderHook(() => usePermiso('camara'));
+    await waitFor(() => expect(result.current.estado).toBe('bloqueado'));
+    consultarCamara.mockClear();
+
+    await app.cambiarA('background');
+
+    expect(consultarCamara).not.toHaveBeenCalled();
+  });
+
+  it('saca el oyente al desmontar', async () => {
+    const app = simularAppState();
+    consultarCamara.mockResolvedValue(bloqueado as never);
+    const { result, unmount } = renderHook(() => usePermiso('camara'));
+    await waitFor(() => expect(result.current.estado).toBe('bloqueado'));
+    expect(app.oyentes.size).toBe(1);
+
+    unmount();
+
+    expect(app.oyentes.size).toBe(0);
   });
 });
 
