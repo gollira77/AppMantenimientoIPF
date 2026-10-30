@@ -1375,7 +1375,7 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 **Qué podría preguntar el docente**
 
 - *¿Por qué no hay "Ahora no"?* — Porque Apple considera que eso filtra quién llega al diálogo. Si la persona no quiere, contesta "No permitir" en el diálogo y la app sigue funcionando.
-- *¿Cómo sale la persona de la pantalla sin aceptar?* — "Continuar" lleva al diálogo y ahí puede decir que no. Además, el gesto del sistema para cerrar el modal sigue disponible.
+- *¿Cómo sale la persona de la pantalla sin aceptar?* — "Continuar" lleva al diálogo y ahí puede decir que no. Es la única salida: Apple no admite irse sin ver el diálogo (ver la corrección posterior a M62).
 - *¿Por qué los textos están en `src/lib`?* — Porque son datos sin React: los usa la pantalla y los verifica un test.
 - *¿Qué pasa con `/permisos/telepatia`?* — `esRecurso` lo rechaza y la pantalla muestra un mensaje. La URL es una entrada externa: no confío en ella.
 
@@ -1443,7 +1443,7 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 - *¿Por qué `useRef` y no `useState`?* — Porque no cambia lo que se dibuja, y además tiene que leerse actualizado dentro del efecto sin volver a dispararlo.
 - *¿Por qué no se guarda en AsyncStorage?* — Porque "no insistir" no significa "no volver a preguntar nunca". Si la persona vuelve a tocar la función, quiere usarla.
-- *¿Qué pasa si cierra el modal con el gesto, sin tocar "Continuar"?* — Lo mismo que con un "no": la app queda en la alternativa, y no se pidió nada.
+- *¿Qué pasa si vuelve con el botón Atrás de Android, sin tocar "Continuar"?* — Lo mismo que con un "no": la app queda en la alternativa, y no se pidió nada.
 
 ---
 
@@ -1674,6 +1674,28 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 - *¿Qué significa `DEFAULT_ACTION_IDENTIFIER`?* — Que la persona tocó la notificación en sí. Las notificaciones pueden tener botones, con otros identificadores.
 - *¿Por qué en el layout raíz?* — Porque tiene que funcionar en cualquier pantalla y existir antes de la navegación. El layout raíz nunca se desmonta.
 - *¿Qué pasa si el reporte ya no existe?* — El detalle muestra "No encontramos el reporte" (M20).
+
+---
+
+## M62 (corrección) · Quité las salidas de la pantalla previa antes del diálogo
+
+**Qué hice**
+
+- Mientras el permiso se puede preguntar, `/permisos/[recurso]` declara `gestureEnabled: false` y `headerBackVisible: false` con `<Stack.Screen>`.
+- Con el permiso bloqueado las opciones siguen siendo las normales.
+- Corregí dos entradas anteriores de esta bitácora (M49 y M52), que presentaban el gesto de cierre como algo aceptable.
+
+**Por qué**
+
+- Al buscar las fuentes de F2 leí las *Human Interface Guidelines* de Apple. Dicen que no hay que dar una forma de salir sin ver el diálogo, "like offering an option to close or cancel".
+- Mi modal no tenía "Ahora no", pero en iOS se podía cerrar deslizando hacia abajo. Era la misma salida, con otra forma.
+- En `bloqueado` no hay diálogo: si también sacara la salida, la persona quedaría atrapada entre "Abrir Ajustes" y nada.
+
+**Qué podría preguntar el docente**
+
+- *¿Y el botón Atrás de Android?* — Ese no se bloquea. La regla es de Apple, y cortar el botón físico de Android es hostil. Si la persona vuelve, la app sigue en la alternativa.
+- *¿Por qué `<Stack.Screen>` dentro de la pantalla y no en el layout?* — Porque las opciones dependen del estado del permiso, y el layout no lo conoce.
+- *¿No hay forma de irse sin contestar en iOS?* — Sí: tocar "Continuar" y responder "No permitir". Eso es lo que Apple quiere: que la decisión sea del diálogo del sistema.
 
 ---
 

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 
 import PantallaPrevia from '@/app/permisos/[recurso]';
 import { usePermiso } from '@/hooks/usePermiso';
@@ -12,6 +12,7 @@ jest.mock('expo-router', () => ({
   router: { back: jest.fn(), canGoBack: jest.fn(() => true), replace: jest.fn() },
   useLocalSearchParams: jest.fn(),
   Link: () => null,
+  Stack: { Screen: jest.fn(() => null) },
 }));
 
 function abrir(recurso: string, ...args: Parameters<typeof permisoSimulado>) {
@@ -34,6 +35,12 @@ describe('Pantalla previa con el permiso bloqueado', () => {
     expect(screen.getAllByRole('button').map((b) => b.props.accessibilityLabel)).toEqual([
       'Abrir Ajustes',
     ]);
+  });
+
+  it('deja salir: acá no hay diálogo y nadie puede quedar atrapado', () => {
+    abrir('camara', 'bloqueado');
+
+    expect(Stack.Screen).not.toHaveBeenCalled();
   });
 
   it('Abrir Ajustes abre los Ajustes y no pide el permiso', () => {
@@ -62,6 +69,14 @@ describe('Pantalla previa', () => {
     ]);
     expect(screen.queryByText('Ahora no')).toBeNull();
     expect(screen.queryByText('Cerrar')).toBeNull();
+  });
+
+  it('no ofrece ninguna salida antes del diálogo', () => {
+    abrir('camara', 'preguntable');
+
+    expect(jest.mocked(Stack.Screen).mock.calls[0]?.[0]).toMatchObject({
+      options: { gestureEnabled: false, headerBackVisible: false },
+    });
   });
 
   it('no pide el permiso al abrirse', () => {

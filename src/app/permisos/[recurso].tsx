@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 
 import { Boton } from '@/components/Boton';
 import { Cargando } from '@/components/Cargando';
@@ -41,8 +41,10 @@ function Previa({ recurso }: { recurso: Recurso }) {
   }
 
   // Un único botón: el "no" se le da al sistema, no a esta pantalla (pauta 5.1.1(iv) de Apple).
+  // Apple tampoco admite salir sin ver el diálogo, así que saco el gesto y el botón atrás.
   return (
     <Pantalla centrada>
+      <Stack.Screen options={{ gestureEnabled: false, headerBackVisible: false }} />
       <Texto variante="titulo">{titulo}</Texto>
       <Texto>{beneficio}</Texto>
       <Texto variante="secundario">Podés cambiar este permiso cuando quieras en Ajustes.</Texto>
