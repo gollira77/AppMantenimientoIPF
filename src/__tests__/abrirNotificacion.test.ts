@@ -3,6 +3,7 @@ import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 
 import { useAbrirNotificacion } from '@/hooks/useAbrirNotificacion';
+import { useAbrirNotificacion as useAbrirNotificacionWeb } from '@/hooks/useAbrirNotificacion.web';
 
 jest.mock(
   'expo-router',
@@ -59,5 +60,13 @@ describe('Tocar una notificación', () => {
     renderHook(() => useAbrirNotificacion());
 
     expect(router.push).not.toHaveBeenCalled();
+  });
+});
+
+describe('Tocar una notificación en web', () => {
+  it('no llama a useLastNotificationResponse, que en web lanza un error', () => {
+    renderHook(() => useAbrirNotificacionWeb());
+
+    expect(Notifications.useLastNotificationResponse).not.toHaveBeenCalled();
   });
 });

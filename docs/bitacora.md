@@ -1779,3 +1779,25 @@ Para la foto (M44) o el panel (M54) iba a repetir todo otra vez.
 
 ---
 
+## M65 (corrección) · Evité leer la respuesta de la notificación en web
+
+**Qué hice**
+
+- Creé `src/hooks/useAbrirNotificacion.web.ts`, una versión vacía del hook.
+- El layout raíz no cambió: sigue importando `@/hooks/useAbrirNotificacion`, y Metro elige el archivo según la plataforma.
+- Agregué un test de que la versión web no llama a `useLastNotificationResponse`.
+
+**Por qué**
+
+- **Problema real:** al abrir la app en el navegador, `useLastNotificationResponse` lanzaba `UnavailabilityError` dentro del layout raíz y se caía toda la app.
+- Los tests no lo vieron porque Jest corre como iOS.
+- No pude usar `if (Platform.OS !== 'web')` adentro del hook: las reglas de los hooks prohíben llamarlos según una condición. Un archivo por plataforma evita la condición.
+
+**Qué podría preguntar el docente**
+
+- *¿La app tiene que funcionar en web?* — La consigna pide Android, iOS y Expo Go. Web sirve para mirar pantallas, pero no para probar permisos: no tiene Ajustes del sistema, y "Abrir Ajustes" no funciona ahí.
+- *¿Cómo elige Metro el archivo?* — Al compilar para web prueba primero `.web.ts`; para Android e iOS usa `.ts`.
+- *¿Qué pasa con "Simular resolución" en web?* — Programar la notificación falla, el servicio atrapa el error y el aviso va a la bandeja (M60).
+
+---
+
